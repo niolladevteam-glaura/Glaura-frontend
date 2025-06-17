@@ -30,7 +30,7 @@ exports.signin = async (req, res) => {
       where: { email },
     });
 
-    const userPermissions = await Permission.findOne({where: { user_id: user.user_id }, attributes: { exclude: ['id', 'user_id', 'createdAt', 'updatedAt'] }});
+    const userPermissions = await Permission.findOne({ where: { user_id: user.user_id }, attributes: { exclude: ['id', 'user_id', 'createdAt', 'updatedAt'] } });
 
 
 
@@ -61,7 +61,7 @@ exports.signin = async (req, res) => {
         role: user.role,
         access_level: user.access_level,
       },
-      permissions: userPermissions || {message: "No permissions found"}
+      permissions: userPermissions || { message: "No permissions found" }
     });
 
   } catch (err) {
