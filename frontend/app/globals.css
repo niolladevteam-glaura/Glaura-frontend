@@ -10,8 +10,11 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+
+    /* Professional Maritime Blue - #003d82 */
+    --primary: 210 100% 25.5%;
     --primary-foreground: 210 40% 98%;
+
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
     --muted: 210 40% 96%;
@@ -22,8 +25,18 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --ring: 210 100% 25.5%;
+    --radius: 0.75rem;
+
+    /* Professional Color Palette */
+    --maritime-primary: 210 100% 25.5%; /* #003d82 */
+    --maritime-secondary: 220 14% 96%; /* #f8fafc */
+    --maritime-accent: 217 91% 60%; /* #3b82f6 */
+    --maritime-success: 142 76% 36%; /* #059669 */
+    --maritime-warning: 38 92% 50%; /* #f59e0b */
+    --maritime-error: 0 84% 60%; /* #ef4444 */
+    --maritime-info: 199 89% 48%; /* #0ea5e9 */
+    --maritime-purple: 262 83% 58%; /* #8b5cf6 */
   }
 
   .dark {
@@ -33,7 +46,7 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 217 91% 60%;
     --primary-foreground: 222.2 84% 4.9%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -45,7 +58,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -55,135 +68,52 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
   }
 }
 
-/* Maritime theme customizations */
-.maritime-gradient {
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 25%, #3b82f6 50%, #0ea5e9 75%, #06b6d4 100%);
-}
-
-.port-call-status {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-}
-
-.port-call-status.pending {
-  @apply bg-yellow-100 text-yellow-800;
-}
-
-.port-call-status.in-progress {
-  @apply bg-blue-100 text-blue-800;
-}
-
-.port-call-status.completed {
-  @apply bg-green-100 text-green-800;
-}
-
-.service-timeline {
-  position: relative;
-}
-
-.service-timeline::before {
-  content: "";
-  position: absolute;
-  left: 1rem;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #e5e7eb;
-}
-
-.timeline-item {
-  position: relative;
-  padding-left: 3rem;
-  padding-bottom: 1.5rem;
-}
-
-.timeline-item::before {
-  content: "";
-  position: absolute;
-  left: 0.75rem;
-  top: 0.25rem;
-  width: 0.5rem;
-  height: 0.5rem;
-  background: #3b82f6;
-  border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px #3b82f6;
-}
-
-.timeline-item.completed::before {
-  background: #10b981;
-  box-shadow: 0 0 0 2px #10b981;
-}
-
-.timeline-item.pending::before {
-  background: #f59e0b;
-  box-shadow: 0 0 0 2px #f59e0b;
-}
-
-/* Auto-logout warning styles */
-.logout-warning {
-  @apply fixed top-4 right-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-lg z-50;
-}
-
-/* Document generation styles */
-.document-preview {
-  @apply border-2 border-dashed border-gray-300 rounded-lg p-8 text-center;
-}
-
-.document-preview.ready {
-  @apply border-blue-500 bg-blue-50;
-}
-
-/* Mobile responsiveness for maritime theme */
-@media (max-width: 768px) {
-  .maritime-gradient {
-    background: linear-gradient(180deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%);
+/* Professional Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-
-  .service-timeline::before {
-    left: 0.5rem;
-  }
-
-  .timeline-item {
-    padding-left: 2rem;
-  }
-
-  .timeline-item::before {
-    left: 0.25rem;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Print styles for documents */
-@media print {
-  .no-print {
-    display: none !important;
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
   }
-
-  .print-only {
-    display: block !important;
-  }
-
-  body {
-    background: white !important;
-    color: black !important;
-  }
-
-  .document-content {
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 1rem !important;
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
-/* Loading animations */
-.loading-spinner {
-  @apply inline-block w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin;
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.pulse-animation {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
 }
 
 @keyframes pulse {
@@ -196,20 +126,214 @@
   }
 }
 
-/* Custom scrollbar for maritime theme */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+/* Professional Components */
+.professional-card {
+  @apply bg-white border border-gray-200 rounded-xl shadow-sm;
+  @apply hover:shadow-md transition-all duration-200;
+  @apply dark:bg-gray-900 dark:border-gray-800;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #f1f5f9;
+.professional-button {
+  @apply inline-flex items-center justify-center rounded-lg text-sm font-medium;
+  @apply transition-colors focus-visible:outline-none focus-visible:ring-2;
+  @apply focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #3b82f6;
-  border-radius: 3px;
+.professional-button-primary {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  @apply shadow-sm hover:shadow-md transition-all duration-200;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
+.professional-button-secondary {
+  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  @apply border border-input shadow-sm hover:shadow-md transition-all duration-200;
+}
+
+.welcome-card {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--maritime-primary)) 0%,
+    hsl(var(--maritime-purple)) 100%
+  );
+  @apply text-white rounded-2xl p-8 relative overflow-hidden;
+}
+
+.welcome-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 70%
+  );
+  border-radius: 50%;
+}
+
+.stats-card {
+  @apply professional-card p-6;
+  @apply hover:scale-[1.02];
+  @apply transition-transform duration-200;
+}
+
+.nav-item {
+  @apply flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200;
+  @apply hover:bg-gray-100 dark:hover:bg-gray-800;
+}
+
+.nav-item.active {
+  @apply bg-primary/10 text-primary border-r-2 border-primary;
+}
+
+.glass-effect {
+  @apply bg-white/80 backdrop-blur-sm border border-white/20;
+  @apply dark:bg-gray-900/80 dark:border-gray-800/50;
+}
+
+/* Form Styles */
+.form-input {
+  @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2;
+  @apply text-sm ring-offset-background file:border-0 file:bg-transparent;
+  @apply file:text-sm file:font-medium placeholder:text-muted-foreground;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  @apply focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.form-label {
+  @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+}
+
+/* Loading States */
+.loading-skeleton {
+  @apply bg-gray-200 dark:bg-gray-700 rounded;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  background-size: 200px 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Utility Classes */
+@layer utilities {
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
+  }
+
+  .animate-fade-in-left {
+    animation: fadeInLeft 0.5s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .welcome-card {
+    @apply p-6;
+  }
+
+  .stats-card:hover {
+    transform: none;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Gradient background */
+.maritime-gradient-bg {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%);
+}
+
+/* Card styling */
+.maritime-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+/* Text gradient */
+.gradient-text {
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Glass morphism effect */
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Button styling */
+.maritime-button {
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.maritime-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* Floating animation */
+.floating-element {
+  animation: floating 6s ease-in-out infinite;
+}
+
+@keyframes floating {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* Loading animation */
+.loading-wave {
+  /* Add your loading animation styles here */
+}
+
+/* Ensure text is visible */
+.text-white {
+  color: white !important;
+}
+
+.text-blue-100 {
+  color: #dbeafe !important;
+}
+
+.text-blue-200 {
+  color: #bfdbfe !important;
+}
+
+.text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.text-gray-800 {
+  color: #1f2937 !important;
 }
