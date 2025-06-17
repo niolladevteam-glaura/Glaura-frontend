@@ -181,8 +181,10 @@ export default function LoginPage() {
 
     const data = await response.json();
 
-    if (!data.success) {
-      throw new Error(data.message || "Authentication failed");
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data && data.message ? data.message : "Authentication failed"
+      );
     }
 
     return {
