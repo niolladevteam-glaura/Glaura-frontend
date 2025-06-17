@@ -303,6 +303,14 @@ export default function UserManagement() {
   // Add state for privileges
   const [selectedPrivileges, setSelectedPrivileges] = useState<string[]>([])
 
+  // Add this right after the state declarations
+  const handleAddUserClick = () => {
+    console.log("Add User button clicked!")
+    console.log("Current dialog state:", isCreateDialogOpen)
+    setIsCreateDialogOpen(true)
+    console.log("Dialog state after setting:", true)
+  }
+
   const router = useRouter()
 
   useEffect(() => {
@@ -452,8 +460,40 @@ export default function UserManagement() {
   }
 
   // Update the createUser function to include privileges
-  const createUser = () => {
-    if (newUser.username && newUser.name && newUser.email) {
+  const createUser = async () => {
+    // Validate required fields
+    if (!newUser.username || !newUser.name || !newUser.email) {
+      alert("Please fill in all required fields (Username, Full Name, Email)")
+      return
+    }
+
+    try {
+      // TODO: Replace with actual API call
+      // const response = await fetch('/api/users', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     username: newUser.username,
+      //     name: newUser.name,
+      //     email: newUser.email,
+      //     role: newUser.role || "",
+      //     department: newUser.department || "",
+      //     accessLevel: newUser.accessLevel || "R",
+      //     phoneNumber: newUser.phoneNumber || "",
+      //     emergencyContact: newUser.emergencyContact || "",
+      //     permissions: selectedPrivileges
+      //   })
+      // })
+      //
+      // if (!response.ok) {
+      //   throw new Error('Failed to create user')
+      // }
+      //
+      // const createdUser = await response.json()
+
+      // Mock implementation - replace with actual API call above
       const user: User = {
         id: Date.now().toString(),
         username: newUser.username,
@@ -465,15 +505,25 @@ export default function UserManagement() {
         isActive: true,
         lastLogin: "",
         createdAt: new Date().toISOString(),
-        permissions: selectedPrivileges, // Use selected privileges instead of newUser.permissions
+        permissions:
+          selectedPrivileges.length > 0 ? selectedPrivileges : getDefaultPrivileges(newUser.accessLevel || "R"),
         phoneNumber: newUser.phoneNumber || "",
         emergencyContact: newUser.emergencyContact || "",
       }
 
+      // Add to local state (replace with API response handling)
       setUsers([...users, user])
+
+      // Reset form and close dialog
       setNewUser({})
       setSelectedPrivileges([])
       setIsCreateDialogOpen(false)
+
+      // Show success message
+      alert("User created successfully!")
+    } catch (error) {
+      console.error("Error creating user:", error)
+      alert("Failed to create user. Please try again.")
     }
   }
 
@@ -594,16 +644,21 @@ export default function UserManagement() {
               <span>User Directory</span>
               <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button onClick={handleAddUserClick}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add User
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Create New User</DialogTitle>
-                    <DialogDescription>Add a new user to the system</DialogDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <DialogTitle>Create New User</DialogTitle>
+                        <DialogDescription>Add a new user to the system</DialogDescription>
+                      </div>
+                    </div>
                   </DialogHeader>
+
                   <div className="space-y-6">
                     {/* Basic Information */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -674,7 +729,14 @@ export default function UserManagement() {
                       </div>
                       <div>
                         <Label htmlFor="accessLevel">Access Level</Label>
-                        <Select value={newUser.accessLevel || ""} onValueChange={handleAccessLevelChange}>
+                        <Select
+                          value={newUser.accessLevel || ""}
+                          onValueChange={(value) => {
+                            setNewUser({ ...newUser, accessLevel: value })
+                            const defaultPrivs = getDefaultPrivileges(value)
+                            setSelectedPrivileges(defaultPrivs)
+                          }}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select access level" />
                           </SelectTrigger>
@@ -701,7 +763,7 @@ export default function UserManagement() {
                       </div>
                     </div>
 
-                    {/* Privileges Section */}
+                    {/* System Privileges Section */}
                     {newUser.accessLevel && (
                       <div className="space-y-4">
                         <div>
@@ -712,7 +774,7 @@ export default function UserManagement() {
                           </p>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {Object.entries(
                             ALL_PRIVILEGES.reduce(
                               (acc, privilege) => {
@@ -723,8 +785,8 @@ export default function UserManagement() {
                               {} as Record<string, Privilege[]>,
                             ),
                           ).map(([category, privileges]) => (
-                            <div key={category} className="border rounded-lg p-4">
-                              <h4 className="font-medium mb-3 text-blue-600">{category}</h4>
+                            <div key={category} className="space-y-3">
+                              <h4 className="font-medium text-blue-600 text-base">{category}</h4>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {privileges.map((privilege) => (
                                   <div key={privilege.id} className="flex items-start space-x-3">
@@ -747,8 +809,8 @@ export default function UserManagement() {
                           ))}
                         </div>
 
-                        <div className="bg-blue-50 p-3 rounded-lg">
-                          <p className="text-sm text-blue-700">
+                        <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
                             <strong>Selected Privileges:</strong> {selectedPrivileges.length} of {ALL_PRIVILEGES.length}
                           </p>
                         </div>
@@ -767,7 +829,13 @@ export default function UserManagement() {
                     >
                       Cancel
                     </Button>
-                    <Button onClick={createUser}>Create User</Button>
+                    <Button
+                      onClick={createUser}
+                      disabled={!newUser.username || !newUser.name || !newUser.email}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Create User
+                    </Button>
                   </div>
                 </DialogContent>
               </Dialog>
