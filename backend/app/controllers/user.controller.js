@@ -33,7 +33,7 @@ exports.createUser = async (req, res) => {
       permissions
     } = req.body;
 
-    const user_id = await generateUserId(User); // ← generate it manually
+    const user_id = await generateUserId(User);
 
     const user = await User.create({
       user_id,
@@ -49,7 +49,7 @@ exports.createUser = async (req, res) => {
     }, { transaction: t });
 
     await Permission.create({
-      user_id: user_id, // ← now guaranteed to be defined
+      user_id,
       ...permissions
     }, { transaction: t });
 
@@ -69,9 +69,6 @@ exports.createUser = async (req, res) => {
     });
   }
 };
-
-
-
 
 exports.getAllUsers = async (req, res) => {
   try {
@@ -98,12 +95,12 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-
-// Get user by ID
 exports.getUserById = async (req, res) => {
   try {
     const id = req.params.id;
-    const user = await User.findByPk(id);
+        const user = await User.findOne({
+      where: { user_id: id },
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -124,3 +121,62 @@ exports.getUserById = async (req, res) => {
   }
 };
 
+exports.updateUser = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const [updated] = await User.update(req.body, {
+      where: { user_id: id }
+    });
+
+    if (updated === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `User with ID ${id} not found or no changes made`
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `User with ID ${id} updated successfully`
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const deleted = await User.destroy({
+      where: { user_id: id }
+    });
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: `User with ID ${id} not found`
+      });
+    }
+
+    await Permission.destroy({
+      where: { user_id: id }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `User with ID ${id} deleted successfully`
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+};
