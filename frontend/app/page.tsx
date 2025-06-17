@@ -33,68 +33,15 @@ import {
 import { useRouter } from "next/navigation";
 
 type ApiUser = {
-  id: number;
+  id: string;
   first_name: string;
   last_name: string;
   email: string;
   role: string;
   access_level: string;
   token: string;
+  permissions?: Record<string, boolean>; // Added permissions field
 };
-
-// Mock users for fallback/demo purposes
-const mockUsers = [
-  {
-    id: 1,
-    username: "admin@niolla.lk",
-    email: "admin@niolla.lk",
-    password: "demo123",
-    first_name: "Admin",
-    last_name: "User",
-    role: "Administrator",
-    access_level: "A",
-    department: "Management",
-  },
-  {
-    id: 2,
-    username: "manager@niolla.lk",
-    email: "manager@niolla.lk",
-    password: "demo123",
-    first_name: "Port",
-    last_name: "Manager",
-    role: "Port Manager",
-    access_level: "B",
-    department: "Operations",
-  },
-  {
-    id: 3,
-    username: "client@msc.com",
-    email: "client@msc.com",
-    password: "demo123",
-    first_name: "MSC",
-    last_name: "Client",
-    role: "Client",
-    access_level: "CLIENT",
-    department: "External",
-  },
-];
-
-const FloatingElement = ({
-  children,
-  delay = 0,
-  className = "",
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) => (
-  <div
-    className={`floating-element ${className}`}
-    style={{ animationDelay: `${delay}s` }}
-  >
-    {children}
-  </div>
-);
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -115,45 +62,13 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // For internal users, try API first
-      if (userType === "internal") {
-        try {
-          const apiResponse = await authenticateWithAPI(email, password);
-          if (apiResponse) {
-            handleSuccessfulLogin(apiResponse);
-            return;
-          }
-        } catch (apiError) {
-          console.error("API login failed:", apiError);
-          setError(
-            apiError instanceof Error ? apiError.message : "API login failed"
-          );
-        }
-      }
-
-      // Fallback to mock user verification
-      const user = mockUsers.find(
-        (u) =>
-          (u.email === email || u.username === email) && u.password === password
-      );
-
-      if (user) {
-        const mockApiUser = {
-          id: user.id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email: user.email,
-          role: user.role,
-          access_level: user.access_level,
-          token: `mock-token-${user.id}-${Date.now()}`,
-        };
-        handleSuccessfulLogin(mockApiUser);
-      } else {
-        setError("Invalid email or password");
-      }
+      const apiResponse = await authenticateWithAPI(email, password);
+      handleSuccessfulLogin(apiResponse);
     } catch (err) {
       console.error("Login error:", err);
-      setError("An unexpected error occurred");
+      setError(
+        err instanceof Error ? err.message : "Invalid email or password"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -167,21 +82,14 @@ export default function LoginPage() {
       `${process.env.NEXT_PUBLIC_API_URL}/auth/signin`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       }
     );
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Login failed");
-    }
-
     const data = await response.json();
 
-    if (!data.success) {
+    if (!response.ok || !data.success) {
       throw new Error(data.message || "Authentication failed");
     }
 
@@ -193,6 +101,7 @@ export default function LoginPage() {
       role: data.user.role,
       access_level: data.user.access_level,
       token: data.token,
+      permissions: data.permissions,
     };
   };
 
@@ -204,6 +113,7 @@ export default function LoginPage() {
       role: user.role,
       accessLevel: user.access_level,
       token: user.token,
+      permissions: user.permissions || {},
     };
 
     // Store authentication data
@@ -235,36 +145,36 @@ export default function LoginPage() {
     <div className="min-h-screen maritime-gradient-bg relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <FloatingElement
-          delay={0}
-          className="absolute top-20 left-10 text-white/10"
+        <div
+          className="absolute top-20 left-10 text-white/10 floating-element"
+          style={{ animationDelay: "0s" }}
         >
           <Waves className="h-16 w-16" />
-        </FloatingElement>
-        <FloatingElement
-          delay={1}
-          className="absolute top-40 right-20 text-white/10"
+        </div>
+        <div
+          className="absolute top-40 right-20 text-white/10 floating-element"
+          style={{ animationDelay: "1s" }}
         >
           <Ship className="h-12 w-12" />
-        </FloatingElement>
-        <FloatingElement
-          delay={2}
-          className="absolute bottom-40 left-20 text-white/10"
+        </div>
+        <div
+          className="absolute bottom-40 left-20 text-white/10 floating-element"
+          style={{ animationDelay: "2s" }}
         >
           <Compass className="h-14 w-14" />
-        </FloatingElement>
-        <FloatingElement
-          delay={0.5}
-          className="absolute bottom-20 right-10 text-white/10"
+        </div>
+        <div
+          className="absolute bottom-20 right-10 text-white/10 floating-element"
+          style={{ animationDelay: "0.5s" }}
         >
           <Navigation className="h-10 w-10" />
-        </FloatingElement>
-        <FloatingElement
-          delay={1.5}
-          className="absolute top-60 left-1/3 text-white/5"
+        </div>
+        <div
+          className="absolute top-60 left-1/3 text-white/5 floating-element"
+          style={{ animationDelay: "1.5s" }}
         >
           <Anchor className="h-20 w-20" />
-        </FloatingElement>
+        </div>
       </div>
 
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
@@ -448,48 +358,55 @@ export default function LoginPage() {
                   </Button>
                 </form>
 
-                {/* Enhanced Demo Credentials */}
+                {/* Demo Credentials Section */}
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
                   <h4 className="font-bold text-base mb-4 text-gray-800 flex items-center">
                     <Zap className="mr-2 h-5 w-5 text-blue-600" />
                     Demo Credentials
                   </h4>
                   <div className="space-y-3 text-sm">
-                    {[
-                      {
-                        role: "Administrator",
-                        email: "admin@niolla.lk",
-                        icon: "👑",
-                      },
-                      {
-                        role: "Port Manager",
-                        email: "manager@niolla.lk",
-                        icon: "⚓",
-                      },
-                      {
-                        role: "Client Access",
-                        email: "client@msc.com",
-                        icon: "🚢",
-                      },
-                    ].map((cred, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm"
-                      >
-                        <div className="flex items-center">
-                          <span className="mr-2 text-lg">{cred.icon}</span>
-                          <div>
-                            <div className="font-semibold text-gray-800">
-                              {cred.role}
-                            </div>
-                            <div className="text-gray-600">{cred.email}</div>
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                      <div className="flex items-center">
+                        <span className="mr-2 text-lg">👑</span>
+                        <div>
+                          <div className="font-semibold text-gray-800">
+                            Administrator
                           </div>
-                        </div>
-                        <div className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-                          demo123
+                          <div className="text-gray-600">admin@niolla.lk</div>
                         </div>
                       </div>
-                    ))}
+                      <div className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
+                        demo123
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                      <div className="flex items-center">
+                        <span className="mr-2 text-lg">⚓</span>
+                        <div>
+                          <div className="font-semibold text-gray-800">
+                            Port Manager
+                          </div>
+                          <div className="text-gray-600">manager@niolla.lk</div>
+                        </div>
+                      </div>
+                      <div className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
+                        demo123
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                      <div className="flex items-center">
+                        <span className="mr-2 text-lg">🚢</span>
+                        <div>
+                          <div className="font-semibold text-gray-800">
+                            Client Access
+                          </div>
+                          <div className="text-gray-600">client@msc.com</div>
+                        </div>
+                      </div>
+                      <div className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
+                        demo123
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
