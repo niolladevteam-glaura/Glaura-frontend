@@ -15,6 +15,7 @@ const express = require('express');
 const app = express();
 const db = require('./app/models');
 const userRoutes = require('./app/routes/user.routes');
+const authRoutes = require('./app/routes/auth.routes');
 
 app.use(express.json());
 
@@ -30,6 +31,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

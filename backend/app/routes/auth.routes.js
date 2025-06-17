@@ -8,15 +8,13 @@
  * For inquiries, contact: support@niolla.lk
  */
 
-// routes/user.routes.js
-
+// routes/auth.routes.js
 
 const express = require('express');
 const router = express.Router();
-const userController = require('../controllers/user.controller');
+const authController = require('../controllers/auth.controller');
 
-router.post('/', userController.createUser);
-router.get('/', userController.getAllUsers);
-router.get('/:id', userController.getUserById);
+router.post('/signin', authController.signin);   // Fixed: was 'singin'
+router.get('/signout', authController.signout);   // Fixed: was 'singout'
 
 module.exports = router;

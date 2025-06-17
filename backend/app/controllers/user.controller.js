@@ -80,3 +80,29 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+
+// Get user by ID
+exports.getUserById = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: `User with ID ${id} not found`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+};
+
