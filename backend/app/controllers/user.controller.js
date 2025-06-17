@@ -15,13 +15,45 @@ const User = db.User;
 
 exports.createUser = async (req, res) => {
   try {
-    const { name, email } = req.body;
-    const user = await User.create({ name, email });
-    res.status(201).json(user);
+    const {
+      first_name,
+      last_name,
+      contact_number,
+      profile_picture,
+      dob,
+      email,
+      password,
+      role,
+      access_level
+    } = req.body;
+
+    // You can add validations here as needed
+
+    const user = await User.create({
+      first_name,
+      last_name,
+      contact_number,
+      profile_picture,
+      dob,
+      email,
+      password, // Consider hashing the password before storing
+      role,
+      access_level
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      data: user
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 };
+
 
 exports.getAllUsers = async (req, res) => {
   try {
