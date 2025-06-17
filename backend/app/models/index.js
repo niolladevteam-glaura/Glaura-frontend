@@ -27,7 +27,20 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-// Import models
+// Load models
 db.User = require('./user.model')(sequelize, DataTypes);
+db.Permission = require('./perms.model')(sequelize, DataTypes);
+
+// Set up associations correctly
+db.User.hasOne(db.Permission, {
+  foreignKey: 'user_id',
+  as: 'permissions',
+  onDelete: 'CASCADE'
+});
+
+db.Permission.belongsTo(db.User, {
+  foreignKey: 'user_id',
+  as: 'user'
+});
 
 module.exports = db;

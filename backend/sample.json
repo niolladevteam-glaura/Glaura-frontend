@@ -1,33 +1,37 @@
 {
-    priv:{
-        "id": "GL245456",
-        management:{
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-        }
-        management:{
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-        }
-        management:{
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-        }
-        management:{
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-            "User Management" : true,
-        }
+    "success": true,
+    "message": "Login successful",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJzYXRoaXJhQGV4YW1wbGUuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzUwMTQwMDcyLCJleHAiOjE3NTAyMjY0NzJ9.7w8INv7M5DV0T7hKm8KYQuJxnZAuIvS2ACOGIjDV8lc",
+    "user": {
+        "id": 1,
+        "first_name": "Sathira",
+        "last_name": "Sathsara",
+        "email": "sathira@example.com"
+    },
+    "role": {
+        "type": "admin",
+        "access_level": "A",
+        "permissions": [
+            {
+                "module": "user_management",
+                "isAllowed": true
+            },
+            {
+                "module": "system_settings",
+                "isAllowed": true
+            },
+            {
+                "module": "port_calls",
+                "isAllowed": true
+            },
+            {
+                "module": "customers",
+                "isAllowed": true
+            },
+            {
+                "module": "communication",
+                "isAllowed": true
+            }
+        ]
     }
 }

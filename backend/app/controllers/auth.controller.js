@@ -10,11 +10,11 @@
 
 // controllers/auth.controller.js
 
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { User } = require('../models'); // adjust if your import is different
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const { User, Permission } = require("../models"); // adjust if your import is different
 
-const SECRET_KEY = process.env.JWT_SECRET || 'niolla-secret'; // Store in .env for security
+const SECRET_KEY = process.env.JWT_SECRET || "niolla-secret"; // Store in .env for security
 
 // POST /signin
 exports.signin = async (req, res) => {
@@ -22,43 +22,46 @@ exports.signin = async (req, res) => {
     const { email, password } = req.body;
     console.log('Signin attempt:', { email });
 
-    // Validate input
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
     }
 
-    // Find user
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({
+      where: { email },
+    });
+
+    const userPermissions = await Permission.findOne({where: { user_id: user.user_id }, attributes: { exclude: ['id', 'user_id', 'createdAt', 'updatedAt'] }});
+
+
+
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
 
-    // Generate JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.user_id, email: user.email, role: user.role },
       SECRET_KEY,
       { expiresIn: '1d' }
     );
 
-    // Success
     res.status(200).json({
       success: true,
       message: 'Login successful',
       token,
       user: {
-        id: user.id,
+        id: user.user_id,
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
         role: user.role,
-        access_level: user.access_level
-      }
+        access_level: user.access_level,
+      },
+      permissions: userPermissions || {message: "No permissions found"}
     });
 
   } catch (err) {
@@ -70,6 +73,6 @@ exports.signin = async (req, res) => {
 exports.signout = (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Signout endpoint hit. Just clear token on client-side.',
+    message: "Signout endpoint hit. Just clear token on client-side.",
   });
 };

@@ -12,8 +12,13 @@
 
 const db = require('../models');
 const User = db.User;
+const Permission = db.Permission;
+
+const generateUserId = require('../utils/generateUserId');
 
 exports.createUser = async (req, res) => {
+  const t = await db.sequelize.transaction();
+
   try {
     const {
       first_name,
@@ -24,35 +29,48 @@ exports.createUser = async (req, res) => {
       email,
       password,
       role,
-      access_level
+      access_level,
+      permissions
     } = req.body;
 
-    // You can add validations here as needed
+    const user_id = await generateUserId(User); // ← generate it manually
 
     const user = await User.create({
+      user_id,
       first_name,
       last_name,
       contact_number,
       profile_picture,
       dob,
       email,
-      password, // Consider hashing the password before storing
+      password,
       role,
       access_level
-    });
+    }, { transaction: t });
+
+    await Permission.create({
+      user_id: user_id, // ← now guaranteed to be defined
+      ...permissions
+    }, { transaction: t });
+
+    await t.commit();
 
     res.status(201).json({
       success: true,
-      message: 'User created successfully',
+      message: 'User and permissions created successfully',
       data: user
     });
+
   } catch (err) {
+    await t.rollback();
     res.status(500).json({
       success: false,
       error: err.message
     });
   }
 };
+
+
 
 
 exports.getAllUsers = async (req, res) => {

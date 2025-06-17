@@ -46,7 +46,7 @@ app.get('/', (req, res) => {
   res.send('App with Sequelize and .env working!');
 });
 
-app.use('/api/users', userRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/auth', authRoutes);
 
 const PORT = process.env.PORT || 3080;

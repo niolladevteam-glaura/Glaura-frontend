@@ -14,6 +14,11 @@ const bcrypt = require('bcrypt');
 
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
+    user_id: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false
+    },
     first_name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -53,8 +58,9 @@ module.exports = (sequelize, DataTypes) => {
     access_level: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
+    }
   }, {
+    tableName: 'User',
     hooks: {
       beforeCreate: async (user) => {
         if (user.password) {
