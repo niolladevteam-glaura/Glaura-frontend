@@ -30,7 +30,8 @@ exports.createUser = async (req, res) => {
       password,
       role,
       access_level,
-      permissions
+      permissions,
+      department
     } = req.body;
 
     const user_id = await generateUserId(User);
@@ -45,7 +46,8 @@ exports.createUser = async (req, res) => {
       email,
       password,
       role,
-      access_level
+      access_level,
+      department: department || 'Other'
     }, { transaction: t });
 
     await Permission.create({
@@ -98,7 +100,7 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
   try {
     const id = req.params.id;
-        const user = await User.findOne({
+    const user = await User.findOne({
       where: { user_id: id },
     });
 

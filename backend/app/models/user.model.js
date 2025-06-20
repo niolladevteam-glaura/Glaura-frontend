@@ -58,6 +58,11 @@ module.exports = (sequelize, DataTypes) => {
     access_level: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    department: {
+      type: DataTypes.STRING,
+      allowNull: true, // or false
+      defaultValue: 'Other' // optional
     }
   }, {
     tableName: 'User',
