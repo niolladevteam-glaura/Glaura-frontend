@@ -31,6 +31,16 @@ import {
   Compass,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { jwtDecode } from "jwt-decode";
+
+interface JwtPayload {
+  id: string;
+  email: string;
+  role: string;
+  access_level: string;
+  iat: number;
+  exp: number;
+}
 
 type ApiUser = {
   id: string;
@@ -54,6 +64,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
+    // Clear any existing tokens on login page load
+    localStorage.removeItem("token");
+    localStorage.removeItem("currentUser");
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -106,22 +119,33 @@ export default function LoginPage() {
   };
 
   const handleSuccessfulLogin = (user: ApiUser) => {
+    // Decode token to verify access level
+    let accessLevel = user.access_level;
+    try {
+      const decoded = jwtDecode<JwtPayload>(user.token);
+      // Use access_level from token if available
+      if (decoded.access_level) {
+        accessLevel = decoded.access_level;
+      }
+    } catch (error) {
+      console.error("Error decoding token:", error);
+    }
+
     const userData = {
       id: user.id,
       name: `${user.first_name} ${user.last_name}`,
       email: user.email,
       role: user.role,
-      accessLevel: user.access_level,
-      token: user.token,
+      accessLevel: accessLevel, // Use verified access level
       permissions: user.permissions || {},
     };
 
-    // Store authentication data
+    // Store authentication data with consistent keys
     localStorage.setItem("currentUser", JSON.stringify(userData));
-    localStorage.setItem("authToken", user.token);
+    localStorage.setItem("token", user.token); // Use "token" key consistently
 
     // Redirect based on access level
-    switch (user.access_level) {
+    switch (accessLevel) {
       case "A":
         router.push("/dashboard");
         break;
@@ -279,7 +303,7 @@ export default function LoginPage() {
                   <div className="space-y-3">
                     <Label
                       htmlFor="userType"
-                      className="text-base font-semibold"
+                      className="text-base font-semibold text-gray-800"
                     >
                       Account Type
                     </Label>
@@ -299,7 +323,10 @@ export default function LoginPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label htmlFor="email" className="text-base font-semibold">
+                    <Label
+                      htmlFor="email"
+                      className="text-base font-semibold text-gray-800"
+                    >
                       Email Address
                     </Label>
                     <Input
@@ -307,7 +334,7 @@ export default function LoginPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="user@niolla.lk"
+                      placeholder="user@greeklanka.lk"
                       required
                       disabled={isLoading}
                       className="h-12 text-base border-2 border-gray-200 focus:border-blue-500 rounded-xl"
@@ -317,7 +344,7 @@ export default function LoginPage() {
                   <div className="space-y-3">
                     <Label
                       htmlFor="password"
-                      className="text-base font-semibold"
+                      className="text-base font-semibold text-gray-800 "
                     >
                       Password
                     </Label>
@@ -357,8 +384,7 @@ export default function LoginPage() {
                     )}
                   </Button>
                 </form>
-
-                {/* Demo Credentials Section */}
+                {/* Demo Credentials Section
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
                   <h4 className="font-bold text-base mb-4 text-gray-800 flex items-center">
                     <Zap className="mr-2 h-5 w-5 text-blue-600" />
@@ -408,7 +434,7 @@ export default function LoginPage() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </div> */}
               </CardContent>
             </Card>
           </div>

@@ -1,70 +1,74 @@
 // lib/api.ts
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080/api";
+import axios from 'axios';
 
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("token");
-  
-  const headers = {
-    "Content-Type": "application/json",
-    ...options.headers,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+const API_BASE_URL = 'http://localhost:3080/api'; // Use your backend URL
 
-  const response = await fetch(`${API_BASE_URL}${url}`, {
-    ...options,
-    headers,
-  });
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Something went wrong");
+// Add request interceptor to inject token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    if (!config.headers) {
+      config.headers = {};
+    }
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  return response.json();
-}
-
-// Auth API
-export const authApi = {
-  signin: async (email: string, password: string) => {
-    return fetchWithAuth("/auth/signin", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-  },
-  signout: async () => {
-    return fetchWithAuth("/auth/signout");
-  },
-};
-
-// User API
 export const userApi = {
   getAllUsers: async () => {
-    return fetchWithAuth("/user");
+    const response = await api.get('/user');
+    return response.data;
   },
+  
   getUserById: async (id: string) => {
-    return fetchWithAuth(`/user/${id}`);
+    const response = await api.get(`/user/${id}`);
+    return response.data;
   },
+  
+getUserPermissions: async (userId: string) => {
+    try {
+      const response = await api.get(`/permission/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      return { 
+        success: false, 
+        message: "Failed to fetch permissions",
+        userPermissions: {} 
+      };
+    }
+  },
+
   createUser: async (userData: any) => {
-    return fetchWithAuth("/user", {
-      method: "POST",
-      body: JSON.stringify(userData),
-    });
+    const response = await api.post('/user', userData);
+    return response.data;
   },
+  
   updateUser: async (id: string, userData: any) => {
-    return fetchWithAuth(`/user/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(userData),
-    });
+    const response = await api.put(`/user/${id}`, userData);
+    return response.data;
+  },
+  
+  toggleUserStatus: async (id: string, status: boolean) => {
+    const response = await api.put(`/user/${id}`, { status });
+    return response.data;
   },
   deleteUser: async (id: string) => {
-    return fetchWithAuth(`/user/${id}`, {
-      method: "DELETE",
-    });
+    const response = await api.delete(`/user/${id}`);
+    return response.data;
   },
-  toggleUserStatus: async (id: string, isActive: boolean) => {
-    return fetchWithAuth(`/user/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ isActive }),
-    });
+  
+  // Auth endpoints
+  signin: async (credentials: { email: string; password: string }) => {
+    const response = await api.post('/auth/signin', credentials);
+    return response.data;
   },
 };

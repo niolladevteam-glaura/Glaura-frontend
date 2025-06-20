@@ -64,12 +64,40 @@ interface User {
   emergencyContact: string;
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data?: T;
+  user?: T;
+}
+
+interface ApiUser {
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  access_level: string;
+  department: string;
+  status: boolean;
+  contact_number?: string;
+  created_at?: string;
+  last_login?: string;
+  permissions?: Record<string, boolean>;
+}
+
 // Add this interface at the top of the file after the existing User interface
 interface Privilege {
   id: string;
   name: string;
   description: string;
   category: string;
+}
+
+interface PermissionResponse {
+  success: boolean;
+  message?: string;
+  userPermissions?: Record<string, boolean>;
 }
 
 // Add this constant after the User interface
@@ -102,31 +130,31 @@ const ALL_PRIVILEGES: Privilege[] = [
 
   // Port Call Privileges
   {
-    id: "port_calls_create",
+    id: "create_port_calls",
     name: "Create Port Calls",
     description: "Create new port call entries",
     category: "Port Calls",
   },
   {
-    id: "port_calls_edit",
+    id: "edit_port_calls",
     name: "Edit Port Calls",
     description: "Modify existing port call details",
     category: "Port Calls",
   },
   {
-    id: "port_calls_delete",
+    id: "delete_port_calls",
     name: "Delete Port Calls",
     description: "Remove port call entries",
     category: "Port Calls",
   },
   {
-    id: "port_calls_view",
+    id: "view_port_calls",
     name: "View Port Calls",
     description: "Access port call information",
     category: "Port Calls",
   },
   {
-    id: "port_calls_assign",
+    id: "assign_port_calls",
     name: "Assign Port Calls",
     description: "Assign port calls to staff members",
     category: "Port Calls",
@@ -134,25 +162,25 @@ const ALL_PRIVILEGES: Privilege[] = [
 
   // Customer Management
   {
-    id: "customers_create",
+    id: "create_customers",
     name: "Create Customers",
     description: "Add new customer companies",
     category: "Customers",
   },
   {
-    id: "customers_edit",
+    id: "edit_customers",
     name: "Edit Customers",
     description: "Modify customer information",
     category: "Customers",
   },
   {
-    id: "customers_view",
+    id: "view_customers",
     name: "View Customers",
     description: "Access customer database",
     category: "Customers",
   },
   {
-    id: "customers_delete",
+    id: "delete_customers",
     name: "Delete Customers",
     description: "Remove customer records",
     category: "Customers",
@@ -160,25 +188,25 @@ const ALL_PRIVILEGES: Privilege[] = [
 
   // Vendor Management
   {
-    id: "vendors_create",
+    id: "create_vendors",
     name: "Create Vendors",
     description: "Add new vendor companies",
     category: "Vendors",
   },
   {
-    id: "vendors_edit",
+    id: "edit_vendors",
     name: "Edit Vendors",
     description: "Modify vendor information",
     category: "Vendors",
   },
   {
-    id: "vendors_view",
+    id: "view_vendors",
     name: "View Vendors",
     description: "Access vendor database",
     category: "Vendors",
   },
   {
-    id: "vendors_delete",
+    id: "delete_vendors",
     name: "Delete Vendors",
     description: "Remove vendor records",
     category: "Vendors",
@@ -186,25 +214,25 @@ const ALL_PRIVILEGES: Privilege[] = [
 
   // Document Management
   {
-    id: "documents_create",
+    id: "create_documents",
     name: "Create Documents",
     description: "Upload and create new documents",
     category: "Documents",
   },
   {
-    id: "documents_edit",
+    id: "edit_documents",
     name: "Edit Documents",
     description: "Modify document details",
     category: "Documents",
   },
   {
-    id: "documents_view",
+    id: "view_documents",
     name: "View Documents",
     description: "Access document library",
     category: "Documents",
   },
   {
-    id: "documents_delete",
+    id: "delete_documents",
     name: "Delete Documents",
     description: "Remove documents",
     category: "Documents",
@@ -212,25 +240,25 @@ const ALL_PRIVILEGES: Privilege[] = [
 
   // Communication
   {
-    id: "messages_send",
+    id: "send_messages",
     name: "Send Messages",
     description: "Send internal messages",
     category: "Communication",
   },
   {
-    id: "messages_view",
+    id: "view_messages",
     name: "View Messages",
     description: "Access messaging system",
     category: "Communication",
   },
   {
-    id: "whatsapp_access",
+    id: "whatsApp_access",
     name: "WhatsApp Access",
     description: "Use WhatsApp integration",
     category: "Communication",
   },
   {
-    id: "phonebook_manage",
+    id: "manage_phone_book",
     name: "Manage Phone Book",
     description: "Add/edit/delete contacts",
     category: "Communication",
@@ -238,7 +266,7 @@ const ALL_PRIVILEGES: Privilege[] = [
 
   // Operations
   {
-    id: "vessels_manage",
+    id: "manage_vessels",
     name: "Manage Vessels",
     description: "Add and edit vessel information",
     category: "Operations",
@@ -258,20 +286,20 @@ const ALL_PRIVILEGES: Privilege[] = [
 
   // Financial
   {
-    id: "disbursement_view",
+    id: "view_disbursements",
     name: "View Disbursements",
     description: "Access disbursement accounts",
     category: "Financial",
   },
   {
-    id: "disbursement_create",
+    id: "create_disbursements",
     name: "Create Disbursements",
     description: "Create disbursement entries",
     category: "Financial",
   },
   {
     id: "invoicing",
-    name: "Invoicing",
+    name: "invoicing",
     description: "Generate and manage invoices",
     category: "Financial",
   },
@@ -284,84 +312,84 @@ const getDefaultPrivileges = (accessLevel: string): string[] => {
       return ALL_PRIVILEGES.map((p) => p.id);
     case "B": // Operations Manager
       return [
-        "port_calls_create",
-        "port_calls_edit",
-        "port_calls_view",
-        "port_calls_assign",
-        "customers_view",
-        "customers_edit",
-        "vendors_view",
-        "vendors_edit",
-        "documents_view",
-        "documents_create",
-        "documents_edit",
-        "messages_send",
-        "messages_view",
-        "vessels_manage",
+        "create_port_calls",
+        "edit_port_calls",
+        "view_port_calls",
+        "assign_port_calls",
+        "view_customers",
+        "edit_customers",
+        "view_vendors",
+        "edit_vendors",
+        "view_documents",
+        "create_documents",
+        "edit_documents",
+        "send_messages",
+        "view_messages",
+        "manage_vessels",
         "reports_access",
         "clearance_operations",
         "bunkering_operations",
       ];
     case "C": // Disbursement Manager
       return [
-        "port_calls_view",
-        "port_calls_edit",
-        "customers_view",
-        "customers_edit",
-        "vendors_view",
-        "documents_view",
-        "documents_create",
-        "messages_send",
-        "messages_view",
-        "disbursement_view",
-        "disbursement_create",
+        "view_port_calls",
+        "edit_port_calls",
+        "view_customers",
+        "edit_customers",
+        "view_vendors",
+        "view_documents",
+        "create_documents",
+        "send_messages",
+        "view_messages",
+        "view_disbursements",
+        "create_disbursements",
         "invoicing",
       ];
     case "D": // Assistant Manager
       return [
-        "port_calls_view",
-        "port_calls_edit",
-        "customers_view",
-        "vendors_view",
-        "documents_view",
-        "documents_create",
-        "messages_send",
-        "messages_view",
-        "vessels_manage",
+        "view_port_calls",
+        "edit_port_calls",
+        "view_customers",
+        "view_vendors",
+        "view_documents",
+        "create_documents",
+        "send_messages",
+        "view_messages",
+        "manage_vessels",
         "clearance_operations",
       ];
     case "E": // Operations Executive
       return [
-        "port_calls_view",
-        "customers_view",
-        "vendors_view",
-        "documents_view",
-        "documents_create",
-        "messages_send",
-        "messages_view",
-        "whatsapp_access",
-        "phonebook_manage",
+        "view_port_calls",
+        "view_customers",
+        "view_vendors",
+        "view_documents",
+        "create_documents",
+        "send_messages",
+        "view_messages",
+        "whatsApp_access",
+        "manage_phone_book",
       ];
     case "F": // Bunkering Officer
       return [
-        "port_calls_view",
-        "vendors_view",
-        "documents_view",
-        "messages_send",
-        "messages_view",
+        "view_port_calls",
+        "view_vendors",
+        "view_documents",
+        "send_messages",
+        "view_messages",
         "bunkering_operations",
       ];
     case "G": // Clearance Officer
       return [
-        "port_calls_view",
-        "vendors_view",
-        "documents_view",
-        "messages_send",
-        "messages_view",
+        "view_port_calls",
+        "view_vendors",
+        "view_documents",
+        "send_messages",
+        "view_messages",
         "clearance_operations",
       ];
     case "R": // General Staff
-      return ["port_calls_view", "documents_view", "messages_view"];
+      return ["view_port_calls", "view_documents", "view_messages"];
     default:
       return [];
   }
@@ -377,6 +405,9 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState<Partial<User>>({});
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editPrivileges, setEditPrivileges] = useState<string[]>([]);
 
   // Add state for privileges
   const [selectedPrivileges, setSelectedPrivileges] = useState<string[]>([]);
@@ -394,7 +425,9 @@ export default function UserManagement() {
   // Replace the useEffect that loads mock users
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
-    if (!userData) {
+    const token = localStorage.getItem("token");
+
+    if (!userData || !token) {
       router.push("/");
       return;
     }
@@ -410,29 +443,61 @@ export default function UserManagement() {
     const loadUsers = async () => {
       try {
         const response = await userApi.getAllUsers();
+        const apiResponse = response as ApiResponse<ApiUser[]>;
 
-        // Transform the API response to match your frontend User interface
-        const transformedUsers = response.data.map((apiUser: any) => ({
-          id: apiUser.user_id,
-          username: apiUser.email.split("@")[0], // Generate username from email
-          name: `${apiUser.first_name} ${apiUser.last_name}`,
-          email: apiUser.email,
-          role: apiUser.role,
-          department: apiUser.department || "Other",
-          accessLevel: apiUser.access_level,
-          isActive: true, // You might need to add this field to your API
-          lastLogin: apiUser.last_login || "",
-          createdAt: apiUser.created_at || new Date().toISOString(),
-          permissions: [], // We'll populate this separately
-          phoneNumber: apiUser.contact_number || "",
-          emergencyContact: "", // Add if available in API
-        }));
+        if (!apiResponse.success || !apiResponse.data) {
+          throw new Error(apiResponse.message || "Failed to load users");
+        }
+
+        const transformedUsers = await Promise.all(
+          apiResponse.data.map(async (apiUser: ApiUser) => {
+            // Fetch permissions for each user using the new endpoint
+            let permissions: string[] = [];
+            try {
+              const permResponse = (await userApi.getUserPermissions(
+                apiUser.user_id
+              )) as PermissionResponse;
+
+              if (permResponse.success && permResponse.userPermissions) {
+                // Convert permissions object to array of keys
+                permissions = Object.entries(permResponse.userPermissions)
+                  .filter(
+                    ([key, value]) =>
+                      value === true && // Only include true permissions
+                      !["createdAt", "updatedAt"].includes(key) // Exclude metadata fields
+                  )
+                  .map(([key]) => key);
+              }
+            } catch (error) {
+              console.error(
+                "Failed to load permissions for user:",
+                apiUser.user_id,
+                error
+              );
+            }
+
+            return {
+              id: apiUser.user_id,
+              username: apiUser.email.split("@")[0],
+              name: `${apiUser.first_name} ${apiUser.last_name}`,
+              email: apiUser.email,
+              role: apiUser.role,
+              department: apiUser.department || "Other",
+              accessLevel: apiUser.access_level,
+              isActive: apiUser.status,
+              lastLogin: apiUser.last_login || "",
+              createdAt: apiUser.created_at || new Date().toISOString(),
+              permissions, // Use fetched permissions
+              phoneNumber: apiUser.contact_number || "",
+              emergencyContact: "",
+            };
+          })
+        );
 
         setUsers(transformedUsers);
         setFilteredUsers(transformedUsers);
       } catch (error) {
         console.error("Failed to load users:", error);
-        // Optionally set empty arrays if API fails
         setUsers([]);
         setFilteredUsers([]);
       }
@@ -479,50 +544,77 @@ export default function UserManagement() {
       const user = users.find((u) => u.id === userId);
       if (!user) return;
 
-      await userApi.toggleUserStatus(userId, !user.isActive);
+      const newStatus = !user.isActive;
+      const response = await userApi.toggleUserStatus(userId, newStatus);
+      const apiResponse = response as ApiResponse<{}>;
+
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.message || "Failed to toggle status");
+      }
+
       setUsers(
-        users.map((u) =>
-          u.id === userId ? { ...u, isActive: !u.isActive } : u
-        )
+        users.map((u) => (u.id === userId ? { ...u, isActive: newStatus } : u))
       );
     } catch (error) {
       console.error("Failed to toggle user status:", error);
-      // Handle error
     }
   };
 
-  // When setting selected user
+  // ========== UPDATED VIEW USER FUNCTION ==========
   const handleViewUser = async (userId: string) => {
     try {
       const response = await userApi.getUserById(userId);
+      const apiResponse = response as ApiResponse<ApiUser>;
+
+      if (!apiResponse.success || !apiResponse.user) {
+        throw new Error(apiResponse.message || "User not found");
+      }
+
+      const apiUser = apiResponse.user;
+
+      // Convert permissions object to array of keys
+      const permissions = apiUser.permissions
+        ? Object.entries(apiUser.permissions)
+            .filter(([_, value]) => value)
+            .map(([key]) => key)
+        : [];
+
       setSelectedUser({
-        ...response.user,
-        id: response.user.user_id,
-        name: `${response.user.first_name} ${response.user.last_name}`,
-        phoneNumber: response.user.contact_number,
+        id: apiUser.user_id,
+        username: apiUser.email.split("@")[0],
+        name: `${apiUser.first_name} ${apiUser.last_name}`,
+        email: apiUser.email,
+        role: apiUser.role,
+        department: apiUser.department || "Other",
+        accessLevel: apiUser.access_level,
+        isActive: apiUser.status,
+        lastLogin: apiUser.last_login || "",
+        createdAt: apiUser.created_at || new Date().toISOString(),
+        permissions,
+        phoneNumber: apiUser.contact_number || "",
+        emergencyContact: "",
       });
     } catch (error) {
       console.error("Failed to fetch user details:", error);
-      // Handle error
     }
   };
 
   const [loading, setLoading] = useState(false);
 
-  // Example usage in API calls
-  const loadUsers = async () => {
-    setLoading(true);
-    try {
-      const response = await userApi.getAllUsers();
-      setUsers(response.data);
-      setFilteredUsers(response.data);
-    } catch (error) {
-      console.error("Failed to load users:", error);
-      // Show error to user
-    } finally {
-      setLoading(false);
-    }
-  };
+  // // Example usage in API calls
+  // const loadUsers = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const response = await userApi.getAllUsers();
+  //     setUsers(response.data);
+  //     setFilteredUsers(response.data);
+  //   } catch (error) {
+  //     console.error("Failed to load users:", error);
+  //     // Show error to user
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   // Update the access level change handler to set default privileges
   const handleAccessLevelChange = (value: string) => {
@@ -551,6 +643,11 @@ export default function UserManagement() {
       const [firstName, ...lastNameParts] = newUser.name.split(" ");
       const lastName = lastNameParts.join(" ");
 
+      const permissionsObj = ALL_PRIVILEGES.reduce((acc, privilege) => {
+        acc[privilege.id] = selectedPrivileges.includes(privilege.id);
+        return acc;
+      }, {} as Record<string, boolean>);
+
       const userData = {
         first_name: firstName,
         last_name: lastName,
@@ -559,21 +656,24 @@ export default function UserManagement() {
         role: newUser.role || "staff",
         access_level: newUser.accessLevel || "R",
         department: newUser.department || "Other",
-        password: "TemporaryPassword123!", // Should implement proper password handling
-        permissions: ALL_PRIVILEGES.reduce((acc, privilege) => {
-          acc[privilege.id] = selectedPrivileges.includes(privilege.id);
-          return acc;
-        }, {} as Record<string, boolean>),
+        status: true,
+        password: "TemporaryPassword123!",
+        permissions: permissionsObj,
       };
 
       const response = await userApi.createUser(userData);
+      const apiResponse = response as ApiResponse<ApiUser>;
 
-      // Transform the created user to match your frontend interface
+      if (!apiResponse.success || !apiResponse.data) {
+        throw new Error(apiResponse.message || "Failed to create user");
+      }
+
+      const apiUser = apiResponse.data;
       const createdUser: User = {
-        id: response.data.user_id,
-        username: newUser.username,
-        name: newUser.name,
-        email: newUser.email,
+        id: apiUser.user_id,
+        username: newUser.username!,
+        name: newUser.name!,
+        email: newUser.email!,
         role: userData.role,
         department: userData.department,
         accessLevel: userData.access_level,
@@ -628,6 +728,64 @@ export default function UserManagement() {
     return <div>Loading...</div>;
   }
 
+  const updateUser = async () => {
+    if (!editingUser) return;
+
+    try {
+      const [firstName, ...lastNameParts] = editingUser.name.split(" ");
+      const lastName = lastNameParts.join(" ");
+
+      const permissionsObj = ALL_PRIVILEGES.reduce((acc, privilege) => {
+        acc[privilege.id] = editPrivileges.includes(privilege.id);
+        return acc;
+      }, {} as Record<string, boolean>);
+
+      const userData = {
+        first_name: firstName,
+        last_name: lastName,
+        email: editingUser.email,
+        contact_number: editingUser.phoneNumber || "",
+        role: editingUser.role || "staff",
+        access_level: editingUser.accessLevel || "R",
+        department: editingUser.department || "Other",
+        status: editingUser.isActive,
+        permissions: permissionsObj,
+      };
+
+      const response = await userApi.updateUser(editingUser.id, userData);
+      const apiResponse = response as ApiResponse<{}>;
+
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.message || "Failed to update user");
+      }
+
+      const updatedUsers = users.map((u) =>
+        u.id === editingUser.id
+          ? { ...editingUser, permissions: editPrivileges }
+          : u
+      );
+
+      setUsers(updatedUsers);
+      setFilteredUsers(updatedUsers);
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+      setEditPrivileges([]);
+      alert("User updated successfully!");
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert(
+        `Failed to update user: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+  const handleEditClick = (user: User) => {
+    setEditingUser(user);
+    setEditPrivileges(user.permissions);
+    setIsEditDialogOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -657,7 +815,7 @@ export default function UserManagement() {
               variant="outline"
               className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800"
             >
-              {currentUser.name} - Managing Director
+              {currentUser.name} - {currentUser.role}
             </Badge>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-2" />
@@ -1046,6 +1204,270 @@ export default function UserManagement() {
           </CardContent>
         </Card>
 
+        {/* Edit User Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>
+                Update user information and permissions
+              </DialogDescription>
+            </DialogHeader>
+
+            {editingUser && (
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-username">Username</Label>
+                    <Input
+                      id="edit-username"
+                      value={editingUser.username}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          username: e.target.value,
+                        })
+                      }
+                      placeholder="john.doe"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-name">Full Name</Label>
+                    <Input
+                      id="edit-name"
+                      value={editingUser.name}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          name: e.target.value,
+                        })
+                      }
+                      placeholder="John Doe"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-email">Email</Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={editingUser.email}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          email: e.target.value,
+                        })
+                      }
+                      placeholder="john@greeklanka.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-phone">Phone Number</Label>
+                    <Input
+                      id="edit-phone"
+                      value={editingUser.phoneNumber}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          phoneNumber: e.target.value,
+                        })
+                      }
+                      placeholder="+94-77-123-4567"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-role">Role</Label>
+                    <Input
+                      id="edit-role"
+                      value={editingUser.role}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          role: e.target.value,
+                        })
+                      }
+                      placeholder="Operations Executive"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-department">Department</Label>
+                    <Select
+                      value={editingUser.department}
+                      onValueChange={(value) =>
+                        setEditingUser({
+                          ...editingUser,
+                          department: value,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Management">Management</SelectItem>
+                        <SelectItem value="Operations">Operations</SelectItem>
+                        <SelectItem value="Disbursement">
+                          Disbursement
+                        </SelectItem>
+                        <SelectItem value="Communication">
+                          Communication
+                        </SelectItem>
+                        <SelectItem value="Clearance">Clearance</SelectItem>
+                        <SelectItem value="Bunkering">Bunkering</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-accessLevel">Access Level</Label>
+                    <Select
+                      value={editingUser.accessLevel}
+                      onValueChange={(value) => {
+                        setEditingUser({
+                          ...editingUser,
+                          accessLevel: value,
+                        });
+                        const defaultPrivs = getDefaultPrivileges(value);
+                        setEditPrivileges(defaultPrivs);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select access level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A">A - Managing Director</SelectItem>
+                        <SelectItem value="B">
+                          B - Operations Manager
+                        </SelectItem>
+                        <SelectItem value="C">
+                          C - Disbursement Manager
+                        </SelectItem>
+                        <SelectItem value="D">D - Assistant Manager</SelectItem>
+                        <SelectItem value="E">
+                          E - Operations Executive
+                        </SelectItem>
+                        <SelectItem value="F">F - Bunkering Officer</SelectItem>
+                        <SelectItem value="G">G - Clearance Officer</SelectItem>
+                        <SelectItem value="R">R - General Staff</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-emergency">Emergency Contact</Label>
+                    <Input
+                      id="edit-emergency"
+                      value={editingUser.emergencyContact}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          emergencyContact: e.target.value,
+                        })
+                      }
+                      placeholder="+94-11-234-5678"
+                    />
+                  </div>
+                </div>
+
+                {/* System Privileges Section */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">System Privileges</h3>
+                    <p className="text-sm text-gray-500">
+                      Modify user permissions as needed
+                    </p>
+                  </div>
+
+                  <div className="space-y-6">
+                    {Object.entries(
+                      ALL_PRIVILEGES.reduce((acc, privilege) => {
+                        if (!acc[privilege.category])
+                          acc[privilege.category] = [];
+                        acc[privilege.category].push(privilege);
+                        return acc;
+                      }, {} as Record<string, Privilege[]>)
+                    ).map(([category, privileges]) => (
+                      <div key={category} className="space-y-3">
+                        <h4 className="font-medium text-blue-600 text-base">
+                          {category}
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {privileges.map((privilege) => (
+                            <div
+                              key={privilege.id}
+                              className="flex items-start space-x-3"
+                            >
+                              <Checkbox
+                                id={`edit-${privilege.id}`}
+                                checked={editPrivileges.includes(privilege.id)}
+                                onCheckedChange={() => {
+                                  if (editPrivileges.includes(privilege.id)) {
+                                    setEditPrivileges(
+                                      editPrivileges.filter(
+                                        (id) => id !== privilege.id
+                                      )
+                                    );
+                                  } else {
+                                    setEditPrivileges([
+                                      ...editPrivileges,
+                                      privilege.id,
+                                    ]);
+                                  }
+                                }}
+                                className="mt-1"
+                              />
+                              <div className="flex-1">
+                                <Label
+                                  htmlFor={`edit-${privilege.id}`}
+                                  className="text-sm font-medium cursor-pointer"
+                                >
+                                  {privilege.name}
+                                </Label>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {privilege.description}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <strong>Selected Privileges:</strong>{" "}
+                      {editPrivileges.length} of {ALL_PRIVILEGES.length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingUser(null);
+                  setEditPrivileges([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={updateUser}
+                disabled={
+                  !editingUser?.username ||
+                  !editingUser?.name ||
+                  !editingUser?.email
+                }
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Update User
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Users List */}
         <div className="space-y-4">
           {filteredUsers.map((user) => (
@@ -1095,7 +1517,11 @@ export default function UserManagement() {
                       <Eye className="h-4 w-4 mr-2" />
                       View
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditClick(user)}
+                    >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </Button>
