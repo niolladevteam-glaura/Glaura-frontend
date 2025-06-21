@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
+import { useAuth } from "@/context/AuthContext";
 
 interface JwtPayload {
   id: string;
@@ -61,6 +62,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const { login } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -76,21 +78,40 @@ export default function LoginPage() {
 
     try {
       const apiResponse = await authenticateWithAPI(email, password);
-      handleSuccessfulLogin(apiResponse);
+
+      // Create user data for auth context
+      const userData = {
+        id: apiResponse.id,
+        name: `${apiResponse.first_name} ${apiResponse.last_name}`,
+        email: apiResponse.email,
+        role: apiResponse.role,
+        accessLevel: apiResponse.access_level,
+        token: apiResponse.token,
+        permissions: apiResponse.permissions || {},
+      };
+
+      // Use context login instead of local storage
+      login(userData);
+
+      // Redirect based on access level
+      switch (apiResponse.access_level) {
+        case "A":
+          router.push("/dashboard");
+          break;
+        case "CLIENT":
+          router.push("/client/dashboard");
+          break;
+        default:
+          router.push("/dashboard");
+      }
     } catch (err) {
-      console.error("Login error:", err);
-      setError(
-        err instanceof Error ? err.message : "Invalid email or password"
-      );
+      // ... error handling ...
     } finally {
       setIsLoading(false);
     }
   };
 
-  const authenticateWithAPI = async (
-    email: string,
-    password: string
-  ): Promise<ApiUser> => {
+  const authenticateWithAPI = async (email: string, password: string) => {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/auth/signin`,
       {

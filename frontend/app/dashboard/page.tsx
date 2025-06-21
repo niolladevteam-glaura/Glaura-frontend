@@ -31,6 +31,7 @@ import {
   Search,
   Camera,
   ArrowRight,
+  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -293,6 +294,7 @@ export default function Dashboard() {
     { href: "/port-calls", icon: Ship, label: "Active Port Calls" },
     { href: "/customers", icon: Users, label: "Customer Companies" },
     { href: "/vendors", icon: Users, label: "Vendor Management" },
+    { href: "/services", icon: ClipboardList, label: "Services Management" },
     { href: "/documents", icon: FileText, label: "Documents" },
     ...(canViewReports()
       ? [{ href: "/reports", icon: BarChart3, label: "Reports" }]

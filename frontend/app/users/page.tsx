@@ -632,7 +632,7 @@ export default function UserManagement() {
     );
   };
 
-  // Update the createUser function to include privileges
+  //  Create User
   const createUser = async () => {
     if (!newUser.username || !newUser.name || !newUser.email) {
       alert("Please fill in all required fields (Username, Full Name, Email)");
@@ -728,6 +728,7 @@ export default function UserManagement() {
     return <div>Loading...</div>;
   }
 
+  // Update user
   const updateUser = async () => {
     if (!editingUser) return;
 
