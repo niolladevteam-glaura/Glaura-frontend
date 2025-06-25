@@ -48,6 +48,7 @@ import {
   FileText,
   X,
   Trash2,
+  CheckCircle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -61,57 +62,52 @@ import Link from "next/link";
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080";
 const API_ENDPOINTS = {
-  VENDORS: `${API_BASE_URL}/vendor`, // Changed from /api/vendor
+  VENDORS: `${API_BASE_URL}/vendor`,
 };
-
-interface VendorPIC {
-  id?: string;
-  name: string;
-  department: string;
-  contactNumbers: string[];
-  emails: string[];
-  remarks: string;
-}
-
-interface Document {
-  id: string;
-  name: string;
-  type: string;
-  uploadedAt: string;
-  expiryDate?: string;
-  status: "Valid" | "Expiring" | "Expired";
-}
 
 interface Vendor {
   id: string;
-  name: string; // Changed from companyName
+  vendor_id: string;
+  name: string;
   address: string;
-  phone_number: string; // Combined phone number
+  phone_number: string;
   company_type: string;
-  email: string; // Single email instead of array
+  email: string;
   remark: string;
-  services: string[]; // Changed from serviceCategories
-  status: {
-    status: boolean; // true = Approved, false = Pending/Rejected
+  vendorServices: {
+    id: number;
+    vendor_id: string;
+    service_name: string;
+    createdAt: string;
+    updatedAt: string;
+  }[];
+  vendorStatus: {
+    id: number;
+    status_id: string;
+    vendor_id: string;
+    status: boolean;
+    createdAt: string;
+    updatedAt: string;
   };
-  pic: {
+  vendorPic: {
+    id: number;
+    pic_id: string;
+    vendor_id: string;
     name: string;
     phone_number: string;
     email: string;
     remark: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  status: {
+    status: boolean;
   };
   // UI-only fields
-  kycStatus?: string; // Derived from status.status
+  kycStatus?: string;
   rating?: number;
   totalJobs?: number;
   completedJobs?: number;
-  // Remove unsupported fields:
-  // - documents
-  // - rating
-  // - totalJobs
-  // - completedJobs
-  // - createdAt
-  // - lastUpdated
 }
 
 const DEFAULT_SERVICE_CATEGORIES = [
@@ -144,6 +140,8 @@ export default function VendorManagement() {
   const [expiryAlerts, setExpiryAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [serviceCategories, setServiceCategories] = useState<string[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
   const [vendorToDelete, setVendorToDelete] = useState<{
     id: string;
     name: string;
@@ -160,7 +158,7 @@ export default function VendorManagement() {
     email: "",
     remark: "",
     services: [] as string[],
-    status: { status: true }, // Default to approved
+    status: { status: true },
     pic: {
       name: "",
       phone_number: "",
@@ -327,49 +325,21 @@ export default function VendorManagement() {
   const loadVendors = async () => {
     try {
       setLoading(true);
-      const response = await fetch(API_ENDPOINTS.VENDORS, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const response = await apiCall(API_ENDPOINTS.VENDORS);
+      console.log("Vendors API response:", response);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
+      if (!response.success) {
+        throw new Error(response.message || "Failed to load vendors");
       }
 
-      const data = await response.json();
-      console.log("API response data:", data);
-
-      // More robust data validation
-      if (!data || !data.success || !Array.isArray(data.data)) {
-        throw new Error(
-          "Invalid response format: expected {success: true, data: []}"
-        );
+      if (!Array.isArray(response.data)) {
+        throw new Error("Invalid vendors data format");
       }
 
-      // Safely map the vendors data
-      const formattedVendors = (data.data || []).map((vendor: any) => ({
-        id: vendor.id || vendor.vendor_id || "",
-        name: vendor.name || "",
-        address: vendor.address || "",
-        phone_number: vendor.phone_number || "",
-        company_type: vendor.company_type || "",
-        email: vendor.email || "",
-        remark: vendor.remark || "",
-        services: Array.isArray(vendor.services) ? vendor.services : [],
-        status: {
-          status: vendor.status?.status || false,
-        },
-        pic: {
-          phone_number: vendor.pic?.phone_number || "",
-          email: vendor.pic?.email || "",
-          remark: vendor.pic?.remark || "",
-        },
-        kycStatus: vendor.status?.status ? "Approved" : "Pending",
+      // Simply use the response data - no need for special mapping
+      const formattedVendors = response.data.map((vendor: any) => ({
+        ...vendor,
+        kycStatus: vendor.vendorStatus?.status ? "Approved" : "Pending",
         rating: 0,
         totalJobs: 0,
         completedJobs: 0,
@@ -377,16 +347,16 @@ export default function VendorManagement() {
 
       setVendors(formattedVendors);
       setFilteredVendors(formattedVendors);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to load vendors:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to load vendors",
+        title: "API Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to load vendors. Please try again.",
         variant: "destructive",
       });
-      // Set empty arrays if there's an error
-      setVendors([]);
-      setFilteredVendors([]);
     } finally {
       setLoading(false);
     }
@@ -439,19 +409,70 @@ export default function VendorManagement() {
     loadVendors();
   }, [router]);
 
+  // Fetch service categories from API
+  useEffect(() => {
+    const fetchServiceCategories = async () => {
+      try {
+        setLoadingServices(true);
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          toast({
+            title: "Authentication Error",
+            description: "Please login again",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/service`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to fetch services");
+        }
+
+        const data = await response.json();
+
+        // CORRECTED: Use service_name property
+        const services = data.data.map((service: any) => service.service_name);
+
+        setServiceCategories(services);
+      } catch (error: any) {
+        console.error("Failed to fetch service categories:", error);
+        toast({
+          title: "API Error",
+          description: error.message || "Failed to load service categories",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+
+    fetchServiceCategories();
+  }, []);
+
   useEffect(() => {
     let filtered = vendors;
 
     if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+
       filtered = filtered.filter(
         (vendor) =>
-          vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vendor.company_type
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          vendor.services.some((service) =>
-            service.toLowerCase().includes(searchTerm.toLowerCase())
-          )
+          vendor.name.toLowerCase().includes(searchLower) ||
+          vendor.company_type.toLowerCase().includes(searchLower) ||
+          // Search in service names
+          vendor.vendorServices.some((service) =>
+            service.service_name.toLowerCase().includes(searchLower)
+          ) ||
+          // Search in PIC name
+          vendor.vendorPic.name?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -462,11 +483,9 @@ export default function VendorManagement() {
     }
 
     if (statusFilter !== "all") {
-      // Convert statusFilter to boolean equivalent
       const statusBoolean = statusFilter === "approved";
-
       filtered = filtered.filter(
-        (vendor) => vendor.status.status === statusBoolean
+        (vendor) => vendor.vendorStatus?.status === statusBoolean
       );
     }
 
@@ -484,15 +503,15 @@ export default function VendorManagement() {
   };
 
   // For nested PIC fields
-  const handlePICChange = (field: string, value: string) => {
-    setVendorForm((prev) => ({
-      ...prev,
-      pic: {
-        ...prev.pic,
-        [field]: value,
-      },
-    }));
-  };
+  // const handlePICChange = (field: keyof VendorPIC, value: string) => {
+  //   setVendorForm((prev) => ({
+  //     ...prev,
+  //     pic: {
+  //       ...prev.pic,
+  //       [field]: value,
+  //     },
+  //   }));
+  // };
 
   // For service categories
   const toggleServiceCategory = (category: string) => {
@@ -517,6 +536,7 @@ export default function VendorManagement() {
 
   // Save vendor function - API ready
   const saveVendor = async () => {
+    // Add validation for PIC name
     if (!vendorForm.name?.trim()) {
       toast({
         title: "Validation Error",
@@ -526,10 +546,19 @@ export default function VendorManagement() {
       return;
     }
 
+    if (!vendorForm.pic.name?.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a PIC name",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // Prepare data for backend
+      // Prepare data for backend - aligned with API structure
       const backendData = {
         name: vendorForm.name.trim(),
         address: vendorForm.address.trim(),
@@ -537,9 +566,12 @@ export default function VendorManagement() {
         company_type: vendorForm.company_type.trim(),
         email: vendorForm.email.trim(),
         remark: vendorForm.remark.trim(),
-        services: vendorForm.services,
-        status: { status: vendorForm.status.status },
+        services: vendorForm.services, // Array of strings
+        status: {
+          status: vendorForm.status.status,
+        },
         pic: {
+          // Corrected key name
           name: vendorForm.pic.name.trim(),
           phone_number: vendorForm.pic.phone_number.trim(),
           email: vendorForm.pic.email.trim(),
@@ -547,19 +579,16 @@ export default function VendorManagement() {
         },
       };
 
+      const VENDOR_API = `${API_BASE_URL}/vendor`;
+
       let response;
       if (editingVendor) {
-        // Update existing vendor
-        response = await apiCall(
-          `${API_ENDPOINTS.VENDORS}/${editingVendor.id}`,
-          {
-            method: "PUT",
-            body: JSON.stringify(backendData),
-          }
-        );
+        response = await apiCall(`${VENDOR_API}/${editingVendor.vendor_id}`, {
+          method: "PUT",
+          body: JSON.stringify(backendData),
+        });
       } else {
-        // Create new vendor
-        response = await apiCall(API_ENDPOINTS.VENDORS, {
+        response = await apiCall(VENDOR_API, {
           method: "POST",
           body: JSON.stringify(backendData),
         });
@@ -594,8 +623,14 @@ export default function VendorManagement() {
           ? "Vendor updated successfully!"
           : "Vendor created successfully!",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save vendor:", error);
+      toast({
+        title: "Error",
+        description:
+          error.message || "Failed to save vendor. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -611,13 +646,15 @@ export default function VendorManagement() {
       company_type: vendor.company_type,
       email: vendor.email,
       remark: vendor.remark,
-      services: vendor.services,
-      status: { status: vendor.status.status },
+      services: vendor.vendorServices.map((service) => service.service_name),
+      status: {
+        status: vendor.vendorStatus?.status || false, // Use vendorStatus instead of status
+      },
       pic: {
-        name: vendor.pic.name,
-        phone_number: vendor.pic.phone_number,
-        email: vendor.pic.email,
-        remark: vendor.pic.remark,
+        name: vendor.vendorPic.name,
+        phone_number: vendor.vendorPic.phone_number,
+        email: vendor.vendorPic.email,
+        remark: vendor.vendorPic.remark,
       },
     });
     setIsAddVendorOpen(true);
@@ -660,21 +697,30 @@ export default function VendorManagement() {
   const deleteVendor = async (id: string, companyName: string) => {
     try {
       setLoading(true);
+
       await apiCall(`${API_ENDPOINTS.VENDORS}/${id}`, {
         method: "DELETE",
       });
 
-      // Update local state
-      setVendors((prev) => prev.filter((vendor) => vendor.id !== id));
-      setFilteredVendors((prev) => prev.filter((vendor) => vendor.id !== id));
+      setVendors((prev) => prev.filter((vendor) => vendor.vendor_id !== id));
+      setFilteredVendors((prev) =>
+        prev.filter((vendor) => vendor.vendor_id !== id)
+      );
 
-      // Show success message
-      alert(`${companyName} has been deleted successfully`);
+      toast({
+        title: "Success",
+        description: `${companyName} has been deleted successfully`,
+      });
     } catch (error) {
       console.error("Failed to delete vendor:", error);
-      alert(`Failed to delete ${companyName}. Please try again.`);
+      toast({
+        title: "Error",
+        description: `Failed to delete ${companyName}. Please try again.`,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -858,7 +904,6 @@ export default function VendorManagement() {
                           <h3 className="text-lg font-medium">
                             Company Information
                           </h3>
-
                           <div>
                             <Label htmlFor="name" className="form-label">
                               Company Name *
@@ -876,7 +921,6 @@ export default function VendorManagement() {
                               className="form-input"
                             />
                           </div>
-
                           <div>
                             <Label htmlFor="companyType" className="form-label">
                               Company Type
@@ -894,7 +938,6 @@ export default function VendorManagement() {
                               className="form-input"
                             />
                           </div>
-
                           <div>
                             <Label htmlFor="address" className="form-label">
                               Address
@@ -913,7 +956,6 @@ export default function VendorManagement() {
                               rows={3}
                             />
                           </div>
-
                           <div>
                             <Label htmlFor="phoneNumber" className="form-label">
                               Phone Number
@@ -931,7 +973,6 @@ export default function VendorManagement() {
                               className="form-input"
                             />
                           </div>
-
                           <div>
                             <Label htmlFor="email" className="form-label">
                               Email
@@ -954,43 +995,56 @@ export default function VendorManagement() {
                             <Label className="form-label">
                               Service Categories
                             </Label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                              {DEFAULT_SERVICE_CATEGORIES.map((category) => (
-                                <div
-                                  key={category}
-                                  className="flex items-center space-x-2"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    id={category}
-                                    checked={vendorForm.services.includes(
-                                      category
-                                    )}
-                                    onChange={() =>
-                                      setVendorForm((prev) => ({
-                                        ...prev,
-                                        services: prev.services.includes(
-                                          category
-                                        )
-                                          ? prev.services.filter(
-                                              (c) => c !== category
-                                            )
-                                          : [...prev.services, category],
-                                      }))
-                                    }
-                                    className="rounded border-gray-300"
-                                  />
-                                  <Label
-                                    htmlFor={category}
-                                    className="text-sm cursor-pointer"
+                            <br />
+                            <Link
+                              href="/services"
+                              className="text-primary text-sm mt-1 inline-block hover:underline"
+                            >
+                              Go to Service Management to add services
+                            </Link>
+                            {loadingServices ? (
+                              <div className="flex items-center space-x-2 py-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                <span className="text-sm text-muted-foreground">
+                                  Loading services...
+                                </span>
+                              </div>
+                            ) : serviceCategories.length > 0 ? (
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 max-h-60 overflow-y-auto p-2 border rounded-lg">
+                                {serviceCategories.map((category) => (
+                                  <div
+                                    key={category}
+                                    className="flex items-center space-x-2"
                                   >
-                                    {category}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
+                                    <input
+                                      type="checkbox"
+                                      id={`service-${category}`}
+                                      checked={vendorForm.services.includes(
+                                        category
+                                      )}
+                                      onChange={() =>
+                                        toggleServiceCategory(category)
+                                      }
+                                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                                    />
+                                    <Label
+                                      htmlFor={`service-${category}`}
+                                      className="text-sm cursor-pointer truncate"
+                                      title={category}
+                                    >
+                                      {category}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mt-2">
+                                <p className="text-yellow-800 text-sm">
+                                  No service categories found.
+                                </p>
+                              </div>
+                            )}
                           </div>
-
                           <div>
                             <Label htmlFor="kycStatus" className="form-label">
                               KYC Status
@@ -1019,14 +1073,13 @@ export default function VendorManagement() {
                               </SelectContent>
                             </Select>
                           </div>
-
                           <div className="space-y-4">
                             <h3 className="text-lg font-medium flex items-center gap-2">
                               <Users className="h-4 w-4" /> Primary Contact
                               (PIC)
                             </h3>
 
-                            {/* Add this PIC Name field */}
+                            {/* PIC Name Field */}
                             <div>
                               <Label htmlFor="picName">PIC Name *</Label>
                               <Input
@@ -1042,6 +1095,7 @@ export default function VendorManagement() {
                                 className="form-input"
                               />
                             </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
                                 <Label htmlFor="picPhone">Phone Number</Label>
@@ -1061,6 +1115,7 @@ export default function VendorManagement() {
                                   className="form-input"
                                 />
                               </div>
+
                               <div>
                                 <Label htmlFor="picEmail">Email</Label>
                                 <Input
@@ -1080,9 +1135,11 @@ export default function VendorManagement() {
                                 />
                               </div>
                             </div>
+
+                            {/* PIC Remark Field */}
                             <div>
                               <Label htmlFor="picRemark">Remarks</Label>
-                              <Input
+                              <Textarea
                                 id="picRemark"
                                 value={vendorForm.pic.remark}
                                 onChange={(e) =>
@@ -1096,10 +1153,10 @@ export default function VendorManagement() {
                                 }
                                 placeholder="Contact person details"
                                 className="form-input"
+                                rows={3}
                               />
                             </div>
                           </div>
-
                           <div>
                             <Label htmlFor="remark" className="form-label">
                               Company Remarks
@@ -1188,14 +1245,14 @@ export default function VendorManagement() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
+                  <div className="flex-1 relative">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search vendors, services, or categories..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 form-input"
+                        className="pl-10 w-full"
                       />
                     </div>
                   </div>
@@ -1291,7 +1348,7 @@ export default function VendorManagement() {
                             size="sm"
                             onClick={() => {
                               setVendorToDelete({
-                                id: vendor.id,
+                                id: vendor.vendor_id,
                                 name: vendor.name,
                               });
                               setDeleteDialogOpen(true);
@@ -1330,13 +1387,15 @@ export default function VendorManagement() {
                           Services
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {vendor.services.map((service, index) => (
+                          {vendor.vendorServices.map((service, index) => (
                             <Badge
                               key={index}
                               variant="secondary"
                               className="text-xs"
                             >
-                              {service}
+                              {typeof service === "string"
+                                ? service
+                                : service.service_name}
                             </Badge>
                           ))}
                         </div>
@@ -1420,13 +1479,14 @@ export default function VendorManagement() {
                   <div>
                     <Label>Services</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {selectedVendor.services.map((service, index) => (
+                      {/* Use vendorServices instead of services */}
+                      {selectedVendor.vendorServices.map((service, index) => (
                         <Badge
                           key={index}
                           variant="secondary"
                           className="text-xs"
                         >
-                          {service}
+                          {service.service_name}
                         </Badge>
                       ))}
                     </div>
@@ -1434,7 +1494,14 @@ export default function VendorManagement() {
 
                   <div>
                     <Label>KYC Status</Label>
-                    <Input value={selectedVendor.kycStatus} readOnly />
+                    <Input
+                      value={
+                        selectedVendor.vendorStatus?.status
+                          ? "Approved"
+                          : "Pending"
+                      }
+                      readOnly
+                    />
                   </div>
 
                   <div>
@@ -1448,31 +1515,29 @@ export default function VendorManagement() {
                     <Users className="h-4 w-4" /> Primary Contact (PIC)
                   </h3>
                   <Card>
-                    <CardContent className="pt-4 space-y-2">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label>PIC Name</Label>
-                          <p className="text-sm mt-1">
-                            {selectedVendor.pic.name || "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <Label>Phone</Label>
-                          <p className="text-sm mt-1">
-                            {selectedVendor.pic.phone_number || "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <Label>Email</Label>
-                          <p className="text-sm mt-1">
-                            {selectedVendor.pic.email || "N/A"}
-                          </p>
-                        </div>
+                    <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>PIC Name</Label>
+                        <p className="text-sm mt-1">
+                          {selectedVendor.vendorPic.name || "N/A"}
+                        </p>
                       </div>
-                      <div className="mt-4">
+                      <div>
+                        <Label>Phone</Label>
+                        <p className="text-sm mt-1">
+                          {selectedVendor.vendorPic.phone_number || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <Label>Email</Label>
+                        <p className="text-sm mt-1">
+                          {selectedVendor.vendorPic.email || "N/A"}
+                        </p>
+                      </div>
+                      <div>
                         <Label>Remarks</Label>
                         <p className="text-sm mt-1">
-                          {selectedVendor.pic.remark || "No remarks"}
+                          {selectedVendor.vendorPic.remark || "No remarks"}
                         </p>
                       </div>
                     </CardContent>
