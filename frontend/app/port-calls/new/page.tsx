@@ -1,15 +1,28 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -17,23 +30,124 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { ArrowLeft, Ship, X, Plus, Users, Anchor } from "lucide-react"
-import Link from "next/link"
-import { ThemeToggle } from "@/components/theme-toggle"
+} from "@/components/ui/dialog";
+import { ArrowLeft, Ship, X, Plus, Users, Anchor, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 // API Configuration - Replace with your actual API endpoints
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
 // API Endpoints
 const API_ENDPOINTS = {
-  SERVICES: `${API_BASE_URL}/services`,
-  PORTS: `${API_BASE_URL}/ports`,
-  FORMALITY_STATUS: `${API_BASE_URL}/formality-status`,
-  VENDORS: `${API_BASE_URL}/vendors`,
-  PORT_CALLS: `${API_BASE_URL}/port-calls`,
-  CLIENTS: `${API_BASE_URL}/clients`,
-  VESSEL_TYPES: `${API_BASE_URL}/vessel-types`,
+  SERVICES: `${API_BASE_URL}/service`,
+  PORTS: `${API_BASE_URL}/port`,
+  FORMALITY_STATUS: `${API_BASE_URL}/sof`,
+  VENDORS: `${API_BASE_URL}/vendor`,
+  PORT_CALLS: `${API_BASE_URL}/portcall`,
+  CLIENTS: `${API_BASE_URL}/customer`,
+  VESSEL: `${API_BASE_URL}/vessel`,
+};
+
+interface Customer {
+  customer_id: string;
+  company_name: string;
+  address: string;
+  phone_number: string;
+  company_type: string;
+  email: string;
+  remark: string;
+  customerPic: {
+    pic_id: string;
+    name: string;
+    phone_number: string;
+    email: string;
+    department: string;
+  };
+}
+
+interface CustomersResponse {
+  success: boolean;
+  message: string;
+  data: Customer[];
+}
+
+interface Vessel {
+  vessel_name: string;
+  imo_number: string;
+  SSCEC_expires: string;
+  company: string;
+  vessel_type: string;
+  flag: string;
+  call_sign: string;
+  build_year: number;
+  grt: number;
+  dwt: number;
+  loa: number;
+  nrt: number;
+  p_and_i_club: string;
+  remark: string;
+}
+
+interface PortCall {
+  vesselName: string;
+  imo: string;
+  vesselType: string;
+  grt: string;
+  nrt: string;
+  flag: string;
+  callSign: string;
+  loa: string;
+  dwt: string;
+  builtYear: string;
+  sscecExpiry: string;
+  clientCompany: string;
+  agencyName: string;
+  eta: string;
+  assignedPIC: string;
+  port: string;
+  formalityStatus: string;
+  piClub: string;
+  remarks: string;
+  services: SelectedService[];
+  createdBy: string;
+  createdAt: string;
+  status: string;
+}
+
+interface VesselAPIResponse {
+  success: boolean;
+  data: {
+    vessel_id: string;
+    vessel_name: string;
+    imo_number: string;
+    SSCEC_expires: string;
+    build_year: number;
+    call_sign: string;
+    company: string;
+    vessel_type: string;
+    flag: string;
+    grt: number;
+    dwt: number;
+    loa: number;
+    nrt: number;
+    p_and_i_club: string;
+    remark: string;
+  };
+}
+
+interface StatusOfFormality {
+  id: string;
+  status_of_formalities: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface StatusOfFormalityResponse {
+  success: boolean;
+  message: string;
+  data: StatusOfFormality | StatusOfFormality[];
 }
 
 // Default data - Replace with API calls
@@ -86,14 +200,14 @@ const DEFAULT_SERVICES = [
   "Vessel Handover",
   "Management Changeover",
   "Discharging Operation",
-]
+];
 
 const DEFAULT_PORTS = [
   { value: "colombo", label: "Colombo, Sri Lanka" },
   { value: "galle", label: "Galle, Sri Lanka" },
   { value: "hambantota", label: "Hambantota, Sri Lanka" },
   { value: "trincomalee", label: "Trincomalee, Sri Lanka" },
-]
+];
 
 const DEFAULT_CLIENTS = [
   { value: "msc", label: "Mediterranean Shipping Company" },
@@ -101,7 +215,7 @@ const DEFAULT_CLIENTS = [
   { value: "cosco", label: "COSCO Shipping Lines" },
   { value: "evergreen", label: "Evergreen Marine" },
   { value: "hapag", label: "Hapag-Lloyd" },
-]
+];
 
 const DEFAULT_VESSEL_TYPES = [
   "Container Ship",
@@ -112,7 +226,7 @@ const DEFAULT_VESSEL_TYPES = [
   "Cruise Ship",
   "Ferry",
   "Offshore Vessel",
-]
+];
 
 const DEFAULT_FORMALITY_STATUS = [
   "Pre-Arrival Message",
@@ -121,7 +235,7 @@ const DEFAULT_FORMALITY_STATUS = [
   "Customs Clearance",
   "Health Clearance",
   "All Formalities Complete",
-]
+];
 
 const DEFAULT_VENDORS = [
   { id: "1", name: "Lanka Marine Services", category: "Launch Boat Services" },
@@ -132,35 +246,52 @@ const DEFAULT_VENDORS = [
   { id: "6", name: "Bunker Solutions", category: "Bunkering" },
   { id: "7", name: "Ship Repair Specialists", category: "Repairs" },
   { id: "8", name: "Medical Services Lanka", category: "Medical" },
-]
+];
 
 interface SelectedService {
-  name: string
-  vendor?: string
-  vendorId?: string
+  name: string;
+  vendor?: string;
+  vendorId?: string;
+}
+
+interface Service {
+  id: number; // or string if you want to use service_id
+  service_id: string;
+  service_name: string;
+  created_by: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Port {
-  value: string
-  label: string
+  port_id: string;
+  port_name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface PortsResponse {
+  success: boolean;
+  message: string;
+  data: Port[];
 }
 
 interface Client {
-  value: string
-  label: string
+  value: string;
+  label: string;
 }
 
 interface Vendor {
-  id: string
-  name: string
-  category: string
+  id: string;
+  name: string;
+  category: string;
 }
 
 export default function NewPortCall() {
-  const [currentUser, setCurrentUser] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    jobNumber: "",
+    vesselId: "",
     vesselName: "",
     imo: "",
     vesselType: "",
@@ -180,126 +311,481 @@ export default function NewPortCall() {
     formalityStatus: "",
     piClub: "",
     remarks: "",
-  })
+  });
+  const [loadingVessel, setLoadingVessel] = useState(false);
+  const [vesselError, setVesselError] = useState<string | null>(null);
 
   // State for dynamic data
-  const [selectedServices, setSelectedServices] = useState<SelectedService[]>([])
-  const [serviceSearch, setServiceSearch] = useState("")
-  const [availableServices, setAvailableServices] = useState<string[]>(DEFAULT_SERVICES)
-  const [ports, setPorts] = useState<Port[]>(DEFAULT_PORTS)
-  const [clients, setClients] = useState<Client[]>(DEFAULT_CLIENTS)
-  const [vesselTypes, setVesselTypes] = useState<string[]>(DEFAULT_VESSEL_TYPES)
-  const [formalityStatuses, setFormalityStatuses] = useState<string[]>(DEFAULT_FORMALITY_STATUS)
-  const [vendors, setVendors] = useState<Vendor[]>(DEFAULT_VENDORS)
+  const [selectedServices, setSelectedServices] = useState<SelectedService[]>(
+    []
+  );
+  const [serviceSearch, setServiceSearch] = useState("");
+  const [availableServices, setAvailableServices] = useState<Service[]>([]);
+  const [ports, setPorts] = useState<{ value: string; label: string }[]>([]);
+  const [clients, setClients] = useState<{ value: string; label: string }[]>(
+    []
+  );
+  const [vesselTypes, setVesselTypes] =
+    useState<string[]>(DEFAULT_VESSEL_TYPES);
+  const [formalityStatuses, setFormalityStatuses] = useState<string[]>(
+    DEFAULT_FORMALITY_STATUS
+  );
+  const [vendors, setVendors] = useState<Vendor[]>(DEFAULT_VENDORS);
+  const [isAddingPort, setIsAddingPort] = useState(false);
+  const [isAddingFormalityStatus, setIsAddingFormalityStatus] = useState(false);
 
   // Modal states
-  const [newServiceName, setNewServiceName] = useState("")
-  const [isAddServiceOpen, setIsAddServiceOpen] = useState(false)
-  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false)
-  const [currentService, setCurrentService] = useState("")
-  const [selectedVendor, setSelectedVendor] = useState("")
-  const [newPortName, setNewPortName] = useState("")
-  const [newFormalityStatus, setNewFormalityStatus] = useState("")
-  const [isAddPortOpen, setIsAddPortOpen] = useState(false)
-  const [isAddFormalityOpen, setIsAddFormalityOpen] = useState(false)
+  const [newServiceName, setNewServiceName] = useState("");
+  const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
+  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+  const [currentService, setCurrentService] = useState("");
+  const [selectedVendor, setSelectedVendor] = useState("");
+  const [newPortName, setNewPortName] = useState("");
+  const [newFormalityStatus, setNewFormalityStatus] = useState("");
+  const [isAddPortOpen, setIsAddPortOpen] = useState(false);
+  const [isAddFormalityOpen, setIsAddFormalityOpen] = useState(false);
 
-  const router = useRouter()
+  const router = useRouter();
+
+  // Load ports when component mounts
+  useEffect(() => {
+    const loadPorts = async () => {
+      const portList = await fetchPorts();
+      setPorts(portList);
+    };
+    loadPorts();
+  }, []);
+
+  // Load clients when component mounts
+  useEffect(() => {
+    const loadClients = async () => {
+      const clientList = await fetchClients();
+      setClients(clientList);
+    };
+    loadClients();
+  }, []);
+
+  // Load statuses when component mounts
+  useEffect(() => {
+    const loadFormalityStatuses = async () => {
+      const statusList = await fetchFormalityStatuses();
+      setFormalityStatuses(statusList.map((s) => s.label));
+    };
+    loadFormalityStatuses();
+  }, []);
 
   // API Functions - Replace these with your actual API calls
-  const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const apiCall = async <T = any,>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> => {
     try {
+      const token = localStorage.getItem("token");
+      const headers = new Headers({
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      });
+
       const response = await fetch(endpoint, {
-        headers: {
-          "Content-Type": "application/json",
-          // Add your authentication headers here
-          // 'Authorization': `Bearer ${token}`,
-          ...options.headers,
-        },
         ...options,
-      })
+        headers,
+      });
 
       if (!response.ok) {
-        throw new Error(`API call failed: ${response.statusText}`)
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.error("API Error Details:", {
+            status: response.status,
+            statusText: response.statusText,
+            endpoint,
+            errorData,
+          });
+        } catch (e) {
+          console.error("API Error (no JSON):", {
+            status: response.status,
+            statusText: response.statusText,
+            endpoint,
+          });
+        }
+        throw new Error(
+          errorData?.message || `Request failed with status ${response.status}`
+        );
       }
 
-      return await response.json()
-    } catch (error) {
-      console.error("API Error:", error)
-      throw error
+      return await response.json();
+    } catch (error: any) {
+      console.error("Full API Error:", {
+        message: error.message,
+        stack: error.stack,
+        endpoint,
+        options,
+      });
+      throw error;
     }
-  }
+  };
+
+  const addPortToDatabase = async (portName: string): Promise<Port> => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await fetch(`${API_ENDPOINTS.PORTS}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ port_name: portName }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API Error Details:", errorData);
+        throw new Error(errorData.message || "Failed to add port");
+      }
+
+      const responseData = await response.json();
+
+      if (!responseData.success) {
+        throw new Error(responseData.message || "Failed to add port");
+      }
+
+      // Return the complete port data including the ID
+      return {
+        port_id: responseData.data.port_id,
+        port_name: responseData.data.port_name,
+        // Include any other fields returned by your API
+      };
+    } catch (error) {
+      console.error("Detailed Error:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        portName,
+        endpoint: API_ENDPOINTS.PORTS,
+      });
+      throw error;
+    }
+  };
+
+  // Fetch all statuses
+  const fetchFormalityStatuses = async (): Promise<
+    { value: string; label: string }[]
+  > => {
+    try {
+      const response = await apiCall<StatusOfFormalityResponse>(
+        `${API_ENDPOINTS.FORMALITY_STATUS}`
+      );
+      if (response.success && response.data) {
+        const statuses = Array.isArray(response.data)
+          ? response.data
+          : [response.data];
+        return statuses.map((status) => ({
+          value: status.id,
+          label: status.status_of_formalities,
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error("Failed to fetch statuses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load formality statuses",
+        variant: "destructive",
+      });
+      return [];
+    }
+  };
+
+  // Add new status
+  const addFormalityStatusToDatabase = async (
+    statusName: string
+  ): Promise<StatusOfFormality> => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await fetch(`${API_ENDPOINTS.FORMALITY_STATUS}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status_of_formalities: statusName }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API Error Details:", errorData);
+        throw new Error(errorData.message || "Failed to add status");
+      }
+
+      const responseData = await response.json();
+
+      if (!responseData.success) {
+        throw new Error(responseData.message || "Failed to add status");
+      }
+
+      return responseData.data;
+    } catch (error) {
+      console.error("Detailed Error:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        statusName,
+        endpoint: API_ENDPOINTS.FORMALITY_STATUS,
+      });
+      throw error;
+    }
+  };
+  // API functions for the port call page
+  const fetchVesselByIMO = async (
+    imo: string
+  ): Promise<VesselAPIResponse | null> => {
+    if (!imo) return null;
+
+    try {
+      setLoadingVessel(true);
+      setVesselError(null);
+      const response = await apiCall<VesselAPIResponse>(
+        `${API_ENDPOINTS.VESSEL}/imo/${imo}`
+      );
+      return response;
+    } catch (error: any) {
+      setVesselError(error.message || "Failed to fetch vessel data");
+      return null;
+    } finally {
+      setLoadingVessel(false);
+    }
+  };
+
+  const fetchServices = async (): Promise<Service[]> => {
+    try {
+      const response = await apiCall<{ data: Service[] }>(
+        API_ENDPOINTS.SERVICES
+      );
+      return response.data || [];
+    } catch (error) {
+      console.error("Failed to fetch services:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load services",
+        variant: "destructive",
+      });
+      return [];
+    }
+  };
+
+  // Fetch all ports
+  const fetchPorts = async (): Promise<{ value: string; label: string }[]> => {
+    try {
+      const response = await apiCall<PortsResponse>(API_ENDPOINTS.PORTS);
+      if (response.success && response.data) {
+        return response.data.map((port) => ({
+          value: port.port_id,
+          label: port.port_name,
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error("Failed to fetch ports:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load ports",
+        variant: "destructive",
+      });
+      return [];
+    }
+  };
+
+  const fetchClients = async (): Promise<
+    { value: string; label: string }[]
+  > => {
+    try {
+      const response = await apiCall<CustomersResponse>(API_ENDPOINTS.CLIENTS);
+      if (response.success && response.data) {
+        return response.data.map((customer) => ({
+          value: customer.customer_id,
+          label: customer.company_name,
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error("Failed to fetch clients:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load clients",
+        variant: "destructive",
+      });
+      return [];
+    }
+  };
+
+  const fetchVendors = async (): Promise<Vendor[]> => {
+    try {
+      const response = await apiCall<{ data: Vendor[] }>(API_ENDPOINTS.VENDORS);
+      return response.data || DEFAULT_VENDORS;
+    } catch (error) {
+      console.error("Failed to fetch vendors:", error);
+      return DEFAULT_VENDORS;
+    }
+  };
+
+  const createPortCall = async (portCallData: any): Promise<any> => {
+    try {
+      const token = localStorage.getItem("token");
+      const headers = new Headers({
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      });
+
+      console.log(
+        "Sending port call data:",
+        JSON.stringify(portCallData, null, 2)
+      );
+
+      const response = await fetch(API_ENDPOINTS.PORT_CALLS, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(portCallData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Backend error details:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+        });
+        throw new Error(errorData.message || "Failed to create port call");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Full API Error:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        portCallData,
+      });
+      throw error;
+    }
+  };
+
+  const handleIMONumberChange = async (imo: string) => {
+    handleInputChange("imo", imo);
+
+    if (imo.length >= 4) {
+      const response = await fetchVesselByIMO(imo);
+      if (response) {
+        const vesselData = response;
+        console.log("Processing vessel data:", vesselData);
+
+        setFormData((prev) => ({
+          ...prev,
+          vesselId: vesselData.data.vessel_id || "", // Handle missing vessel_id
+          vesselName: vesselData.data.vessel_name || prev.vesselName,
+          vesselType: vesselData.data.vessel_type || prev.vesselType,
+          flag: vesselData.data.flag || prev.flag,
+          callSign: vesselData.data.call_sign || prev.callSign,
+          builtYear: vesselData.data.build_year
+            ? String(vesselData.data.build_year)
+            : prev.builtYear,
+          grt: vesselData.data.grt ? String(vesselData.data.grt) : prev.grt,
+          dwt: vesselData.data.dwt ? String(vesselData.data.dwt) : prev.dwt,
+          loa: vesselData.data.loa ? String(vesselData.data.loa) : prev.loa,
+          nrt: vesselData.data.nrt ? String(vesselData.data.nrt) : prev.nrt,
+          piClub: vesselData.data.p_and_i_club || prev.piClub,
+          sscecExpiry: vesselData.data.SSCEC_expires
+            ? new Date(vesselData.data.SSCEC_expires)
+                .toISOString()
+                .split("T")[0]
+            : prev.sscecExpiry,
+          remarks: vesselData.data.remark || prev.remarks,
+        }));
+      }
+    }
+  };
+
+  // Helper function for date formatting
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toISOString().split("T")[0];
+    } catch {
+      return "";
+    }
+  };
 
   // Load initial data from API
   const loadInitialData = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
+      const [services, ports, clients, vendors] = await Promise.all([
+        fetchServices(),
+        fetchPorts(),
+        fetchClients(),
+        fetchVendors(),
+      ]);
 
-      // TODO: Replace with actual API calls
-      // const [servicesRes, portsRes, clientsRes, vendorsRes] = await Promise.all([
-      //   apiCall(API_ENDPOINTS.SERVICES),
-      //   apiCall(API_ENDPOINTS.PORTS),
-      //   apiCall(API_ENDPOINTS.CLIENTS),
-      //   apiCall(API_ENDPOINTS.VENDORS)
-      // ])
-
-      // setAvailableServices(servicesRes.data || DEFAULT_SERVICES)
-      // setPorts(portsRes.data || DEFAULT_PORTS)
-      // setClients(clientsRes.data || DEFAULT_CLIENTS)
-      // setVendors(vendorsRes.data || DEFAULT_VENDORS)
-
-      // For now, using default data
-      console.log("Loading initial data from API...")
+      setAvailableServices(services);
+      setPorts(ports);
+      setClients(clients);
+      setVendors(vendors);
     } catch (error) {
-      console.error("Failed to load initial data:", error)
-      // Fallback to default data on error
+      console.error("Failed to load initial data:", error);
+      // Only set empty arrays (already the default state)
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    const userData = localStorage.getItem("currentUser")
+    const userData = localStorage.getItem("currentUser");
     if (!userData) {
-      router.push("/")
-      return
+      router.push("/");
+      return;
     }
 
-    const user = JSON.parse(userData)
-    setCurrentUser(user)
+    const user = JSON.parse(userData);
+    setCurrentUser(user);
 
     // Generate job number
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, "0")
-    const day = String(now.getDate()).padStart(2, "0")
-    const jobNumber = `GLPC-${year}-${month}${day}-${Math.floor(Math.random() * 1000)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const jobNumber = `GLPC-${year}-${month}${day}-${Math.floor(
+      Math.random() * 1000
+    )
       .toString()
-      .padStart(3, "0")}`
+      .padStart(3, "0")}`;
 
-    setFormData((prev) => ({ ...prev, jobNumber }))
+    setFormData((prev) => ({ ...prev, jobNumber }));
 
     // Load initial data
-    loadInitialData()
-  }, [router])
+    loadInitialData();
+  }, [router]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleServiceToggle = (service: string) => {
-    const isSelected = selectedServices.some((s) => s.name === service)
+    const isSelected = selectedServices.some((s) => s.name === service);
 
     if (isSelected) {
-      setSelectedServices((prev) => prev.filter((s) => s.name !== service))
+      setSelectedServices((prev) => prev.filter((s) => s.name !== service));
     } else {
-      setCurrentService(service)
-      setIsVendorModalOpen(true)
+      setCurrentService(service);
+      setIsVendorModalOpen(true);
     }
-  }
+  };
 
   const handleVendorSelection = () => {
     if (selectedVendor) {
-      const vendor = vendors.find((v) => v.id === selectedVendor)
+      const vendor = vendors.find((v) => v.id === selectedVendor);
       setSelectedServices((prev) => [
         ...prev,
         {
@@ -307,69 +793,77 @@ export default function NewPortCall() {
           vendor: vendor?.name,
           vendorId: vendor?.id,
         },
-      ])
-      setIsVendorModalOpen(false)
-      setSelectedVendor("")
-      setCurrentService("")
+      ]);
+      setIsVendorModalOpen(false);
+      setSelectedVendor("");
+      setCurrentService("");
     }
-  }
+  };
 
   // Add new service function - API ready
   const addNewService = async () => {
     if (!newServiceName.trim()) {
-      alert("Please enter a service name.")
-      return
-    }
-
-    if (availableServices.includes(newServiceName.trim())) {
-      alert("This service already exists.")
-      return
+      toast({
+        title: "Validation Error",
+        description: "Please enter a service name",
+        variant: "destructive",
+      });
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
+      const response = await apiCall<Service>(API_ENDPOINTS.SERVICES, {
+        method: "POST",
+        body: JSON.stringify({ service_name: newServiceName.trim() }),
+      });
 
-      // TODO: Replace with actual API call
-      // const response = await apiCall(API_ENDPOINTS.SERVICES, {
-      //   method: 'POST',
-      //   body: JSON.stringify({ name: newServiceName.trim() })
-      // })
+      setAvailableServices((prev) => [...prev, response]);
+      setNewServiceName("");
+      setIsAddServiceOpen(false);
 
-      // For now, update local state
-      setAvailableServices((prev) => [...prev, newServiceName.trim()])
-      setNewServiceName("")
-      setIsAddServiceOpen(false)
-
-      console.log("Service added:", newServiceName.trim())
-      alert("Service added successfully!")
+      toast({
+        title: "Success",
+        description: "Service added successfully!",
+      });
     } catch (error) {
-      console.error("Failed to add service:", error)
-      alert("Failed to add service. Please try again.")
+      console.error("Failed to add service:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add service",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const removeSelectedService = (serviceName: string) => {
-    setSelectedServices((prev) => prev.filter((s) => s.name !== serviceName))
-  }
+    setSelectedServices((prev) => prev.filter((s) => s.name !== serviceName));
+  };
 
-  const filteredServices = availableServices.filter((service) =>
-    service.toLowerCase().includes(serviceSearch.toLowerCase()),
-  )
+  const filteredServices = useMemo(() => {
+    if (!serviceSearch) return availableServices;
+
+    return availableServices.filter((service) => {
+      return service.service_name
+        .toLowerCase()
+        .includes(serviceSearch.toLowerCase());
+    });
+  }, [availableServices, serviceSearch]);
 
   // Add custom port function - API ready
   const addCustomPort = async () => {
     if (!newPortName.trim()) {
-      alert("Please enter a port name.")
-      return
+      alert("Please enter a port name.");
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
 
-      const portValue = newPortName.toLowerCase().replace(/\s+/g, "-")
-      const newPort = { value: portValue, label: newPortName.trim() }
+      const portValue = newPortName.toLowerCase().replace(/\s+/g, "-");
+      const newPort = { value: portValue, label: newPortName.trim() };
 
       // TODO: Replace with actual API call
       // const response = await apiCall(API_ENDPOINTS.PORTS, {
@@ -378,34 +872,34 @@ export default function NewPortCall() {
       // })
 
       // For now, update local state
-      setPorts((prev) => [...prev, newPort])
-      setNewPortName("")
-      setIsAddPortOpen(false)
+      setPorts((prev) => [...prev, newPort]);
+      setNewPortName("");
+      setIsAddPortOpen(false);
 
-      console.log("Port added:", newPort)
-      alert("Port added successfully!")
+      console.log("Port added:", newPort);
+      alert("Port added successfully!");
     } catch (error) {
-      console.error("Failed to add port:", error)
-      alert("Failed to add port. Please try again.")
+      console.error("Failed to add port:", error);
+      alert("Failed to add port. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Add custom formality status function - API ready
   const addCustomFormalityStatus = async () => {
     if (!newFormalityStatus.trim()) {
-      alert("Please enter a formality status.")
-      return
+      alert("Please enter a formality status.");
+      return;
     }
 
     if (formalityStatuses.includes(newFormalityStatus.trim())) {
-      alert("This formality status already exists.")
-      return
+      alert("This formality status already exists.");
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
 
       // TODO: Replace with actual API call
       // const response = await apiCall(API_ENDPOINTS.FORMALITY_STATUS, {
@@ -414,67 +908,124 @@ export default function NewPortCall() {
       // })
 
       // For now, update local state
-      setFormalityStatuses((prev) => [...prev, newFormalityStatus.trim()])
-      setNewFormalityStatus("")
-      setIsAddFormalityOpen(false)
+      setFormalityStatuses((prev) => [...prev, newFormalityStatus.trim()]);
+      setNewFormalityStatus("");
+      setIsAddFormalityOpen(false);
 
-      console.log("Formality status added:", newFormalityStatus.trim())
-      alert("Formality status added successfully!")
+      console.log("Formality status added:", newFormalityStatus.trim());
+      alert("Formality status added successfully!");
     } catch (error) {
-      console.error("Failed to add formality status:", error)
-      alert("Failed to add formality status. Please try again.")
+      console.error("Failed to add formality status:", error);
+      alert("Failed to add formality status. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Submit port call function - API ready
   const handleSubmit = async () => {
-    // Validate required fields
-    if (!formData.vesselName || !formData.clientCompany || selectedServices.length === 0) {
-      alert("Please fill in all required fields and select at least one service.")
-      return
-    }
-
     try {
-      setLoading(true)
+      setLoading(true);
 
-      const portCallData = {
-        ...formData,
-        services: selectedServices,
-        createdBy: currentUser?.name,
-        createdAt: new Date().toISOString(),
-        status: "Pending Assignment",
+      // Validate required fields
+      if (!formData.vesselName || !formData.clientCompany || !formData.port) {
+        throw new Error("Vessel name, client company, and port are required");
       }
 
-      // TODO: Replace with actual API call
-      // const response = await apiCall(API_ENDPOINTS.PORT_CALLS, {
-      //   method: 'POST',
-      //   body: JSON.stringify(portCallData)
-      // })
+      // Prepare the payload in the exact format the backend expects
+      const payload = {
+        vessel_id: formData.vesselId || `VES-${Date.now()}`, // Ensure vessel_id is at root level
+        vessel_name: formData.vesselName,
+        imo: formData.imo,
+        port_id: formData.port, // Send port_id directly
+        port: ports.find((p) => p.value === formData.port)?.label,
+        client_company_id: formData.clientCompany,
+        client_company: clients.find((c) => c.value === formData.clientCompany)
+          ?.label,
+        agency_name: formData.agencyName,
+        status_of_formalities: formData.formalityStatus || "Pending",
+        eta: formData.eta ? new Date(formData.eta).toISOString() : null,
+        pic_id: currentUser?.id || "system",
+        pic_name: currentUser?.name || "System User",
+        pic_email: currentUser?.email || "",
+        remarks: formData.remarks || "",
+        status: "In Progress", // Ensure status is at root level
+        priority: "Low",
+        created_by: currentUser?.id || "system",
+        // Vessel details as separate fields (not nested)
+        vessel_type: formData.vesselType,
+        flag: formData.flag,
+        call_sign: formData.callSign,
+        grt: formData.grt ? parseFloat(formData.grt) : null,
+        nrt: formData.nrt ? parseFloat(formData.nrt) : null,
+        loa: formData.loa ? parseFloat(formData.loa) : null,
+        dwt: formData.dwt ? parseFloat(formData.dwt) : null,
+        built_year: formData.builtYear ? parseInt(formData.builtYear) : null,
+        p_and_i_club: formData.piClub,
+        // Services array
+        services: selectedServices.map((service, index) => ({
+          service_id: `SVC-${Date.now()}-${index}`,
+          service_name: service.name,
+          vendor_id: service.vendorId || null,
+          vendor_name: service.vendor || "No vendor specified",
+          status: true,
+        })),
+      };
 
-      console.log("Creating port call:", portCallData)
+      console.log(
+        "Final payload being sent:",
+        JSON.stringify(payload, null, 2)
+      );
 
-      // Simulate success
-      alert(
-        `Port Call ${formData.jobNumber} created successfully!\n\nNotifications sent to:\n- Operations Manager\n- Assigned PIC\n- Client: ${clients.find((c) => c.value === formData.clientCompany)?.label}`,
-      )
+      const response = await fetch(API_ENDPOINTS.PORT_CALLS, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-      router.push("/dashboard")
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Backend error details:", errorData);
+        throw new Error(errorData.error || "Failed to create port call");
+      }
+
+      const result = await response.json();
+      console.log("Success response:", result);
+
+      toast({
+        title: "Success",
+        description: "Port call created successfully!",
+        duration: 5000,
+      });
+
+      router.push("/dashboard");
     } catch (error) {
-      console.error("Failed to create port call:", error)
-      alert("Failed to create port call. Please try again.")
+      console.error("Error creating port call:", {
+        error: error instanceof Error ? error.message : String(error),
+        formData,
+      });
+
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to create port call",
+        variant: "destructive",
+        duration: 8000,
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="loading-skeleton w-8 h-8 rounded-full"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -494,15 +1045,22 @@ export default function NewPortCall() {
                 <Anchor className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gradient">Create New Port Call</h1>
-                <p className="text-sm text-muted-foreground">Disbursement Department</p>
+                <h1 className="text-xl font-bold text-gradient">
+                  Create New Port Call
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Disbursement Department
+                </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
             <ThemeToggle />
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+            <Badge
+              variant="outline"
+              className="bg-primary/10 text-primary border-primary/20"
+            >
               {currentUser.name} - Level {currentUser.accessLevel}
             </Badge>
           </div>
@@ -520,33 +1078,41 @@ export default function NewPortCall() {
                   <Ship className="h-5 w-5" />
                   <span>Basic Information</span>
                 </CardTitle>
-                <CardDescription>Enter the basic port call and vessel details</CardDescription>
+                <CardDescription>
+                  Enter the basic port call and vessel details
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="jobNumber" className="form-label">
-                      Job Number
-                    </Label>
-                    <Input
-                      id="jobNumber"
-                      value={formData.jobNumber}
-                      onChange={(e) => handleInputChange("jobNumber", e.target.value)}
-                      className="form-input bg-muted"
-                      readOnly
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="imo" className="form-label">
                       IMO Number *
                     </Label>
-                    <Input
-                      id="imo"
-                      value={formData.imo}
-                      onChange={(e) => handleInputChange("imo", e.target.value)}
-                      placeholder="9876543"
-                      className="form-input"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="imo"
+                        value={formData.imo}
+                        onChange={(e) => handleIMONumberChange(e.target.value)}
+                        placeholder="9876543"
+                        className="form-input"
+                      />
+                      {loadingVessel && (
+                        <span className="text-sm">Loading vessel data...</span>
+                      )}
+                      {vesselError && (
+                        <span className="text-sm text-red-500">
+                          {vesselError}
+                        </span>
+                      )}
+                      {loadingVessel && (
+                        <div className="absolute right-3 top-2.5">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    {vesselError && (
+                      <p className="text-sm text-red-500 mt-1">{vesselError}</p>
+                    )}
                   </div>
                 </div>
 
@@ -558,7 +1124,9 @@ export default function NewPortCall() {
                     <Input
                       id="vesselName"
                       value={formData.vesselName}
-                      onChange={(e) => handleInputChange("vesselName", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("vesselName", e.target.value)
+                      }
                       placeholder="Enter vessel name"
                       className="form-input"
                     />
@@ -569,7 +1137,9 @@ export default function NewPortCall() {
                     </Label>
                     <Select
                       value={formData.vesselType}
-                      onValueChange={(value) => handleInputChange("vesselType", value)}
+                      onValueChange={(value) =>
+                        handleInputChange("vesselType", value)
+                      }
                     >
                       <SelectTrigger className="form-input">
                         <SelectValue placeholder="Select type" />
@@ -593,7 +1163,9 @@ export default function NewPortCall() {
                     <Input
                       id="flag"
                       value={formData.flag}
-                      onChange={(e) => handleInputChange("flag", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("flag", e.target.value)
+                      }
                       placeholder="Country flag"
                       className="form-input"
                     />
@@ -605,7 +1177,9 @@ export default function NewPortCall() {
                     <Input
                       id="callSign"
                       value={formData.callSign}
-                      onChange={(e) => handleInputChange("callSign", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("callSign", e.target.value)
+                      }
                       placeholder="ABCD1"
                       className="form-input"
                     />
@@ -617,14 +1191,16 @@ export default function NewPortCall() {
                     <Input
                       id="builtYear"
                       value={formData.builtYear}
-                      onChange={(e) => handleInputChange("builtYear", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("builtYear", e.target.value)
+                      }
                       placeholder="2020"
                       className="form-input"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="grt" className="form-label">
                       GRT
@@ -634,18 +1210,6 @@ export default function NewPortCall() {
                       value={formData.grt}
                       onChange={(e) => handleInputChange("grt", e.target.value)}
                       placeholder="45,000"
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="nrt" className="form-label">
-                      NRT
-                    </Label>
-                    <Input
-                      id="nrt"
-                      value={formData.nrt}
-                      onChange={(e) => handleInputChange("nrt", e.target.value)}
-                      placeholder="25,000"
                       className="form-input"
                     />
                   </div>
@@ -684,7 +1248,9 @@ export default function NewPortCall() {
                       id="sscecExpiry"
                       type="date"
                       value={formData.sscecExpiry}
-                      onChange={(e) => handleInputChange("sscecExpiry", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("sscecExpiry", e.target.value)
+                      }
                       className="form-input"
                     />
                   </div>
@@ -695,7 +1261,9 @@ export default function NewPortCall() {
                     <Input
                       id="piClub"
                       value={formData.piClub}
-                      onChange={(e) => handleInputChange("piClub", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("piClub", e.target.value)
+                      }
                       placeholder="Enter P&I Club name"
                       className="form-input"
                     />
@@ -705,10 +1273,15 @@ export default function NewPortCall() {
             </Card>
 
             {/* Client & Operations */}
-            <Card className="professional-card animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+            <Card
+              className="professional-card animate-fade-in-up"
+              style={{ animationDelay: "0.1s" }}
+            >
               <CardHeader>
                 <CardTitle>Client & Operations</CardTitle>
-                <CardDescription>Client information and operational details</CardDescription>
+                <CardDescription>
+                  Client information and operational details
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -718,7 +1291,9 @@ export default function NewPortCall() {
                     </Label>
                     <Select
                       value={formData.clientCompany}
-                      onValueChange={(value) => handleInputChange("clientCompany", value)}
+                      onValueChange={(value) =>
+                        handleInputChange("clientCompany", value)
+                      }
                     >
                       <SelectTrigger className="form-input">
                         <SelectValue placeholder="Select client" />
@@ -739,7 +1314,9 @@ export default function NewPortCall() {
                     <Input
                       id="agencyName"
                       value={formData.agencyName}
-                      onChange={(e) => handleInputChange("agencyName", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("agencyName", e.target.value)
+                      }
                       placeholder="Enter agency name"
                       className="form-input"
                     />
@@ -752,29 +1329,36 @@ export default function NewPortCall() {
                       <Label htmlFor="port" className="form-label">
                         Port & Country
                       </Label>
-                      <Dialog open={isAddPortOpen} onOpenChange={setIsAddPortOpen}>
+                      <Dialog
+                        open={isAddPortOpen}
+                        onOpenChange={setIsAddPortOpen}
+                      >
                         <DialogTrigger asChild>
                           <Button
                             variant="outline"
                             size="sm"
                             disabled={loading}
                             onClick={() => {
-                              console.log("Add Port button clicked")
-                              setIsAddPortOpen(true)
+                              console.log("Add Port button clicked");
+                              setIsAddPortOpen(true);
                             }}
                           >
-                            <Plus className="h-4 w-4 mr-1" />
+                            <Plus className="h-4 w-4 mr-2" />
                             Add Port
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-md">
                           <DialogHeader>
                             <DialogTitle>Add New Port</DialogTitle>
-                            <DialogDescription>Add a new port to the available ports list</DialogDescription>
+                            <DialogDescription>
+                              Add a new port to the available ports list
+                            </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-6">
                             <div className="space-y-2">
-                              <Label htmlFor="portName">Port Name & Country</Label>
+                              <Label htmlFor="portName">
+                                Port Name & Country
+                              </Label>
                               <Input
                                 id="portName"
                                 value={newPortName}
@@ -787,26 +1371,88 @@ export default function NewPortCall() {
                               <Button
                                 variant="outline"
                                 onClick={() => {
-                                  setIsAddPortOpen(false)
-                                  setNewPortName("")
+                                  setIsAddPortOpen(false);
+                                  setNewPortName("");
                                 }}
-                                disabled={loading}
+                                disabled={isAddingPort}
                               >
                                 Cancel
                               </Button>
                               <Button
-                                onClick={addCustomPort}
-                                disabled={loading || !newPortName.trim()}
+                                onClick={async () => {
+                                  if (!newPortName.trim()) {
+                                    toast({
+                                      title: "Validation Error",
+                                      description: "Please enter a port name",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+
+                                  setIsAddingPort(true);
+                                  try {
+                                    const newPort = await addPortToDatabase(
+                                      newPortName.trim()
+                                    );
+
+                                    // Update the local state immediately
+                                    setPorts((prevPorts) => [
+                                      ...prevPorts,
+                                      {
+                                        value: newPort.port_id,
+                                        label: newPort.port_name,
+                                      },
+                                    ]);
+
+                                    // Optionally select the newly added port
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      port: newPort.port_id,
+                                    }));
+
+                                    setIsAddPortOpen(false);
+                                    setNewPortName("");
+
+                                    toast({
+                                      title: "Success",
+                                      description: "Port added successfully!",
+                                    });
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description:
+                                        error instanceof Error
+                                          ? error.message
+                                          : "Failed to add port",
+                                      variant: "destructive",
+                                    });
+                                  } finally {
+                                    setIsAddingPort(false);
+                                  }
+                                }}
+                                disabled={!newPortName.trim() || isAddingPort}
                                 className="bg-blue-600 hover:bg-blue-700 text-white"
                               >
-                                {loading ? "Adding..." : "Add Port"}
+                                {isAddingPort ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Adding...
+                                  </>
+                                ) : (
+                                  "Add Port"
+                                )}
                               </Button>
                             </div>
                           </div>
                         </DialogContent>
                       </Dialog>
                     </div>
-                    <Select value={formData.port} onValueChange={(value) => handleInputChange("port", value)}>
+                    <Select
+                      value={formData.port}
+                      onValueChange={(value) =>
+                        handleInputChange("port", value)
+                      }
+                    >
                       <SelectTrigger className="form-input">
                         <SelectValue placeholder="Select port" />
                       </SelectTrigger>
@@ -839,54 +1485,111 @@ export default function NewPortCall() {
                       <Label htmlFor="formalityStatus" className="form-label">
                         Status of Formalities
                       </Label>
-                      <Dialog open={isAddFormalityOpen} onOpenChange={setIsAddFormalityOpen}>
+                      <Dialog
+                        open={isAddFormalityOpen}
+                        onOpenChange={setIsAddFormalityOpen}
+                      >
                         <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={loading}
-                            onClick={() => {
-                              console.log("Add Status button clicked")
-                              setIsAddFormalityOpen(true)
-                            }}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
+                          <Button variant="outline" size="sm">
+                            <Plus className="h-4 w-4 mr-2" />
                             Add Status
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-md">
                           <DialogHeader>
                             <DialogTitle>Add New Formality Status</DialogTitle>
-                            <DialogDescription>Add a new formality status to the available options</DialogDescription>
+                            <DialogDescription>
+                              Add a new status of formalities to the available
+                              options
+                            </DialogDescription>
                           </DialogHeader>
-                          <div className="space-y-6">
+                          <div className="space-y-4">
                             <div className="space-y-2">
-                              <Label htmlFor="statusName">Formality Status</Label>
+                              <Label htmlFor="statusName">Status Name</Label>
                               <Input
                                 id="statusName"
                                 value={newFormalityStatus}
-                                onChange={(e) => setNewFormalityStatus(e.target.value)}
-                                placeholder="e.g., Pre-Arrival Message"
-                                className="w-full"
+                                onChange={(e) =>
+                                  setNewFormalityStatus(e.target.value)
+                                }
+                                placeholder="e.g., Customs Clearance"
                               />
                             </div>
                             <div className="flex justify-end space-x-3">
                               <Button
                                 variant="outline"
                                 onClick={() => {
-                                  setIsAddFormalityOpen(false)
-                                  setNewFormalityStatus("")
+                                  setIsAddFormalityOpen(false);
+                                  setNewFormalityStatus("");
                                 }}
-                                disabled={loading}
+                                disabled={isAddingFormalityStatus}
                               >
                                 Cancel
                               </Button>
                               <Button
-                                onClick={addCustomFormalityStatus}
-                                disabled={loading || !newFormalityStatus.trim()}
+                                onClick={async () => {
+                                  if (!newFormalityStatus.trim()) {
+                                    toast({
+                                      title: "Validation Error",
+                                      description: "Please enter a status name",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+
+                                  setIsAddingFormalityStatus(true);
+                                  try {
+                                    const newStatus =
+                                      await addFormalityStatusToDatabase(
+                                        newFormalityStatus.trim()
+                                      );
+
+                                    // Update local state
+                                    setFormalityStatuses((prev) => [
+                                      ...prev,
+                                      newStatus.status_of_formalities,
+                                    ]);
+
+                                    // AUTO-SELECT THE NEWLY ADDED STATUS
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      formalityStatus: newStatus.id,
+                                    }));
+
+                                    setIsAddFormalityOpen(false);
+                                    setNewFormalityStatus("");
+
+                                    toast({
+                                      title: "Success",
+                                      description: "Status added and selected!",
+                                    });
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description:
+                                        error instanceof Error
+                                          ? error.message
+                                          : "Failed to add status",
+                                      variant: "destructive",
+                                    });
+                                  } finally {
+                                    setIsAddingFormalityStatus(false);
+                                  }
+                                }}
+                                disabled={
+                                  !newFormalityStatus.trim() ||
+                                  isAddingFormalityStatus
+                                }
                                 className="bg-blue-600 hover:bg-blue-700 text-white"
                               >
-                                {loading ? "Adding..." : "Add Status"}
+                                {isAddingFormalityStatus ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Adding...
+                                  </>
+                                ) : (
+                                  "Add Status"
+                                )}
                               </Button>
                             </div>
                           </div>
@@ -895,7 +1598,9 @@ export default function NewPortCall() {
                     </div>
                     <Select
                       value={formData.formalityStatus}
-                      onValueChange={(value) => handleInputChange("formalityStatus", value)}
+                      onValueChange={(value) =>
+                        handleInputChange("formalityStatus", value)
+                      }
                     >
                       <SelectTrigger className="form-input">
                         <SelectValue placeholder="Select status" />
@@ -916,7 +1621,9 @@ export default function NewPortCall() {
                     <Input
                       id="assignedPIC"
                       value={formData.assignedPIC}
-                      onChange={(e) => handleInputChange("assignedPIC", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("assignedPIC", e.target.value)
+                      }
                       placeholder="Will be assigned by Ops Manager"
                       className="form-input bg-muted"
                       readOnly
@@ -931,7 +1638,9 @@ export default function NewPortCall() {
                   <Textarea
                     id="remarks"
                     value={formData.remarks}
-                    onChange={(e) => handleInputChange("remarks", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("remarks", e.target.value)
+                    }
                     placeholder="Enter any additional remarks or special instructions"
                     rows={3}
                     className="form-input"
@@ -943,10 +1652,15 @@ export default function NewPortCall() {
 
           {/* Services Selection */}
           <div className="space-y-6">
-            <Card className="professional-card animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+            <Card
+              className="professional-card animate-fade-in-up"
+              style={{ animationDelay: "0.2s" }}
+            >
               <CardHeader>
                 <CardTitle>Work Scope & Services</CardTitle>
-                <CardDescription>Select required services for this port call</CardDescription>
+                <CardDescription>
+                  Select required services for this port call
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
@@ -960,28 +1674,27 @@ export default function NewPortCall() {
                       onChange={(e) => setServiceSearch(e.target.value)}
                       placeholder="Search services..."
                       className="form-input"
+                      disabled={loading}
                     />
                   </div>
                   <div className="flex items-end">
-                    <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={loading}
-                          onClick={() => {
-                            console.log("Add Service button clicked")
-                            setIsAddServiceOpen(true)
-                          }}
-                        >
+                    <Dialog
+                      open={isAddServiceOpen}
+                      onOpenChange={setIsAddServiceOpen}
+                    >
+                      <Link href="/services" passHref>
+                        <Button variant="outline" size="sm" disabled={loading}>
                           <Plus className="h-4 w-4 mr-2" />
                           Add Service
                         </Button>
-                      </DialogTrigger>
+                      </Link>
+
                       <DialogContent className="sm:max-w-md">
                         <DialogHeader>
                           <DialogTitle>Add New Service</DialogTitle>
-                          <DialogDescription>Add a new service to the available services list</DialogDescription>
+                          <DialogDescription>
+                            Add a new service to the available services list
+                          </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-6">
                           <div className="space-y-2">
@@ -989,7 +1702,9 @@ export default function NewPortCall() {
                             <Input
                               id="serviceName"
                               value={newServiceName}
-                              onChange={(e) => setNewServiceName(e.target.value)}
+                              onChange={(e) =>
+                                setNewServiceName(e.target.value)
+                              }
                               placeholder="Enter new service name"
                               className="w-full"
                             />
@@ -998,8 +1713,8 @@ export default function NewPortCall() {
                             <Button
                               variant="outline"
                               onClick={() => {
-                                setIsAddServiceOpen(false)
-                                setNewServiceName("")
+                                setIsAddServiceOpen(false);
+                                setNewServiceName("");
                               }}
                               disabled={loading}
                             >
@@ -1020,31 +1735,62 @@ export default function NewPortCall() {
                 </div>
 
                 <div className="max-h-96 overflow-y-auto space-y-2 border rounded-lg p-4">
-                  {filteredServices.map((service) => (
-                    <div key={service} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={service}
-                        checked={selectedServices.some((s) => s.name === service)}
-                        onCheckedChange={() => handleServiceToggle(service)}
-                      />
-                      <Label htmlFor={service} className="text-sm cursor-pointer flex-1">
-                        {service}
-                      </Label>
+                  {filteredServices.length > 0 ? (
+                    filteredServices.map((service) => (
+                      <div
+                        key={service.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <Checkbox
+                          id={service.service_id}
+                          checked={selectedServices.some(
+                            (s) => s.name === service.service_name
+                          )}
+                          onCheckedChange={() =>
+                            handleServiceToggle(service.service_name)
+                          }
+                        />
+                        <Label
+                          htmlFor={service.service_id}
+                          className="text-sm cursor-pointer flex-1"
+                        >
+                          {service.service_name}
+                        </Label>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      {loading
+                        ? "Loading services..."
+                        : "No services available"}
                     </div>
-                  ))}
+                  )}
                 </div>
 
                 {selectedServices.length > 0 && (
                   <div className="pt-4 border-t">
-                    <h4 className="font-medium mb-2">Selected Services ({selectedServices.length})</h4>
+                    <h4 className="font-medium mb-2">
+                      Selected Services ({selectedServices.length})
+                    </h4>
                     <div className="space-y-2">
                       {selectedServices.map((service, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm p-2 bg-muted rounded">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between text-sm p-2 bg-muted rounded"
+                        >
                           <div>
                             <span>{service.name}</span>
-                            {service.vendor && <span className="text-primary ml-2">({service.vendor})</span>}
+                            {service.vendor && (
+                              <span className="text-primary ml-2">
+                                ({service.vendor})
+                              </span>
+                            )}
                           </div>
-                          <Button variant="ghost" size="sm" onClick={() => removeSelectedService(service.name)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeSelectedService(service.name)}
+                          >
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
@@ -1061,25 +1807,26 @@ export default function NewPortCall() {
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Job Number:</span>
-                  <span className="font-medium">{formData.jobNumber}</span>
-                </div>
-                <div className="flex justify-between">
                   <span>Vessel:</span>
-                  <span className="font-medium">{formData.vesselName || "Not specified"}</span>
+                  <span className="font-medium">
+                    {formData.vesselName || "Not specified"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Client:</span>
                   <span className="font-medium">
                     {formData.clientCompany
-                      ? clients.find((c) => c.value === formData.clientCompany)?.label
+                      ? clients.find((c) => c.value === formData.clientCompany)
+                          ?.label
                       : "Not selected"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Port:</span>
                   <span className="font-medium">
-                    {formData.port ? ports.find((p) => p.value === formData.port)?.label : "Not selected"}
+                    {formData.port
+                      ? ports.find((p) => p.value === formData.port)?.label
+                      : "Not selected"}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -1092,7 +1839,12 @@ export default function NewPortCall() {
             <Button
               onClick={handleSubmit}
               className="w-full professional-button-primary h-12 text-base"
-              disabled={loading || !formData.vesselName || !formData.clientCompany || selectedServices.length === 0}
+              disabled={
+                loading ||
+                !formData.vesselName ||
+                !formData.clientCompany ||
+                selectedServices.length === 0
+              }
             >
               {loading ? "Creating..." : "Create Port Call"}
             </Button>
@@ -1105,7 +1857,9 @@ export default function NewPortCall() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Select Vendor for {currentService}</DialogTitle>
-            <DialogDescription>Choose a vendor to provide this service</DialogDescription>
+            <DialogDescription>
+              Choose a vendor to provide this service
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -1123,7 +1877,9 @@ export default function NewPortCall() {
                         <Users className="h-4 w-4" />
                         <div>
                           <div className="font-medium">{vendor.name}</div>
-                          <div className="text-sm text-muted-foreground">{vendor.category}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {vendor.category}
+                          </div>
                         </div>
                       </div>
                     </SelectItem>
@@ -1135,9 +1891,9 @@ export default function NewPortCall() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  setIsVendorModalOpen(false)
-                  setSelectedVendor("")
-                  setCurrentService("")
+                  setIsVendorModalOpen(false);
+                  setSelectedVendor("");
+                  setCurrentService("");
                 }}
                 disabled={loading}
               >
@@ -1155,5 +1911,5 @@ export default function NewPortCall() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

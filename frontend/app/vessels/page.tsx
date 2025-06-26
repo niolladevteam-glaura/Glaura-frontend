@@ -31,6 +31,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/use-toast";
 import {
   Ship,
   Search,
@@ -61,7 +62,13 @@ interface Vessel {
   builtYear: number;
   callSign: string;
   sscecExpiry: string;
-  sscecStatus: "Valid" | "Expiring" | "Expired";
+  sscecStatus:
+    | "valid"
+    | "expiring"
+    | "expired"
+    | "Valid"
+    | "Expiring"
+    | "Expired";
   owner: string;
   manager: string;
   piClub: string;
@@ -114,6 +121,93 @@ export default function VesselManagement() {
   });
   const router = useRouter();
 
+  // API Utility Function
+  const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+    try {
+      const token = localStorage.getItem("token");
+      const currentUser = localStorage.getItem("currentUser");
+
+      if (!token || !currentUser) {
+        throw new Error("Authentication required");
+      }
+
+      const response = await fetch(endpoint, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          ...options.headers,
+        },
+        ...options,
+      });
+
+      // Handle 401 Unauthorized
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("currentUser");
+        window.location.href = "/"; // Full page reload to reset state
+        throw new Error("Session expired. Please login again.");
+      }
+
+      // Handle other error statuses
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          throw new Error(response.statusText || "Request failed");
+        }
+
+        // Handle duplicate IMO case (assuming backend returns 400 with message)
+        if (response.status === 400 && errorData.message?.includes("IMO")) {
+          throw new Error(errorData.message);
+        }
+
+        throw new Error(
+          errorData.message || `Request failed with status ${response.status}`
+        );
+      }
+
+      // Return parsed JSON for successful responses
+      return await response.json();
+    } catch (error: any) {
+      console.error("API Error:", error);
+      throw error; // Re-throw to let calling function handle
+    }
+  };
+
+  // Vessel-specific API functions
+  const fetchVessels = async (): Promise<Vessel[]> => {
+    const response = await apiCall("http://localhost:3080/api/vessel");
+
+    // Check if response has data array
+    if (response && response.success && Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    console.error("Unexpected API response format:", response);
+    throw new Error("Invalid vessels data format received from server");
+  };
+
+  const createVessel = async (vesselData: any) => {
+    return await apiCall("http://localhost:3080/api/vessel", {
+      method: "POST",
+      body: JSON.stringify(vesselData),
+    });
+  };
+
+  const updateVessel = async (id: string, vesselData: any) => {
+    return await apiCall(`http://localhost:3080/api/vessel/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(vesselData),
+    });
+  };
+
+  const deleteVessel = async (id: string) => {
+    return await apiCall(`http://localhost:3080/api/vessel/${id}`, {
+      method: "DELETE",
+    });
+  };
+
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
     if (!userData) {
@@ -124,182 +218,173 @@ export default function VesselManagement() {
     const user = JSON.parse(userData);
     setCurrentUser(user);
 
-    // Mock vessel data
-    const mockVessels: Vessel[] = [
-      {
-        id: "1",
-        name: "MSC Oscar",
-        imo: "9876543",
-        flag: "Panama",
-        vesselType: "Container Ship",
-        grt: 195000,
-        nrt: 58500,
-        dwt: 199400,
-        loa: 395,
-        builtYear: 2015,
-        callSign: "3EJK2",
-        sscecExpiry: "2024-03-15",
-        sscecStatus: "Expiring",
-        owner: "Mediterranean Shipping Company",
-        manager: "MSC Ship Management",
-        piClub: "Britannia P&I Club",
-        lastPortCall: "2024-01-15",
-        totalPortCalls: 45,
-        createdAt: "2023-01-15T10:00:00Z",
-        lastUpdated: "2024-01-15T14:30:00Z",
-      },
-      {
-        id: "2",
-        name: "Maersk Gibraltar",
-        imo: "9654321",
-        flag: "Denmark",
-        vesselType: "Container Ship",
-        grt: 165000,
-        nrt: 49500,
-        dwt: 180000,
-        loa: 380,
-        builtYear: 2018,
-        callSign: "OZJM2",
-        sscecExpiry: "2024-08-20",
-        sscecStatus: "Valid",
-        owner: "Maersk Line",
-        manager: "Maersk Ship Management",
-        piClub: "Gard P&I Club",
-        lastPortCall: "2024-01-16",
-        totalPortCalls: 32,
-        createdAt: "2023-02-20T09:00:00Z",
-        lastUpdated: "2024-01-16T11:15:00Z",
-      },
-      {
-        id: "3",
-        name: "COSCO Shipping",
-        imo: "9543210",
-        flag: "China",
-        vesselType: "Container Ship",
-        grt: 140000,
-        nrt: 42000,
-        dwt: 155000,
-        loa: 350,
-        builtYear: 2020,
-        callSign: "BQXM8",
-        sscecExpiry: "2023-12-10",
-        sscecStatus: "Expired",
-        owner: "COSCO Shipping Lines",
-        manager: "COSCO Ship Management",
-        piClub: "China P&I Club",
-        lastPortCall: "2024-01-17",
-        totalPortCalls: 28,
-        createdAt: "2023-03-10T16:00:00Z",
-        lastUpdated: "2024-01-17T18:00:00Z",
-      },
-      {
-        id: "4",
-        name: "Ever Given",
-        imo: "9811000",
-        flag: "Panama",
-        vesselType: "Container Ship",
-        grt: 220000,
-        nrt: 66000,
-        dwt: 224000,
-        loa: 400,
-        builtYear: 2018,
-        callSign: "H3RC",
-        sscecExpiry: "2024-06-30",
-        sscecStatus: "Valid",
-        owner: "Evergreen Marine",
-        manager: "Evergreen Ship Management",
-        piClub: "UK P&I Club",
-        lastPortCall: "2024-01-18",
-        totalPortCalls: 38,
-        createdAt: "2023-04-05T12:00:00Z",
-        lastUpdated: "2024-01-18T10:15:00Z",
-      },
-      {
-        id: "5",
-        name: "Hapag Express",
-        imo: "9765432",
-        flag: "Germany",
-        vesselType: "Container Ship",
-        grt: 175000,
-        nrt: 52500,
-        dwt: 190000,
-        loa: 385,
-        builtYear: 2019,
-        callSign: "DKBM4",
-        sscecExpiry: "2024-02-28",
-        sscecStatus: "Expiring",
-        owner: "Hapag-Lloyd",
-        manager: "Hapag-Lloyd Ship Management",
-        piClub: "Skuld P&I Club",
-        lastPortCall: "2024-01-19",
-        totalPortCalls: 25,
-        createdAt: "2023-05-12T14:00:00Z",
-        lastUpdated: "2024-01-19T16:30:00Z",
-      },
-    ];
+    const loadVessels = async () => {
+      try {
+        const data = await fetchVessels();
 
-    setVessels(mockVessels);
-    setFilteredVessels(mockVessels);
+        // Transform the backend data to match our frontend interface
+        const transformedVessels = data.map((vessel: any) => ({
+          id: vessel.vessel_id || vessel.id,
+          name: vessel.vessel_name || vessel.name,
+          imo: vessel.imo_number || vessel.imo,
+          flag: vessel.flag,
+          vesselType: vessel.vessel_type || vessel.vesselType,
+          grt: vessel.grt || 0,
+          nrt: vessel.nrt || 0,
+          dwt: vessel.dwt || 0,
+          loa: vessel.loa || 0,
+          builtYear: vessel.build_year || vessel.builtYear,
+          callSign: vessel.call_sign || vessel.callSign,
+          sscecExpiry: vessel.SSCEC_expires || vessel.sscecExpiry,
+          sscecStatus:
+            vessel.sscec_status ||
+            calculateSSCECStatus(vessel.SSCEC_expires || vessel.sscecExpiry),
+          owner: vessel.company || vessel.owner,
+          manager: vessel.manager || vessel.company || vessel.owner,
+          piClub: vessel.p_and_i_club || vessel.piClub,
+          lastPortCall:
+            vessel.lastPortCall || new Date().toISOString().split("T")[0],
+          totalPortCalls: vessel.totalPortCalls || 0,
+          createdAt: vessel.createdAt || new Date().toISOString(),
+          lastUpdated:
+            vessel.updatedAt || vessel.lastUpdated || new Date().toISOString(),
+        }));
+
+        setVessels(transformedVessels);
+        setFilteredVessels(transformedVessels);
+      } catch (error) {
+        console.error("Failed to load vessels:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load vessel data",
+          variant: "destructive",
+        });
+      }
+    };
+
+    loadVessels();
   }, [router]);
 
-  const handleAddVessel = () => {
-    // Calculate days until SSCEC expiry
+  // Helper function to calculate SSCEC status
+  const calculateSSCECStatus = (
+    expiryDate: string
+  ): "Valid" | "Expiring" | "Expired" => {
     const today = new Date();
-    const expiryDate = new Date(newVessel.sscecExpiry);
+    const expiry = new Date(expiryDate);
     const daysUntilExpiry = Math.floor(
-      (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    const handleViewVessel = (vessel: Vessel) => {
-      setSelectedVessel(vessel);
-      setViewDialogOpen(true);
-    };
+    return daysUntilExpiry < 0
+      ? "Expired"
+      : daysUntilExpiry <= 30
+      ? "Expiring"
+      : "Valid";
+  };
+  const handleAddVessel = async () => {
+    try {
+      // First check if IMO already exists in the current vessels list
+      const imoExists = vessels.some((v) => v.imo === newVessel.imo);
+      if (imoExists) {
+        toast({
+          title: "Duplicate IMO",
+          description: "A vessel with this IMO number already exists",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    const handleEditClick = (vessel: Vessel) => {
-      setVesselToEdit(vessel);
-      setEditDialogOpen(true);
-    };
+      const vesselData = {
+        vessel_name: newVessel.name,
+        imo_number: newVessel.imo,
+        SSCEC_expires: newVessel.sscecExpiry,
+        company: newVessel.owner,
+        vessel_type: newVessel.vesselType,
+        flag: newVessel.flag,
+        call_sign: newVessel.callSign,
+        build_year: newVessel.builtYear,
+        grt: newVessel.grt,
+        dwt: newVessel.dwt,
+        loa: newVessel.loa,
+        nrt: newVessel.nrt,
+        p_and_i_club: newVessel.piClub,
+      };
 
-    // Determine status based on days until expiry
-    const sscecStatus =
-      daysUntilExpiry < 0
-        ? "Expired"
-        : daysUntilExpiry <= 30
-        ? "Expiring"
-        : "Valid";
+      const response = await createVessel(vesselData);
 
-    const vesselWithId: Vessel = {
-      ...newVessel,
-      id: Math.random().toString(36).substring(2, 9), // Generate random ID
-      sscecStatus, // Use calculated status
-      createdAt: new Date().toISOString(),
-      lastUpdated: new Date().toISOString(),
-      // Set default values for DB-managed fields
-      lastPortCall: new Date().toISOString().split("T")[0], // Current date as default
-      totalPortCalls: 0, // Start with 0 port calls
-      manager: newVessel.owner, // Default manager same as owner
-    };
+      const vesselWithId: Vessel = {
+        ...newVessel,
+        id: response.vessel_id, // Use ID from backend
+        sscecStatus: calculateSSCECStatus(newVessel.sscecExpiry),
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
+        lastPortCall: new Date().toISOString().split("T")[0],
+        totalPortCalls: 0,
+        manager: newVessel.owner,
+      };
 
-    // Add new vessel to state
-    setVessels([...vessels, vesselWithId]);
-    setIsDialogOpen(false);
+      setVessels((prevVessels) => {
+        const vesselWithId: Vessel = {
+          ...newVessel,
+          id: response.vessel_id,
+          sscecStatus: calculateSSCECStatus(newVessel.sscecExpiry),
+          createdAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString(),
+          lastPortCall: new Date().toISOString().split("T")[0],
+          totalPortCalls: 0,
+          manager: newVessel.owner,
+        };
+        return [...prevVessels, vesselWithId];
+      });
 
-    // Reset form to initial state
-    setNewVessel({
-      name: "",
-      imo: "",
-      flag: "",
-      vesselType: "Container Ship",
-      grt: 0,
-      nrt: 0,
-      dwt: 0,
-      loa: 0,
-      builtYear: new Date().getFullYear(),
-      callSign: "",
-      sscecExpiry: new Date().toISOString().split("T")[0],
-      owner: "",
-      piClub: "",
-    });
+      // Reset form
+      setNewVessel({
+        name: "",
+        imo: "",
+        flag: "",
+        vesselType: "Container Ship",
+        grt: 0,
+        nrt: 0,
+        dwt: 0,
+        loa: 0,
+        builtYear: new Date().getFullYear(),
+        callSign: "",
+        sscecExpiry: new Date().toISOString().split("T")[0],
+        owner: "",
+        piClub: "",
+      });
+
+      setIsDialogOpen(false);
+
+      toast({
+        title: "Success",
+        description: "Vessel added successfully",
+      });
+
+      setSearchTerm("");
+      setTypeFilter("all");
+      setStatusFilter("all");
+    } catch (error: any) {
+      console.error("Failed to add vessel:", error);
+
+      // Check for duplicate IMO error from backend
+      if (
+        error.message.includes("IMO") ||
+        error.message.includes("duplicate")
+      ) {
+        toast({
+          title: "Duplicate IMO",
+          description: "A vessel with this IMO number already exists",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to add vessel",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   useEffect(() => {
@@ -329,17 +414,17 @@ export default function VesselManagement() {
 
     if (selectedTab !== "all") {
       switch (selectedTab) {
-        case "valid":
+        case "Valid":
           filtered = filtered.filter(
             (vessel) => vessel.sscecStatus === "Valid"
           );
           break;
-        case "expiring":
+        case "Expiring":
           filtered = filtered.filter(
             (vessel) => vessel.sscecStatus === "Expiring"
           );
           break;
-        case "expired":
+        case "Expired":
           filtered = filtered.filter(
             (vessel) => vessel.sscecStatus === "Expired"
           );
@@ -364,7 +449,7 @@ export default function VesselManagement() {
       case "Expired":
         return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600";
+        return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700";
     }
   };
 
@@ -440,15 +525,15 @@ export default function VesselManagement() {
               <TabsTrigger value="all">
                 All Vessels ({vessels.length})
               </TabsTrigger>
-              <TabsTrigger value="valid">
+              <TabsTrigger value="Valid">
                 Valid SSCEC (
                 {vessels.filter((v) => v.sscecStatus === "Valid").length})
               </TabsTrigger>
-              <TabsTrigger value="expiring">
+              <TabsTrigger value="Expiring">
                 Expiring (
                 {vessels.filter((v) => v.sscecStatus === "Expiring").length})
               </TabsTrigger>
-              <TabsTrigger value="expired">
+              <TabsTrigger value="Expired">
                 Expired (
                 {vessels.filter((v) => v.sscecStatus === "Expired").length})
               </TabsTrigger>
@@ -1123,14 +1208,43 @@ export default function VesselManagement() {
                       Cancel
                     </Button>
                     <Button
-                      onClick={() => {
-                        // Update the vessel in the state
-                        setVessels(
-                          vessels.map((v) =>
-                            v.id === vesselToEdit.id ? vesselToEdit : v
-                          )
-                        );
-                        setEditDialogOpen(false);
+                      onClick={async () => {
+                        try {
+                          if (vesselToEdit) {
+                            const vesselData = {
+                              vessel_name: vesselToEdit.name,
+                              imo_number: vesselToEdit.imo,
+                              SSCEC_expires: vesselToEdit.sscecExpiry,
+                              company: vesselToEdit.owner,
+                              vessel_type: vesselToEdit.vesselType,
+                              flag: vesselToEdit.flag,
+                              call_sign: vesselToEdit.callSign,
+                              build_year: vesselToEdit.builtYear,
+                              grt: vesselToEdit.grt,
+                              dwt: vesselToEdit.dwt,
+                              loa: vesselToEdit.loa,
+                              nrt: vesselToEdit.nrt,
+                              p_and_i_club: vesselToEdit.piClub,
+                            };
+
+                            await updateVessel(vesselToEdit.id, vesselData);
+
+                            // Update local state
+                            setVessels(
+                              vessels.map((v) =>
+                                v.id === vesselToEdit.id ? vesselToEdit : v
+                              )
+                            );
+                            setEditDialogOpen(false);
+
+                            toast({
+                              title: "Success",
+                              description: "Vessel updated successfully",
+                            });
+                          }
+                        } catch (error) {
+                          console.error("Failed to update vessel:", error);
+                        }
                       }}
                     >
                       Save Changes
@@ -1167,17 +1281,27 @@ export default function VesselManagement() {
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => {
-                    if (vesselToDelete) {
-                      setVessels(
-                        vessels.filter((v) => v.id !== vesselToDelete.id)
-                      );
-                      setFilteredVessels(
-                        filteredVessels.filter(
-                          (v) => v.id !== vesselToDelete.id
-                        )
-                      );
-                      setDeleteDialogOpen(false);
+                  onClick={async () => {
+                    try {
+                      if (vesselToDelete) {
+                        await deleteVessel(vesselToDelete.id);
+                        setVessels(
+                          vessels.filter((v) => v.id !== vesselToDelete.id)
+                        );
+                        setFilteredVessels(
+                          filteredVessels.filter(
+                            (v) => v.id !== vesselToDelete.id
+                          )
+                        );
+                        setDeleteDialogOpen(false);
+
+                        toast({
+                          title: "Success",
+                          description: "Vessel deleted successfully",
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Failed to delete vessel:", error);
                     }
                   }}
                 >
@@ -1234,9 +1358,9 @@ export default function VesselManagement() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="valid">Valid</SelectItem>
-                        <SelectItem value="expiring">Expiring</SelectItem>
-                        <SelectItem value="expired">Expired</SelectItem>
+                        <SelectItem value="Valid">Valid</SelectItem>
+                        <SelectItem value="Expiring">Expiring</SelectItem>
+                        <SelectItem value="Expired">Expired</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
