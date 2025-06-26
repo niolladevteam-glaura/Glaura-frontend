@@ -25,31 +25,30 @@ import {
   FileText,
   MoreHorizontal,
   Eye,
-  Edit,
+  LogOut,
+  Anchor,
+  SquareSlash,
+  Loader2,
   CheckCircle,
   AlertCircle,
   XCircle,
-  LogOut,
-  Anchor,
 } from "lucide-react";
 import Link from "next/link";
 
 interface PortCall {
-  id: string;
-  jobNumber: string;
-  vesselName: string;
-  imo: string;
-  client: string;
+  job_id: string;
+  vessel_name: string;
+  vessel_imo: string;
+  client_company: string;
   eta: string;
   etd?: string;
   port: string;
-  status: "Pending" | "In Progress" | "Completed" | "Cancelled";
-  services: number;
-  completedServices: number;
-  assignedPIC: string;
+  status: "Pending" | "Completed";
+  assigned_pic: string;
   priority: "High" | "Medium" | "Low";
-  createdAt: string;
-  lastUpdated: string;
+  created: string;
+  updatedAt: string;
+  services: any[];
 }
 
 export default function ActivePortCalls() {
@@ -60,9 +59,71 @@ export default function ActivePortCalls() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [portFilter, setPortFilter] = useState("all");
   const [selectedTab, setSelectedTab] = useState("all");
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
+    const fetchPortCalls = async () => {
+      try {
+        setLoading(true);
+
+        // Get token from localStorage
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/portcall`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("currentUser");
+          router.push("/");
+          throw new Error("Session expired. Please login again.");
+        }
+
+        const data = await response.json();
+
+        console.log(data);
+
+        if (data.success && data.data) {
+          const mappedPortCalls = data.data.map((pc: any) => ({
+            job_id: pc.job_id,
+            vessel_name: pc.vessel_name,
+            vessel_imo: pc.vessel_imo,
+            client_company: pc.client_company,
+            eta: pc.eta,
+            etd: pc.etd || undefined,
+            port: pc.port,
+            status: mapStatus(pc.status, pc.services || []), // <-- modified line
+            assigned_pic: pc.assigned_pic || "Not assigned",
+            priority: pc.priority || "Medium",
+            created: pc.created,
+            updatedAt: pc.updatedAt,
+            services: pc.services || [],
+          }));
+
+          setPortCalls(mappedPortCalls);
+          setFilteredPortCalls(mappedPortCalls);
+        } else {
+          console.error("Failed to fetch port calls:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching port calls:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const userData = localStorage.getItem("currentUser");
     if (!userData) {
       router.push("/");
@@ -71,110 +132,34 @@ export default function ActivePortCalls() {
 
     const user = JSON.parse(userData);
     setCurrentUser(user);
+    fetchPortCalls();
+  }, [router]);
 
-    // Mock port calls data
-    const mockPortCalls: PortCall[] = [
-      {
-        id: "1",
-        jobNumber: "GLPC-2024-001",
-        vesselName: "MSC Oscar",
-        imo: "9876543",
-        client: "Mediterranean Shipping",
-        eta: "2024-01-15T14:30",
-        etd: "2024-01-16T08:00",
-        port: "Colombo",
-        status: "In Progress",
-        services: 8,
-        completedServices: 5,
-        assignedPIC: "Sandalu Nawarathne",
-        priority: "High",
-        createdAt: "2024-01-14T10:00",
-        lastUpdated: "2024-01-15T12:30",
-      },
-      {
-        id: "2",
-        jobNumber: "GLPC-2024-002",
-        vesselName: "Maersk Gibraltar",
-        imo: "9654321",
-        client: "Maersk Line",
-        eta: "2024-01-16T09:15",
-        port: "Galle",
-        status: "Pending",
-        services: 12,
-        completedServices: 0,
-        assignedPIC: "Supun Rathnayaka",
-        priority: "Medium",
-        createdAt: "2024-01-15T08:00",
-        lastUpdated: "2024-01-15T08:00",
-      },
-      {
-        id: "3",
-        jobNumber: "GLPC-2024-003",
-        vesselName: "COSCO Shipping",
-        imo: "9543210",
-        client: "COSCO Shipping Lines",
-        eta: "2024-01-17T16:45",
-        port: "Hambantota",
-        status: "Completed",
-        services: 6,
-        completedServices: 6,
-        assignedPIC: "Chamod Asiridu",
-        priority: "Low",
-        createdAt: "2024-01-16T14:00",
-        lastUpdated: "2024-01-17T18:00",
-      },
-      {
-        id: "4",
-        jobNumber: "GLPC-2024-004",
-        vesselName: "Ever Given",
-        imo: "9811000",
-        client: "Evergreen Marine",
-        eta: "2024-01-18T11:30",
-        port: "Colombo",
-        status: "In Progress",
-        services: 15,
-        completedServices: 8,
-        assignedPIC: "Joyal Akash",
-        priority: "High",
-        createdAt: "2024-01-17T09:00",
-        lastUpdated: "2024-01-18T10:15",
-      },
-      {
-        id: "5",
-        jobNumber: "GLPC-2024-005",
-        vesselName: "Hapag Express",
-        imo: "9765432",
-        client: "Hapag-Lloyd",
-        eta: "2024-01-19T13:00",
-        port: "Galle",
-        status: "Pending",
-        services: 9,
-        completedServices: 0,
-        assignedPIC: "Supun Rathnayaka",
-        priority: "Medium",
-        createdAt: "2024-01-18T16:00",
-        lastUpdated: "2024-01-18T16:00",
-      },
-    ];
-
-    // Filter based on user access level
-    let filteredData = mockPortCalls;
-    if (user.accessLevel === "F") {
-      // Bunkering - only bunker related calls
-      filteredData = mockPortCalls.filter((pc) => pc.services > 0);
-    } else if (user.accessLevel === "G") {
-      // Spare Clearance
-      filteredData = mockPortCalls.filter((pc) => pc.services > 0);
-    } else if (user.accessLevel === "I") {
-      // Galle Operations
-      filteredData = mockPortCalls.filter(
-        (pc) => pc.port === "Galle" || pc.port === "Hambantota"
-      );
+  // Helper function to map API status and check if all services are completed
+  const mapStatus = (status: string, services: any[]): PortCall["status"] => {
+    // If there are services and all are completed, return Completed
+    if (
+      Array.isArray(services) &&
+      services.length > 0 &&
+      services.every(
+        (s) =>
+          s.status === false ||
+          s.status === "Completed" ||
+          s.status === "completed"
+      )
+    ) {
+      return "Completed";
     }
 
-    setPortCalls(filteredData);
-    setFilteredPortCalls(filteredData);
-  }, [router]);
+    switch (status.toLowerCase()) {
+      case "open":
+        return "Pending";
+      case "completed":
+        return "Completed";
+      default:
+        return "Pending";
+    }
+  };
 
   useEffect(() => {
     let filtered = portCalls;
@@ -183,10 +168,10 @@ export default function ActivePortCalls() {
     if (searchTerm) {
       filtered = filtered.filter(
         (pc) =>
-          pc.vesselName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          pc.jobNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          pc.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          pc.imo.includes(searchTerm)
+          pc.vessel_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          pc.job_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          pc.client_company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          pc.vessel_imo.includes(searchTerm)
       );
     }
 
@@ -206,9 +191,7 @@ export default function ActivePortCalls() {
     if (selectedTab !== "all") {
       switch (selectedTab) {
         case "active":
-          filtered = filtered.filter(
-            (pc) => pc.status === "In Progress" || pc.status === "Pending"
-          );
+          filtered = filtered.filter((pc) => pc.status === "Pending");
           break;
         case "completed":
           filtered = filtered.filter((pc) => pc.status === "Completed");
@@ -270,8 +253,37 @@ export default function ActivePortCalls() {
     }
   };
 
+  // Calculate service stats
+  const getServiceStats = (services: any[]) => {
+    const totalServices = services.length;
+    const completedServices = services.filter(
+      (s) =>
+        s.status === false ||
+        s.status === "Completed" ||
+        s.status === "completed"
+    ).length;
+    const progress =
+      totalServices > 0
+        ? Math.round((completedServices / totalServices) * 100)
+        : 0;
+
+    return { totalServices, completedServices, progress };
+  };
+
   if (!currentUser) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -365,8 +377,9 @@ export default function ActivePortCalls() {
                   <SelectContent>
                     <SelectItem value="all">All Ports</SelectItem>
                     <SelectItem value="colombo">Colombo</SelectItem>
-                    <SelectItem value="galle">Galle</SelectItem>
+                    <SelectItem value="gall">Gall</SelectItem>
                     <SelectItem value="hambantota">Hambantota</SelectItem>
+                    <SelectItem value="trincomalee">Trincomalee</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -377,13 +390,7 @@ export default function ActivePortCalls() {
                 <TabsTrigger value="all">All ({portCalls.length})</TabsTrigger>
                 <TabsTrigger value="active">
                   Active (
-                  {
-                    portCalls.filter(
-                      (pc) =>
-                        pc.status === "In Progress" || pc.status === "Pending"
-                    ).length
-                  }
-                  )
+                  {portCalls.filter((pc) => pc.status === "Pending").length})
                 </TabsTrigger>
                 <TabsTrigger value="completed">
                   Completed (
@@ -400,159 +407,153 @@ export default function ActivePortCalls() {
 
         {/* Port Calls List */}
         <div className="space-y-4">
-          {filteredPortCalls.map((portCall) => (
-            <Card
-              key={portCall.id}
-              className="hover:shadow-md transition-shadow"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(portCall.status)}
-                      <div>
-                        <h3 className="font-semibold text-lg">
-                          {portCall.vesselName}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {portCall.jobNumber}
-                        </p>
+          {filteredPortCalls.map((portCall) => {
+            const { totalServices, completedServices, progress } =
+              getServiceStats(portCall.services);
+
+            return (
+              <Card
+                key={portCall.job_id}
+                className="hover:shadow-md transition-shadow"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        {getStatusIcon(portCall.status)}
+                        <div>
+                          <h3 className="font-semibold text-lg">
+                            {portCall.vessel_name}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {portCall.job_id}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Badge className={getStatusColor(portCall.status)}>
+                          {portCall.status}
+                        </Badge>
+                        <Badge className={getPriorityColor(portCall.priority)}>
+                          {portCall.priority}
+                        </Badge>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <Badge className={getStatusColor(portCall.status)}>
-                        {portCall.status}
-                      </Badge>
-                      <Badge className={getPriorityColor(portCall.priority)}>
-                        {portCall.priority}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Link href={"/pcs"}>
+                    <div className="flex items-center space-x-2">
+                      <Link href={`/pcs/${portCall.job_id}`}>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-2" />
+                          Services
+                        </Button>
+                      </Link>
                       <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Services
+                        <SquareSlash />
                       </Button>
-                    </Link>
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Client
-                    </p>
-                    <p className="font-medium">{portCall.client}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      IMO
-                    </p>
-                    <p className="font-medium">{portCall.imo}</p>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <MapPin className="h-4 w-4 text-gray-400" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Port
+                        Client
                       </p>
-                      <p className="font-medium">{portCall.port}</p>
+                      <p className="font-medium">{portCall.client_company}</p>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Users className="h-4 w-4 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Assigned PIC
+                        IMO
                       </p>
-                      <p className="font-medium">{portCall.assignedPIC}</p>
+                      <p className="font-medium">{portCall.vessel_imo}</p>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="h-4 w-4 text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Port
+                        </p>
+                        <p className="font-medium">{portCall.port}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Users className="h-4 w-4 text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Assigned PIC
+                        </p>
+                        <p className="font-medium">{portCall.assigned_pic}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        ETA
-                      </p>
-                      <p className="font-medium">
-                        {new Date(portCall.eta).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  {portCall.etd && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          ETD
+                          ETA
                         </p>
                         <p className="font-medium">
-                          {new Date(portCall.etd).toLocaleString()}
+                          {new Date(portCall.eta).toLocaleString()}
                         </p>
                       </div>
                     </div>
-                  )}
-                  <div className="flex items-center space-x-1">
-                    <Clock className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Last Updated
-                      </p>
-                      <p className="font-medium">
-                        {new Date(portCall.lastUpdated).toLocaleString()}
-                      </p>
+                    {portCall.etd && (
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            ETD
+                          </p>
+                          <p className="font-medium">
+                            {new Date(portCall.etd).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center space-x-1">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Last Updated
+                        </p>
+                        <p className="font-medium">
+                          {new Date(portCall.updatedAt).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Services Progress */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600 dark:text-gray-300">
-                        Services: {portCall.completedServices}/
-                        {portCall.services}
+                  {/* Services Progress */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          Services: {completedServices}/{totalServices}
+                        </span>
+                      </div>
+                      <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all"
+                          style={{
+                            width: `${progress}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {progress}%
                       </span>
                     </div>
-                    <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full transition-all"
-                        style={{
-                          width: `${
-                            (portCall.completedServices / portCall.services) *
-                            100
-                          }%`,
-                        }}
-                      ></div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Created: {new Date(portCall.created).toLocaleDateString()}
                     </div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {Math.round(
-                        (portCall.completedServices / portCall.services) * 100
-                      )}
-                      %
-                    </span>
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Created: {new Date(portCall.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
 
-          {filteredPortCalls.length === 0 && (
+          {filteredPortCalls.length === 0 && !loading && (
             <Card>
               <CardContent className="text-center py-12">
                 <Ship className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
