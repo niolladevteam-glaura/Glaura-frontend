@@ -305,6 +305,7 @@ export default function Dashboard() {
     { href: "/messages", icon: FileText, label: "Messages" },
     { href: "/feedback", icon: MessageSquare, label: "Feedback & Complaints" },
     { href: "/vessels", icon: Ship, label: "Vessel Management" },
+    { href: "/pic-management", icon: Phone, label: "PIC Management" },
     { href: "/whatsapp", icon: MessageCircle, label: "WhatsApp" },
     { href: "/phonebook", icon: Phone, label: "Phone Book" },
   ];
@@ -623,7 +624,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card
+            {/* <Card
               className="professional-card animate-fade-in-up"
               style={{ animationDelay: "0.2s" }}
             >
@@ -683,7 +684,7 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                 </ChartContainer>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </main>
       </div>
