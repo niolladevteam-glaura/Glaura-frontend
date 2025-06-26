@@ -37,7 +37,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 // API Configuration - Replace with your actual API endpoints
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080/api";
 
 // API Endpoints
 const API_ENDPOINTS = {
@@ -48,6 +48,7 @@ const API_ENDPOINTS = {
   PORT_CALLS: `${API_BASE_URL}/portcall`,
   CLIENTS: `${API_BASE_URL}/customer`,
   VESSEL: `${API_BASE_URL}/vessel`,
+  CUSTOMER_PIC: `${API_BASE_URL}/customerpic`,
 };
 
 interface Customer {
@@ -150,6 +151,25 @@ interface StatusOfFormalityResponse {
   data: StatusOfFormality | StatusOfFormality[];
 }
 
+interface CustomerPic {
+  pic_id: string;
+  customer_id: string;
+  name: string;
+  phone_number: string;
+  email: string;
+  birthday: string;
+  receiveUpdates: boolean;
+  department: string;
+  remark: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CustomerPicResponse {
+  success: boolean;
+  data: CustomerPic[];
+}
+
 // Default data - Replace with API calls
 const DEFAULT_SERVICES = [
   "Crew Embarkation",
@@ -215,6 +235,12 @@ const DEFAULT_CLIENTS = [
   { value: "cosco", label: "COSCO Shipping Lines" },
   { value: "evergreen", label: "Evergreen Marine" },
   { value: "hapag", label: "Hapag-Lloyd" },
+];
+
+const priorities = [
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
 ];
 
 const DEFAULT_VESSEL_TYPES = [
@@ -311,6 +337,11 @@ export default function NewPortCall() {
     formalityStatus: "",
     piClub: "",
     remarks: "",
+    priority: "",
+    pic: {
+      pic_id: "",
+      customerPIC: "",
+    },
   });
   const [loadingVessel, setLoadingVessel] = useState(false);
   const [vesselError, setVesselError] = useState<string | null>(null);
@@ -330,6 +361,9 @@ export default function NewPortCall() {
   const [formalityStatuses, setFormalityStatuses] = useState<string[]>(
     DEFAULT_FORMALITY_STATUS
   );
+  const [customerPIC, setCustomerPIC] = useState<
+    { value: string; label: string }[]
+  >([]);
   const [vendors, setVendors] = useState<Vendor[]>(DEFAULT_VENDORS);
   const [isAddingPort, setIsAddingPort] = useState(false);
   const [isAddingFormalityStatus, setIsAddingFormalityStatus] = useState(false);
@@ -372,6 +406,14 @@ export default function NewPortCall() {
       setFormalityStatuses(statusList.map((s) => s.label));
     };
     loadFormalityStatuses();
+  }, []);
+
+  useEffect(() => {
+    const loadCustomerPICs = async () => {
+      const picList = await fetchCustomerPic();
+      setCustomerPIC(picList); // store full objects!
+    };
+    loadCustomerPICs();
   }, []);
 
   // API Functions - Replace these with your actual API calls
@@ -493,6 +535,33 @@ export default function NewPortCall() {
       toast({
         title: "Error",
         description: "Failed to load formality statuses",
+        variant: "destructive",
+      });
+      return [];
+    }
+  };
+
+  const fetchCustomerPic = async (): Promise<
+    { value: string; label: string }[]
+  > => {
+    try {
+      const response = await apiCall<CustomerPicResponse>(
+        API_ENDPOINTS.CUSTOMER_PIC
+      );
+
+      if (response.success && Array.isArray(response.data)) {
+        return response.data.map((pic) => ({
+          value: pic.pic_id,
+          label: pic.name,
+        }));
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Failed to fetch customer PIC:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load customer PICs",
         variant: "destructive",
       });
       return [];
@@ -772,6 +841,16 @@ export default function NewPortCall() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handlePicChange = (key: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      pic: {
+        ...prev.pic,
+        [key]: value,
+      },
+    }));
+  };
+
   const handleServiceToggle = (service: string) => {
     const isSelected = selectedServices.some((s) => s.name === service);
 
@@ -944,13 +1023,17 @@ export default function NewPortCall() {
           ?.label,
         agency_name: formData.agencyName,
         status_of_formalities: formData.formalityStatus || "Pending",
+        pic: {
+          id: formData.pic.pic_id,
+          name: formData.pic.customerPIC,
+        },
         eta: formData.eta ? new Date(formData.eta).toISOString() : null,
         pic_id: currentUser?.id || "system",
         pic_name: currentUser?.name || "System User",
         pic_email: currentUser?.email || "",
         remarks: formData.remarks || "",
         status: "In Progress", // Ensure status is at root level
-        priority: "Low",
+        priority: formData.priority,
         created_by: currentUser?.id || "system",
         // Vessel details as separate fields (not nested)
         vessel_type: formData.vesselType,
@@ -1615,19 +1698,56 @@ export default function NewPortCall() {
                     </Select>
                   </div>
                   <div>
+                    <Label htmlFor="Priority" className="form-label">
+                      Priority
+                    </Label>
+                    <Select
+                      value={formData.priority}
+                      onValueChange={(priority) => {
+                        handleInputChange("priority", priority);
+                      }}
+                    >
+                      <SelectTrigger className="form-input" id="priority">
+                        <SelectValue placeholder="Select Priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {priorities.map((priority) => (
+                          <SelectItem
+                            key={priority.value}
+                            value={priority.value}
+                          >
+                            {priority.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
                     <Label htmlFor="assignedPIC" className="form-label">
                       Assigned PIC
                     </Label>
-                    <Input
-                      id="assignedPIC"
-                      value={formData.assignedPIC}
-                      onChange={(e) =>
-                        handleInputChange("assignedPIC", e.target.value)
-                      }
-                      placeholder="Will be assigned by Ops Manager"
-                      className="form-input bg-muted"
-                      readOnly
-                    />
+                    <Select
+                      value={formData.pic.pic_id}
+                      onValueChange={(pic_id) => {
+                        // Find the selected PIC object by ID
+                        const selected = customerPIC.find(
+                          (pic) => pic.value === pic_id
+                        );
+                        handlePicChange("pic_id", pic_id);
+                        handlePicChange("customerPIC", selected?.label || "");
+                      }}
+                    >
+                      <SelectTrigger className="form-input" id="assignedPIC">
+                        <SelectValue placeholder="Select PIC's" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customerPIC.map((pic) => (
+                          <SelectItem key={pic.value} value={pic.value}>
+                            {pic.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
