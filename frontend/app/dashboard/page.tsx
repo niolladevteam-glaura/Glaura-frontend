@@ -82,6 +82,24 @@ interface BirthdayAlert {
   daysUntil: number;
 }
 
+// Add DashboardData interface
+interface DashboardData {
+  active_port_calls: {
+    today_count: number;
+    from_yesterday: number;
+  };
+  pending_services: number;
+  Birthday_count: number;
+  recent_port_calls: {
+    Vessel_Name: string;
+    Company: string;
+    Port: string;
+    status: string;
+    service: number;
+  }[];
+  port_vessel_volume: Record<string, number>;
+}
+
 const StatCard = ({
   title,
   value,
@@ -119,16 +137,27 @@ const StatCard = ({
 export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [activePortCalls, setActivePortCalls] = useState<PortCall[]>([]);
-  const [birthdayAlerts, setBirthdayAlerts] = useState<BirthdayAlert[]>([]);
+  const [activePortCallsCount, setActivePortCallsCount] = useState(0);
+  const [pendingServicesCount, setPendingServicesCount] = useState(0);
+  const [birthdayCount, setBirthdayCount] = useState(0);
+  const [activePortCallsTrend, setActivePortCallsTrend] = useState("");
+  const [vesselVolumeData, setVesselVolumeData] = useState<
+    { port: string; vessels: number }[]
+  >([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
+
+    // Retrieve both user data and token from localStorage
     const userData = localStorage.getItem("currentUser");
-    if (!userData) {
+    const token = localStorage.getItem("token");
+
+    if (!userData || !token) {
       router.push("/");
       return;
     }
@@ -136,86 +165,87 @@ export default function Dashboard() {
     const user = JSON.parse(userData);
     setCurrentUser(user);
 
-    // Mock data based on user access level
-    const mockPortCalls: PortCall[] = [
-      {
-        id: "1",
-        jobNumber: "GLPC-2024-001",
-        vesselName: "MSC Oscar",
-        imo: "9876543",
-        client: "Mediterranean Shipping",
-        eta: "2024-01-15T14:30",
-        port: "Colombo",
-        status: "In Progress",
-        services: 8,
-        assignedPIC: "Sandalu Nawarathne",
-      },
-      {
-        id: "2",
-        jobNumber: "GLPC-2024-002",
-        vesselName: "Maersk Gibraltar",
-        imo: "9654321",
-        client: "Maersk Line",
-        eta: "2024-01-16T09:15",
-        port: "Galle",
-        status: "Pending",
-        services: 12,
-        assignedPIC: "Supun Rathnayaka",
-      },
-      {
-        id: "3",
-        jobNumber: "GLPC-2024-003",
-        vesselName: "COSCO Shipping",
-        imo: "9543210",
-        client: "COSCO Shipping Lines",
-        eta: "2024-01-17T16:45",
-        port: "Hambantota",
-        status: "Completed",
-        services: 6,
-        assignedPIC: "Chamod Asiridu",
-      },
-    ];
+    // Fetch dashboard data
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch("http://localhost:3080/api/dashboard", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
 
-    const mockBirthdays: BirthdayAlert[] = [
-      {
-        name: "John Smith",
-        company: "Mediterranean Shipping",
-        date: "Jan 18",
-        daysUntil: 3,
-      },
-      {
-        name: "Sarah Johnson",
-        company: "Maersk Line",
-        date: "Jan 25",
-        daysUntil: 10,
-      },
-    ];
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("currentUser");
+          router.push("/");
+          throw new Error("Session expired. Please login again.");
+        }
 
-    // Filter data based on user access level
-    if (user.accessLevel === "F") {
-      setActivePortCalls(mockPortCalls.filter((pc) => pc.services > 0));
-    } else if (user.accessLevel === "G") {
-      setActivePortCalls(mockPortCalls.filter((pc) => pc.services > 0));
-    } else if (user.accessLevel === "I") {
-      setActivePortCalls(
-        mockPortCalls.filter(
-          (pc) => pc.port === "Galle" || pc.port === "Hambantota"
-        )
-      );
-    } else {
-      setActivePortCalls(mockPortCalls);
-    }
+        if (!response.ok) {
+          throw new Error(`Failed to fetch dashboard data: ${response.status}`);
+        }
 
-    setBirthdayAlerts(mockBirthdays);
+        const data = await response.json();
+
+        // Set stats
+        setActivePortCallsCount(data.active_port_calls.today_count);
+        setPendingServicesCount(data.pending_services);
+        setBirthdayCount(data.Birthday_count);
+
+        // Calculate trend
+        const trendValue =
+          data.active_port_calls.today_count -
+          data.active_port_calls.from_yesterday;
+        setActivePortCallsTrend(
+          trendValue >= 0 ? `+${trendValue}` : `${trendValue}`
+        );
+
+        // Map recent port calls
+        const mappedPortCalls = data.recent_port_calls.map(
+          (item: any, index: number) => ({
+            id: `temp-${index}`,
+            jobNumber: "N/A",
+            vesselName: item.Vessel_Name,
+            imo: "N/A",
+            client: item.Company,
+            eta: "N/A",
+            port: item.Port,
+            status: item.status,
+            services: item.service,
+            assignedPIC: "N/A",
+          })
+        );
+        setActivePortCalls(mappedPortCalls);
+
+        // Transform vessel volume data
+        const transformedVesselVolume = Object.entries(
+          data.port_vessel_volume
+        ).map(([port, vessels]) => ({
+          port,
+          vessels: vessels as number,
+        }));
+        setVesselVolumeData(transformedVesselVolume);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        // Handle error (e.g., show toast notification)
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, [router]);
 
   // Chart data
-  const vesselVolumeData = [
-    { port: "Colombo", vessels: 45 },
-    { port: "Galle", vessels: 23 },
-    { port: "Hambantota", vessels: 18 },
-    { port: "Trincomalee", vessels: 12 },
-  ];
+  // const vesselVolumeData = [
+  //   { port: "Colombo", vessels: 45 },
+  //   { port: "Galle", vessels: 23 },
+  //   { port: "Hambantota", vessels: 18 },
+  //   { port: "Trincomalee", vessels: 12 },
+  // ];
 
   const growthTrendData = [
     { month: "Sep", vessels: 78, revenue: 2.4 },
@@ -486,44 +516,38 @@ export default function Dashboard() {
           </nav>
         </aside>
 
-        {/* Enhanced Main Content */}
+        {/*  Main Content */}
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
           {/* Welcome Card */}
           <WelcomeCard user={currentUser} />
 
-          {/* Enhanced Stats Cards */}
+          {/*  Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
               title="Active Port Calls"
-              value={
-                activePortCalls.filter((pc) => pc.status !== "Completed").length
-              }
+              value={activePortCallsCount}
               subtitle="from yesterday"
-              trend="+2"
+              trend={activePortCallsTrend}
               icon={Ship}
               delay={0}
             />
             <StatCard
               title="Pending Services"
-              value={activePortCalls.reduce(
-                (sum, pc) =>
-                  sum + (pc.status !== "Completed" ? pc.services : 0),
-                0
-              )}
+              value={pendingServicesCount}
               subtitle="across all calls"
               icon={Activity}
               delay={0.1}
             />
             <StatCard
               title="Birthday Alerts"
-              value={birthdayAlerts.filter((b) => b.daysUntil <= 7).length}
+              value={birthdayCount}
               subtitle="next 7 days"
               icon={Calendar}
               delay={0.2}
             />
             <StatCard
               title="Department"
-              value={currentUser.department}
+              value={currentUser?.department || ""}
               subtitle="your assignment"
               icon={Users}
               delay={0.3}
@@ -534,10 +558,12 @@ export default function Dashboard() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">Recent Activities</h2>
-              <Button variant="ghost" className="text-primary">
-                View All
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <Link href="/port-calls">
+                <Button variant="ghost" className="text-primary">
+                  View All
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -584,6 +610,7 @@ export default function Dashboard() {
 
           {/* Enhanced Charts Section */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+            {/* Charts using real data */}
             <Card className="professional-card animate-fade-in-up">
               <CardHeader>
                 <CardTitle className="flex items-center">
