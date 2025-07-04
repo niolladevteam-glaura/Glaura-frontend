@@ -64,26 +64,38 @@ async function updateUserSettings(userId: string, body: any, token: string) {
 }
 
 // --- UI Types ---
+
 interface UserProfile {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  department: string;
-  accessLevel: string;
-  avatar?: string;
-  address: string;
-  emergencyContact?: string;
-  joinDate: string;
-  preferences: {
-    theme: string;
-    notifications: boolean;
-    emailUpdates: boolean;
-    language: string;
+  personal_info: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    dob: string;
+    address: string;
+    role: string;
+    department: string;
+    joining_date: string;
+    profile_picture?: string;
+    accessLevel?: string;
   };
-  twoFactorAuth?: boolean;
-  mode?: string;
+  preferences: {
+    notifications: {
+      email: boolean;
+      sms: boolean;
+      push: boolean;
+    };
+    language?: string;
+    theme?: string;
+  };
+  security: {
+    two_factor_authentication: boolean;
+  };
+  theme: {
+    theme: string;
+    color_theme: string;
+  };
 }
 
 const ColorThemeSelector = ({
@@ -183,26 +195,34 @@ export default function ProfilePage() {
         // Map API shape to UI shape
         const userProfile: UserProfile = {
           id: user.id,
-          name: [personal_info.first_name, personal_info.last_name]
-            .filter(Boolean)
-            .join(" "),
-          email: personal_info.email,
-          phone: personal_info.phone,
-          role: personal_info.role,
-          department: personal_info.department,
-          accessLevel: personal_info.role, // can map differently if needed
-          avatar: personal_info.profile_picture,
-          address: personal_info.address,
-          emergencyContact: "", // Add if exists in backend
-          joinDate: personal_info.joining_date,
-          preferences: {
-            theme: theme.color_theme,
-            notifications: preferences.notifications.push,
-            emailUpdates: preferences.notifications.email,
-            language: preferences.language || "en",
+          personal_info: {
+            first_name: personal_info.first_name,
+            last_name: personal_info.last_name,
+            email: personal_info.email,
+            phone: personal_info.phone,
+            dob: personal_info.dob,
+            address: personal_info.address,
+            role: personal_info.role,
+            department: personal_info.department,
+            joining_date: personal_info.joining_date,
+            profile_picture: personal_info.profile_picture,
           },
-          twoFactorAuth: security.two_factor_authentication,
-          mode: theme.theme,
+          preferences: {
+            notifications: {
+              email: preferences.notifications.email,
+              sms: preferences.notifications.sms,
+              push: preferences.notifications.push,
+            },
+            language: "en", // Default value
+            theme: theme.color_theme,
+          },
+          security: {
+            two_factor_authentication: security.two_factor_authentication,
+          },
+          theme: {
+            theme: theme.theme,
+            color_theme: theme.color_theme,
+          },
         };
         setCurrentUser(userProfile);
         setFormData(userProfile);
@@ -218,35 +238,78 @@ export default function ProfilePage() {
   const handleSave = async () => {
     const token = localStorage.getItem("token");
     if (!currentUser || !formData || !token) return;
-    // Map UI -> API shape
+
     const updateBody = {
-      push_notifications: formData.preferences?.notifications ?? true,
-      email_notifications: formData.preferences?.emailUpdates ?? true,
-      twoFactorAuth: formData.twoFactorAuth ?? false,
-      mode: formData.mode || "light",
-      colorTheme: formData.preferences?.theme || "maritime",
+      personal_info: {
+        first_name:
+          formData.personal_info?.first_name ||
+          currentUser.personal_info.first_name,
+        last_name:
+          formData.personal_info?.last_name ||
+          currentUser.personal_info.last_name,
+        email: formData.personal_info?.email || currentUser.personal_info.email,
+        phone: formData.personal_info?.phone || currentUser.personal_info.phone,
+        dob: formData.personal_info?.dob || currentUser.personal_info.dob,
+      },
+      preferences: {
+        notifications: {
+          email:
+            formData.preferences?.notifications?.email ??
+            currentUser.preferences.notifications.email,
+          sms:
+            formData.preferences?.notifications?.sms ??
+            currentUser.preferences.notifications.sms,
+          push:
+            formData.preferences?.notifications?.push ??
+            currentUser.preferences.notifications.push,
+        },
+      },
+      security: {
+        two_factor_authentication:
+          formData.security?.two_factor_authentication ??
+          currentUser.security.two_factor_authentication,
+      },
+      theme: {
+        theme: formData.theme?.theme || currentUser.theme.theme,
+        color_theme:
+          formData.theme?.color_theme || currentUser.theme.color_theme,
+      },
     };
+
     try {
       await updateUserSettings(currentUser.id, updateBody, token);
       setIsEditing(false);
     } catch (e) {
-      // Optionally show error
+      console.error("Failed to update settings:", e);
     }
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      if (field.includes(".")) {
+        const [parent, child] = field.split(".");
+        return {
+          ...prev,
+          [parent]: {
+            ...(prev[parent as keyof typeof prev] as object),
+            [child]: value,
+          },
+        };
+      }
+      return { ...prev, [field]: value };
+    });
   };
 
   const handlePreferenceChange = (field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
       preferences: {
-        theme: prev.preferences?.theme ?? "maritime",
-        notifications: prev.preferences?.notifications ?? false,
-        emailUpdates: prev.preferences?.emailUpdates ?? false,
-        language: prev.preferences?.language ?? "en",
         ...prev.preferences,
+        notifications: prev.preferences?.notifications || {
+          email: false,
+          sms: false,
+          push: false,
+        },
         [field]: value,
       },
     }));
@@ -319,10 +382,13 @@ export default function ProfilePage() {
                 <div className="relative inline-block mb-4">
                   <Avatar className="w-24 h-24">
                     <AvatarImage
-                      src={currentUser.avatar || "/placeholder.svg"}
+                      src={
+                        currentUser.personal_info.profile_picture ||
+                        "/placeholder.svg"
+                      }
                     />
                     <AvatarFallback className="text-2xl">
-                      {currentUser.name.charAt(0)}
+                      {currentUser.personal_info.first_name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   {isEditing && (
@@ -336,13 +402,13 @@ export default function ProfilePage() {
                 </div>
 
                 <h3 className="font-semibold text-lg mb-1">
-                  {currentUser.name}
+                  {currentUser.personal_info.first_name}
                 </h3>
                 <p className="text-muted-foreground text-sm mb-2">
-                  {currentUser.role}
+                  {currentUser.personal_info.role}
                 </p>
                 <Badge variant="outline" className="mb-4">
-                  Access Level: {currentUser.accessLevel}
+                  Access Level: {currentUser.personal_info.accessLevel}
                 </Badge>
 
                 <Separator className="my-4" />
@@ -350,13 +416,15 @@ export default function ProfilePage() {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center space-x-2">
                     <Building className="h-4 w-4 text-muted-foreground" />
-                    <span>{currentUser.department}</span>
+                    <span>{currentUser.personal_info.department}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>
                       Joined{" "}
-                      {new Date(currentUser.joinDate).toLocaleDateString()}
+                      {new Date(
+                        currentUser.personal_info.joining_date
+                      ).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
@@ -388,12 +456,35 @@ export default function ProfilePage() {
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
+                        <Label htmlFor="firstName">First Name</Label>
                         <Input
-                          id="name"
-                          value={formData.name || ""}
+                          id="firstName"
+                          value={
+                            formData.personal_info?.first_name ||
+                            currentUser.personal_info.first_name ||
+                            ""
+                          }
                           onChange={(e) =>
-                            handleInputChange("name", e.target.value)
+                            handleInputChange(
+                              "personal_info.first_name",
+                              e.target.value
+                            )
+                          }
+                          disabled={!isEditing}
+                          className="form-input"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <Input
+                          id="lastName"
+                          value={
+                            formData.personal_info?.last_name ||
+                            currentUser?.personal_info?.last_name ||
+                            ""
+                          }
+                          onChange={(e) =>
+                            handleInputChange("lastName", e.target.value)
                           }
                           disabled={!isEditing}
                           className="form-input"
@@ -404,7 +495,11 @@ export default function ProfilePage() {
                         <Input
                           id="email"
                           type="email"
-                          value={formData.email || ""}
+                          value={
+                            formData.personal_info?.email ||
+                            currentUser?.personal_info?.email ||
+                            ""
+                          }
                           onChange={(e) =>
                             handleInputChange("email", e.target.value)
                           }
@@ -416,7 +511,11 @@ export default function ProfilePage() {
                         <Label htmlFor="phone">Phone Number</Label>
                         <Input
                           id="phone"
-                          value={formData.phone || ""}
+                          value={
+                            formData.personal_info?.phone ||
+                            currentUser?.personal_info?.phone ||
+                            ""
+                          }
                           onChange={(e) =>
                             handleInputChange("phone", e.target.value)
                           }
@@ -425,12 +524,17 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="emergency">Address</Label>
+                        <Label htmlFor="dob">Birthday</Label>
                         <Input
-                          id="address"
-                          value={formData.address || ""}
+                          id="dob"
+                          type="date"
+                          value={
+                            formData.personal_info?.dob ||
+                            currentUser?.personal_info?.dob ||
+                            ""
+                          }
                           onChange={(e) =>
-                            handleInputChange("address", e.target.value)
+                            handleInputChange("dob", e.target.value)
                           }
                           disabled={!isEditing}
                           className="form-input"
@@ -445,7 +549,11 @@ export default function ProfilePage() {
                         <Label htmlFor="role">Role</Label>
                         <Input
                           id="role"
-                          value={formData.role || ""}
+                          value={
+                            formData.personal_info?.role ||
+                            currentUser?.personal_info?.role ||
+                            ""
+                          }
                           disabled
                           className="form-input bg-muted"
                         />
@@ -454,7 +562,11 @@ export default function ProfilePage() {
                         <Label htmlFor="department">Department</Label>
                         <Input
                           id="department"
-                          value={formData.department || ""}
+                          value={
+                            formData.personal_info?.department ||
+                            currentUser?.personal_info?.department ||
+                            ""
+                          }
                           disabled
                           className="form-input bg-muted"
                         />
@@ -484,7 +596,9 @@ export default function ProfilePage() {
                         </p>
                       </div>
                       <Switch
-                        checked={formData.preferences?.notifications || false}
+                        checked={
+                          formData.preferences?.notifications.push || false
+                        }
                         onCheckedChange={(checked) =>
                           handlePreferenceChange("notifications", checked)
                         }
@@ -502,7 +616,9 @@ export default function ProfilePage() {
                         </p>
                       </div>
                       <Switch
-                        checked={formData.preferences?.emailUpdates || false}
+                        checked={
+                          formData.preferences?.notifications.email || false
+                        }
                         onCheckedChange={(checked) =>
                           handlePreferenceChange("emailUpdates", checked)
                         }
