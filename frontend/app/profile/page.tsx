@@ -1,52 +1,130 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { User, Settings, Palette, Shield, Camera, Save, ArrowLeft, Building, Calendar, Anchor } from "lucide-react"
-import Link from "next/link"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  User,
+  Settings,
+  Palette,
+  Shield,
+  Camera,
+  Save,
+  ArrowLeft,
+  Building,
+  Calendar,
+  Anchor,
+} from "lucide-react";
+import Link from "next/link";
 
+// --- API utility functions ---
+const BASE_URL = "http://localhost:3080/api/usersetting";
+
+async function fetchUserSettings(userId: string, token: string) {
+  const res = await fetch(`${BASE_URL}/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function updateUserSettings(userId: string, body: any, token: string) {
+  const res = await fetch(`${BASE_URL}/${userId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// --- UI Types ---
 interface UserProfile {
-  id: string
-  name: string
-  email: string
-  phone: string
-  role: string
-  department: string
-  accessLevel: string
-  avatar?: string
-  address: string
-  emergencyContact: string
-  joinDate: string
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  department: string;
+  accessLevel: string;
+  avatar?: string;
+  address: string;
+  emergencyContact?: string;
+  joinDate: string;
   preferences: {
-    theme: string
-    notifications: boolean
-    emailUpdates: boolean
-    language: string
-  }
+    theme: string;
+    notifications: boolean;
+    emailUpdates: boolean;
+    language: string;
+  };
+  twoFactorAuth?: boolean;
+  mode?: string;
 }
 
 const ColorThemeSelector = ({
   currentTheme,
   onThemeChange,
-}: { currentTheme: string; onThemeChange: (theme: string) => void }) => {
+}: {
+  currentTheme: string;
+  onThemeChange: (theme: string) => void;
+}) => {
   const themes = [
-    { name: "Maritime Blue", value: "maritime", primary: "#003d82", secondary: "#0ea5e9" },
-    { name: "Ocean Green", value: "ocean", primary: "#059669", secondary: "#10b981" },
-    { name: "Sunset Orange", value: "sunset", primary: "#ea580c", secondary: "#f97316" },
-    { name: "Royal Purple", value: "royal", primary: "#7c3aed", secondary: "#8b5cf6" },
-    { name: "Steel Gray", value: "steel", primary: "#475569", secondary: "#64748b" },
-  ]
+    {
+      name: "Maritime Blue",
+      value: "maritime",
+      primary: "#003d82",
+      secondary: "#0ea5e9",
+    },
+    {
+      name: "Ocean Green",
+      value: "ocean",
+      primary: "#059669",
+      secondary: "#10b981",
+    },
+    {
+      name: "Sunset Orange",
+      value: "sunset",
+      primary: "#ea580c",
+      secondary: "#f97316",
+    },
+    {
+      name: "Royal Purple",
+      value: "royal",
+      primary: "#7c3aed",
+      secondary: "#8b5cf6",
+    },
+    {
+      name: "Steel Gray",
+      value: "steel",
+      primary: "#475569",
+      secondary: "#64748b",
+    },
+  ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -54,91 +132,134 @@ const ColorThemeSelector = ({
         <div
           key={theme.value}
           className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-            currentTheme === theme.value ? "border-primary" : "border-border hover:border-primary/50"
+            currentTheme === theme.value
+              ? "border-primary"
+              : "border-border hover:border-primary/50"
           }`}
           onClick={() => onThemeChange(theme.value)}
         >
           <div className="flex items-center space-x-3 mb-3">
             <div className="flex space-x-1">
-              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.primary }} />
-              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.secondary }} />
+              <div
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: theme.primary }}
+              />
+              <div
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: theme.secondary }}
+              />
             </div>
             <span className="font-medium">{theme.name}</span>
           </div>
-          <div className="text-sm text-muted-foreground">Professional {theme.name.toLowerCase()} theme</div>
+          <div className="text-sm text-muted-foreground">
+            Professional {theme.name.toLowerCase()} theme
+          </div>
         </div>
       ))}
     </div>
-  )
-}
+  );
+};
 
 export default function ProfilePage() {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState<Partial<UserProfile>>({})
-  const router = useRouter()
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<Partial<UserProfile>>({});
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
+  // Get user and token from localStorage
   useEffect(() => {
-    const userData = localStorage.getItem("currentUser")
-    if (!userData) {
-      router.push("/")
-      return
+    const userData = localStorage.getItem("currentUser");
+    const token = localStorage.getItem("token");
+    if (!userData || !token) {
+      router.push("/");
+      return;
     }
+    const user = JSON.parse(userData);
+    // Fetch from backend
+    fetchUserSettings(user.id, token)
+      .then((resp) => {
+        const { personal_info, preferences, security, theme } = resp.data;
+        // Map API shape to UI shape
+        const userProfile: UserProfile = {
+          id: user.id,
+          name: [personal_info.first_name, personal_info.last_name]
+            .filter(Boolean)
+            .join(" "),
+          email: personal_info.email,
+          phone: personal_info.phone,
+          role: personal_info.role,
+          department: personal_info.department,
+          accessLevel: personal_info.role, // can map differently if needed
+          avatar: personal_info.profile_picture,
+          address: personal_info.address,
+          emergencyContact: "", // Add if exists in backend
+          joinDate: personal_info.joining_date,
+          preferences: {
+            theme: theme.color_theme,
+            notifications: preferences.notifications.push,
+            emailUpdates: preferences.notifications.email,
+            language: preferences.language || "en",
+          },
+          twoFactorAuth: security.two_factor_authentication,
+          mode: theme.theme,
+        };
+        setCurrentUser(userProfile);
+        setFormData(userProfile);
+      })
+      .catch((e) => {
+        // Handle error or allow fallback
+        setCurrentUser(null);
+      })
+      .finally(() => setLoading(false));
+  }, [router]);
 
-    const user = JSON.parse(userData)
-
-    // Mock complete user profile
-    const mockProfile: UserProfile = {
-      id: user.id || "1",
-      name: user.name || "John Doe",
-      email: user.email || "john.doe@greeklanka.com",
-      phone: "+94-77-123-4567",
-      role: user.role || "Operations Manager",
-      department: user.department || "Operations",
-      accessLevel: user.accessLevel || "B",
-      avatar: user.avatar,
-      address: "123 Marine Drive, Colombo 03, Sri Lanka",
-      emergencyContact: "+94-11-234-5678",
-      joinDate: "2023-01-15",
-      preferences: {
-        theme: "maritime",
-        notifications: true,
-        emailUpdates: true,
-        language: "en",
-      },
+  // Save handler mapped to PUT
+  const handleSave = async () => {
+    const token = localStorage.getItem("token");
+    if (!currentUser || !formData || !token) return;
+    // Map UI -> API shape
+    const updateBody = {
+      push_notifications: formData.preferences?.notifications ?? true,
+      email_notifications: formData.preferences?.emailUpdates ?? true,
+      twoFactorAuth: formData.twoFactorAuth ?? false,
+      mode: formData.mode || "light",
+      colorTheme: formData.preferences?.theme || "maritime",
+    };
+    try {
+      await updateUserSettings(currentUser.id, updateBody, token);
+      setIsEditing(false);
+    } catch (e) {
+      // Optionally show error
     }
-
-    setCurrentUser(mockProfile)
-    setFormData(mockProfile)
-  }, [router])
-
-  const handleSave = () => {
-    if (currentUser && formData) {
-      const updatedUser = { ...currentUser, ...formData }
-      setCurrentUser(updatedUser)
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser))
-      setIsEditing(false)
-    }
-  }
+  };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handlePreferenceChange = (field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
-      preferences: { ...prev.preferences, [field]: value },
-    }))
-  }
+      preferences: {
+        theme: prev.preferences?.theme ?? "maritime",
+        notifications: prev.preferences?.notifications ?? false,
+        emailUpdates: prev.preferences?.emailUpdates ?? false,
+        language: prev.preferences?.language ?? "en",
+        ...prev.preferences,
+        [field]: value,
+      },
+    }));
+  };
 
-  if (!currentUser) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="loading-skeleton w-8 h-8 rounded-full"></div>
       </div>
-    )
+    );
   }
+  if (!currentUser) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -157,8 +278,12 @@ export default function ProfilePage() {
                 <Anchor className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gradient">User Profile</h1>
-                <p className="text-sm text-muted-foreground">Manage your account and preferences</p>
+                <h1 className="text-xl font-bold text-gradient">
+                  User Profile
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Manage your account and preferences
+                </p>
               </div>
             </div>
           </div>
@@ -193,18 +318,29 @@ export default function ProfilePage() {
               <CardContent className="p-6 text-center">
                 <div className="relative inline-block mb-4">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src={currentUser.avatar || "/placeholder.svg"} />
-                    <AvatarFallback className="text-2xl">{currentUser.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage
+                      src={currentUser.avatar || "/placeholder.svg"}
+                    />
+                    <AvatarFallback className="text-2xl">
+                      {currentUser.name.charAt(0)}
+                    </AvatarFallback>
                   </Avatar>
                   {isEditing && (
-                    <Button size="sm" className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0">
+                    <Button
+                      size="sm"
+                      className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                    >
                       <Camera className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
 
-                <h3 className="font-semibold text-lg mb-1">{currentUser.name}</h3>
-                <p className="text-muted-foreground text-sm mb-2">{currentUser.role}</p>
+                <h3 className="font-semibold text-lg mb-1">
+                  {currentUser.name}
+                </h3>
+                <p className="text-muted-foreground text-sm mb-2">
+                  {currentUser.role}
+                </p>
                 <Badge variant="outline" className="mb-4">
                   Access Level: {currentUser.accessLevel}
                 </Badge>
@@ -218,7 +354,10 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>Joined {new Date(currentUser.joinDate).toLocaleDateString()}</span>
+                    <span>
+                      Joined{" "}
+                      {new Date(currentUser.joinDate).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -242,7 +381,9 @@ export default function ProfilePage() {
                       <User className="mr-2 h-5 w-5" />
                       Personal Information
                     </CardTitle>
-                    <CardDescription>Update your personal details and contact information</CardDescription>
+                    <CardDescription>
+                      Update your personal details and contact information
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -251,7 +392,9 @@ export default function ProfilePage() {
                         <Input
                           id="name"
                           value={formData.name || ""}
-                          onChange={(e) => handleInputChange("name", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange("name", e.target.value)
+                          }
                           disabled={!isEditing}
                           className="form-input"
                         />
@@ -262,7 +405,9 @@ export default function ProfilePage() {
                           id="email"
                           type="email"
                           value={formData.email || ""}
-                          onChange={(e) => handleInputChange("email", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange("email", e.target.value)
+                          }
                           disabled={!isEditing}
                           className="form-input"
                         />
@@ -272,32 +417,25 @@ export default function ProfilePage() {
                         <Input
                           id="phone"
                           value={formData.phone || ""}
-                          onChange={(e) => handleInputChange("phone", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange("phone", e.target.value)
+                          }
                           disabled={!isEditing}
                           className="form-input"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="emergency">Emergency Contact</Label>
+                        <Label htmlFor="emergency">Address</Label>
                         <Input
-                          id="emergency"
-                          value={formData.emergencyContact || ""}
-                          onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
+                          id="address"
+                          value={formData.address || ""}
+                          onChange={(e) =>
+                            handleInputChange("address", e.target.value)
+                          }
                           disabled={!isEditing}
                           className="form-input"
                         />
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Input
-                        id="address"
-                        value={formData.address || ""}
-                        onChange={(e) => handleInputChange("address", e.target.value)}
-                        disabled={!isEditing}
-                        className="form-input"
-                      />
                     </div>
 
                     <Separator />
@@ -305,7 +443,12 @@ export default function ProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label htmlFor="role">Role</Label>
-                        <Input id="role" value={formData.role || ""} disabled className="form-input bg-muted" />
+                        <Input
+                          id="role"
+                          value={formData.role || ""}
+                          disabled
+                          className="form-input bg-muted"
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="department">Department</Label>
@@ -328,7 +471,9 @@ export default function ProfilePage() {
                       <Settings className="mr-2 h-5 w-5" />
                       Preferences
                     </CardTitle>
-                    <CardDescription>Customize your application preferences and settings</CardDescription>
+                    <CardDescription>
+                      Customize your application preferences and settings
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="flex items-center justify-between">
@@ -340,7 +485,9 @@ export default function ProfilePage() {
                       </div>
                       <Switch
                         checked={formData.preferences?.notifications || false}
-                        onCheckedChange={(checked) => handlePreferenceChange("notifications", checked)}
+                        onCheckedChange={(checked) =>
+                          handlePreferenceChange("notifications", checked)
+                        }
                         disabled={!isEditing}
                       />
                     </div>
@@ -356,7 +503,9 @@ export default function ProfilePage() {
                       </div>
                       <Switch
                         checked={formData.preferences?.emailUpdates || false}
-                        onCheckedChange={(checked) => handlePreferenceChange("emailUpdates", checked)}
+                        onCheckedChange={(checked) =>
+                          handlePreferenceChange("emailUpdates", checked)
+                        }
                         disabled={!isEditing}
                       />
                     </div>
@@ -367,7 +516,9 @@ export default function ProfilePage() {
                       <Label htmlFor="language">Language</Label>
                       <Select
                         value={formData.preferences?.language || "en"}
-                        onValueChange={(value) => handlePreferenceChange("language", value)}
+                        onValueChange={(value) =>
+                          handlePreferenceChange("language", value)
+                        }
                         disabled={!isEditing}
                       >
                         <SelectTrigger>
@@ -391,21 +542,27 @@ export default function ProfilePage() {
                       <Shield className="mr-2 h-5 w-5" />
                       Security Settings
                     </CardTitle>
-                    <CardDescription>Manage your account security and access permissions</CardDescription>
+                    <CardDescription>
+                      Manage your account security and access permissions
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-medium">Change Password</h4>
-                          <p className="text-sm text-muted-foreground">Update your account password</p>
+                          <p className="text-sm text-muted-foreground">
+                            Update your account password
+                          </p>
                         </div>
                         <Button variant="outline">Change</Button>
                       </div>
 
                       <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
-                          <h4 className="font-medium">Two-Factor Authentication</h4>
+                          <h4 className="font-medium">
+                            Two-Factor Authentication
+                          </h4>
                           <p className="text-sm text-muted-foreground">
                             Add an extra layer of security to your account
                           </p>
@@ -416,7 +573,9 @@ export default function ProfilePage() {
                       <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-medium">Active Sessions</h4>
-                          <p className="text-sm text-muted-foreground">Manage your active login sessions</p>
+                          <p className="text-sm text-muted-foreground">
+                            Manage your active login sessions
+                          </p>
                         </div>
                         <Button variant="outline">View</Button>
                       </div>
@@ -432,18 +591,26 @@ export default function ProfilePage() {
                       <Palette className="mr-2 h-5 w-5" />
                       Appearance Settings
                     </CardTitle>
-                    <CardDescription>Customize the look and feel of your application</CardDescription>
+                    <CardDescription>
+                      Customize the look and feel of your application
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="space-y-4">
                       <div>
-                        <Label className="text-base font-medium">Color Theme</Label>
+                        <Label className="text-base font-medium">
+                          Color Theme
+                        </Label>
                         <p className="text-sm text-muted-foreground mb-4">
                           Choose your preferred color scheme for the application
                         </p>
                         <ColorThemeSelector
-                          currentTheme={formData.preferences?.theme || "maritime"}
-                          onThemeChange={(theme) => handlePreferenceChange("theme", theme)}
+                          currentTheme={
+                            formData.preferences?.theme || "maritime"
+                          }
+                          onThemeChange={(theme) =>
+                            handlePreferenceChange("theme", theme)
+                          }
                         />
                       </div>
 
@@ -452,7 +619,9 @@ export default function ProfilePage() {
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <Label>Dark Mode</Label>
-                          <p className="text-sm text-muted-foreground">Toggle between light and dark themes</p>
+                          <p className="text-sm text-muted-foreground">
+                            Toggle between light and dark themes
+                          </p>
                         </div>
                         <ThemeToggle />
                       </div>
@@ -465,5 +634,5 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

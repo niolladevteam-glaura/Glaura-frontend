@@ -32,6 +32,9 @@ import {
   Camera,
   ArrowRight,
   ClipboardList,
+  UserCog,
+  Handshake,
+  Building2,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -322,21 +325,21 @@ export default function Dashboard() {
       ? [{ href: "/port-calls/new", icon: Plus, label: "New Port Call" }]
       : []),
     { href: "/port-calls", icon: Ship, label: "Active Port Calls" },
-    { href: "/customers", icon: Users, label: "Customer Companies" },
-    { href: "/vendors", icon: Users, label: "Vendor Management" },
+    { href: "/customers", icon: Building2, label: "Customer Companies" },
+    { href: "/vendors", icon: Handshake, label: "Vendor Management" },
     { href: "/services", icon: ClipboardList, label: "Services Management" },
     { href: "/documents", icon: FileText, label: "Documents" },
-    ...(canViewReports()
-      ? [{ href: "/reports", icon: BarChart3, label: "Reports" }]
-      : []),
+    // ...(canViewReports()
+    //   ? [{ href: "/reports", icon: BarChart3, label: "Reports" }]
+    //   : []),
     ...(currentUser.accessLevel === "A"
       ? [{ href: "/users", icon: Users, label: "User Management" }]
       : []),
     { href: "/messages", icon: FileText, label: "Messages" },
     { href: "/feedback", icon: MessageSquare, label: "Feedback & Complaints" },
     { href: "/vessels", icon: Ship, label: "Vessel Management" },
-    { href: "/pic-management", icon: Phone, label: "PIC Management" },
-    { href: "/whatsapp", icon: MessageCircle, label: "WhatsApp" },
+    { href: "/pic-management", icon: UserCog, label: "PIC Management" },
+    { href: "/whatsapp", icon: MessageCircle, label: "GL Chat" },
     { href: "/phonebook", icon: Phone, label: "Phone Book" },
   ];
 
@@ -420,6 +423,9 @@ export default function Dashboard() {
               <div>
                 <h1 className="text-xl font-bold text-gradient">GLAURA</h1>
               </div>
+              <Badge className="bg-white/20 text-white border-white/30 mb-4">
+                test
+              </Badge>
             </div>
           </div>
 
@@ -444,13 +450,33 @@ export default function Dashboard() {
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-3">
-              <div className="bg-primary p-3 rounded-2xl">
-                <Anchor className="h-8 w-8 text-primary-foreground" />
+              <div className="h-12 w-12 relative">
+                <img
+                  src="/color-glaura.png"
+                  alt="Glaura Logo"
+                  className="absolute inset-0 h-full w-full object-contain dark:hidden"
+                />
+                <img
+                  src="/white-glaura.png"
+                  alt="Glaura Logo Dark"
+                  className="absolute inset-0 h-full w-full object-contain hidden dark:block"
+                />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gradient">GLAURA</h1>
+                <h1 className="text-2xl font-bold text-gradient flex items-center gap-4 mb-2">
+                  GLAURA
+                  <Badge
+                    className="
+                                bg-white/20 text-black border border-black/30 px-3 py-1 rounded-md
+                                dark:bg-white/20 dark:text-white dark:border-white/30
+                              "
+                  >
+                    0.1.0-pre-alpha
+                  </Badge>
+                </h1>
+
                 <p className="text-sm text-muted-foreground">
-                  The Aura of Excellence in Port Service{" "}
+                  The Aura of Excellence in Port Service
                 </p>
               </div>
             </div>
@@ -578,7 +604,7 @@ export default function Dashboard() {
                       <div className="bg-primary/10 p-2 rounded-lg">
                         <Ship className="h-5 w-5 text-primary" />
                       </div>
-                      <Badge
+                      {/* <Badge
                         variant={
                           portCall.status === "Completed"
                             ? "default"
@@ -588,7 +614,7 @@ export default function Dashboard() {
                         }
                       >
                         {portCall.status}
-                      </Badge>
+                      </Badge> */}
                     </div>
                   </CardHeader>
                   <CardContent>

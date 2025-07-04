@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -51,7 +50,7 @@ type ApiUser = {
   role: string;
   access_level: string;
   token: string;
-  permissions?: Record<string, boolean>; // Added permissions field
+  permissions?: Record<string, boolean>;
 };
 
 export default function LoginPage() {
@@ -79,15 +78,19 @@ export default function LoginPage() {
     try {
       const apiResponse = await authenticateWithAPI(email, password);
 
+      console.log(apiResponse);
+
       // Create user data for auth context
       const userData = {
         id: apiResponse.id,
+        userId: apiResponse.id,
         name: `${apiResponse.first_name} ${apiResponse.last_name}`,
         email: apiResponse.email,
         role: apiResponse.role,
+        department: apiResponse.department,
         accessLevel: apiResponse.access_level,
         token: apiResponse.token,
-        permissions: apiResponse.permissions || {},
+        permissions: apiResponse.permissions,
       };
 
       // Use context login instead of local storage
@@ -104,8 +107,13 @@ export default function LoginPage() {
         default:
           router.push("/dashboard");
       }
-    } catch (err) {
-      // ... error handling ...
+    } catch (err: any) {
+      // Show error message to user
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Authentication failed. Please check your credentials."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -134,6 +142,8 @@ export default function LoginPage() {
       email: data.user.email,
       role: data.user.role,
       access_level: data.user.access_level,
+      department: data.user.department,
+      phone_number: data.user.phone_number,
       token: data.token,
       permissions: data.permissions,
     };
@@ -163,7 +173,7 @@ export default function LoginPage() {
 
     // Store authentication data with consistent keys
     localStorage.setItem("currentUser", JSON.stringify(userData));
-    localStorage.setItem("token", user.token); // Use "token" key consistently
+    localStorage.setItem("token", user.token);
 
     // Redirect based on access level
     switch (accessLevel) {
@@ -405,57 +415,6 @@ export default function LoginPage() {
                     )}
                   </Button>
                 </form>
-                {/* Demo Credentials Section
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
-                  <h4 className="font-bold text-base mb-4 text-gray-800 flex items-center">
-                    <Zap className="mr-2 h-5 w-5 text-blue-600" />
-                    Demo Credentials
-                  </h4>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
-                      <div className="flex items-center">
-                        <span className="mr-2 text-lg">👑</span>
-                        <div>
-                          <div className="font-semibold text-gray-800">
-                            Administrator
-                          </div>
-                          <div className="text-gray-600">admin@niolla.lk</div>
-                        </div>
-                      </div>
-                      <div className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-                        demo123
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
-                      <div className="flex items-center">
-                        <span className="mr-2 text-lg">⚓</span>
-                        <div>
-                          <div className="font-semibold text-gray-800">
-                            Port Manager
-                          </div>
-                          <div className="text-gray-600">manager@niolla.lk</div>
-                        </div>
-                      </div>
-                      <div className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-                        demo123
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
-                      <div className="flex items-center">
-                        <span className="mr-2 text-lg">🚢</span>
-                        <div>
-                          <div className="font-semibold text-gray-800">
-                            Client Access
-                          </div>
-                          <div className="text-gray-600">client@msc.com</div>
-                        </div>
-                      </div>
-                      <div className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-                        demo123
-                      </div>
-                    </div>
-                  </div>
-                </div> */}
               </CardContent>
             </Card>
           </div>

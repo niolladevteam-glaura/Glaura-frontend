@@ -381,6 +381,39 @@ export default function NewPortCall() {
 
   const router = useRouter();
 
+  useEffect(() => {
+    const userData = localStorage.getItem("currentUser");
+    if (!userData) {
+      router.push("/");
+      return;
+    }
+
+    const user = JSON.parse(userData);
+    setCurrentUser(user);
+
+    // Permission check for creating port calls
+    let hasPermission = false;
+    if (user.permissions) {
+      if (Array.isArray(user.permissions)) {
+        hasPermission = user.permissions.includes("create_port_calls");
+      } else if (typeof user.permissions === "object") {
+        hasPermission = !!user.permissions["create_port_calls"];
+      }
+    }
+
+    if (!hasPermission) {
+      toast({
+        title: "Access Denied",
+        description: "You do not have permission to create port calls.",
+        variant: "destructive",
+      });
+      router.push("/dashboard");
+      return;
+    }
+
+    // ...rest of your code
+  }, [router]);
+
   // Load ports when component mounts
   useEffect(() => {
     const loadPorts = async () => {

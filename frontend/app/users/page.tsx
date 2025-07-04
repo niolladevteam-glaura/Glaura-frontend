@@ -62,6 +62,8 @@ interface User {
   permissions: string[];
   phoneNumber: string;
   emergencyContact: string;
+  dob?: string;
+  profilePic?: string;
 }
 
 interface ApiResponse<T> {
@@ -84,6 +86,8 @@ interface ApiUser {
   created_at?: string;
   last_login?: string;
   permissions?: Record<string, boolean>;
+  dob?: string;
+  profile_pic?: string;
 }
 
 // Add this interface at the top of the file after the existing User interface
@@ -408,6 +412,7 @@ export default function UserManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editPrivileges, setEditPrivileges] = useState<string[]>([]);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   // Add state for privileges
   const [selectedPrivileges, setSelectedPrivileges] = useState<string[]>([]);
@@ -422,7 +427,6 @@ export default function UserManagement() {
 
   const router = useRouter();
 
-  // Replace the useEffect that loads mock users
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
     const token = localStorage.getItem("token");
@@ -435,7 +439,16 @@ export default function UserManagement() {
     const user = JSON.parse(userData);
     setCurrentUser(user);
 
-    if (user.accessLevel !== "A") {
+    let hasPermission = false;
+    if (user.permissions) {
+      if (Array.isArray(user.permissions)) {
+        hasPermission = user.permissions.includes("user_management");
+      } else if (typeof user.permissions === "object") {
+        hasPermission = !!user.permissions["user_management"];
+      }
+    }
+
+    if (!hasPermission) {
       router.push("/dashboard");
       return;
     }
@@ -490,6 +503,8 @@ export default function UserManagement() {
               permissions, // Use fetched permissions
               phoneNumber: apiUser.contact_number || "",
               emergencyContact: "",
+              dob: apiUser.dob, // Add this
+              profilePic: apiUser.profile_pic, // Add this
             };
           })
         );
@@ -690,7 +705,7 @@ export default function UserManagement() {
       setNewUser({});
       setSelectedPrivileges([]);
       setIsCreateDialogOpen(false);
-      alert("User created successfully!");
+      setShowSuccessDialog(true);
     } catch (error) {
       console.error("Error creating user:", error);
       alert(
@@ -751,6 +766,8 @@ export default function UserManagement() {
         department: editingUser.department || "Other",
         status: editingUser.isActive,
         permissions: permissionsObj,
+        dob: editingUser.dob, // Add this
+        profile_pic: editingUser.profilePic, // Add this
       };
 
       const response = await userApi.updateUser(editingUser.id, userData);
@@ -786,6 +803,26 @@ export default function UserManagement() {
     setEditPrivileges(user.permissions);
     setIsEditDialogOpen(true);
   };
+
+  function handleRemoveProfilePic() {
+    if (editingUser) {
+      setEditingUser({ ...editingUser, profilePic: undefined });
+    }
+  }
+
+  function handleProfilePicChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // For demo: use a local object URL. In production, upload to server and use the returned URL.
+    const url = URL.createObjectURL(file);
+
+    if (editingUser) {
+      setEditingUser({ ...editingUser, profilePic: url });
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -1048,18 +1085,63 @@ export default function UserManagement() {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="emergency">Emergency Contact</Label>
+                        <Label htmlFor="dob">Date of Birth</Label>
                         <Input
-                          id="emergency"
-                          value={newUser.emergencyContact || ""}
+                          id="dob"
+                          type="date"
+                          value={newUser.dob || ""}
                           onChange={(e) =>
-                            setNewUser({
-                              ...newUser,
-                              emergencyContact: e.target.value,
-                            })
+                            setNewUser({ ...newUser, dob: e.target.value })
                           }
-                          placeholder="+94-11-234-5678"
                         />
+                      </div>
+                      <div className="col-span-full">
+                        <Label htmlFor="profilePic">Profile Picture</Label>
+                        <div className="mt-2 flex items-center gap-x-3">
+                          {newUser.profilePic ? (
+                            <img
+                              className="h-16 w-16 rounded-full object-cover"
+                              src={newUser.profilePic}
+                              alt="Profile preview"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                              <Users className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                          <label
+                            htmlFor="profile-upload"
+                            className="cursor-pointer rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          >
+                            <input
+                              id="profile-upload"
+                              name="profile-upload"
+                              type="file"
+                              className="sr-only"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  try {
+                                    // Here you would typically upload to your server
+                                    // For demo, we'll use a mock URL
+                                    const mockUrl = URL.createObjectURL(file);
+                                    setNewUser({
+                                      ...newUser,
+                                      profilePic: mockUrl,
+                                    });
+                                  } catch (error) {
+                                    console.error(
+                                      "Error uploading image:",
+                                      error
+                                    );
+                                  }
+                                }
+                              }}
+                            />
+                            Add Profile picture
+                          </label>
+                        </div>
                       </div>
                     </div>
 
@@ -1353,18 +1435,74 @@ export default function UserManagement() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="edit-emergency">Emergency Contact</Label>
+                    <Label htmlFor="edit-dob">Date of Birth</Label>
                     <Input
-                      id="edit-emergency"
-                      value={editingUser.emergencyContact}
+                      id="edit-dob"
+                      type="date"
+                      value={editingUser?.dob || ""}
                       onChange={(e) =>
                         setEditingUser({
                           ...editingUser,
-                          emergencyContact: e.target.value,
-                        })
+                          dob: e.target.value,
+                        } as User)
                       }
-                      placeholder="+94-11-234-5678"
                     />
+                  </div>
+                  <div className="col-span-full">
+                    <Label className="text-sm font-medium">
+                      Profile Picture
+                    </Label>
+                    <div className="mt-2 flex items-center gap-4">
+                      {/* Profile Image Container */}
+                      <div className="relative h-24 w-24">
+                        {selectedUser?.profilePic ? (
+                          <img
+                            className="h-full w-full rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                            src={selectedUser.profilePic}
+                            alt={`${selectedUser.name}'s profile`}
+                            onError={(e) => {
+                              // Fallback if image fails to load
+                              (e.target as HTMLImageElement).style.display =
+                                "none";
+                            }}
+                          />
+                        ) : (
+                          <div className="h-full w-full rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-800 flex items-center justify-center">
+                            <span className="text-2xl font-bold text-gray-600 dark:text-gray-300">
+                              {selectedUser?.name
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Optional: Upload Button for Edit Mode */}
+                      {isEditDialogOpen && (
+                        <div className="flex flex-col gap-2">
+                          <label className="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <input
+                              type="file"
+                              className="sr-only"
+                              accept="image/*"
+                              onChange={handleProfilePicChange}
+                            />
+                            Change Photo
+                          </label>
+                          {selectedUser?.profilePic && (
+                            <button
+                              type="button"
+                              onClick={handleRemoveProfilePic}
+                              className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-600"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1469,6 +1607,20 @@ export default function UserManagement() {
           </DialogContent>
         </Dialog>
 
+        <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>User Created!</DialogTitle>
+              <DialogDescription>
+                The user has been created successfully.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end mt-4">
+              <Button onClick={() => setShowSuccessDialog(false)}>OK</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Users List */}
         <div className="space-y-4">
           {filteredUsers.map((user) => (
@@ -1476,20 +1628,38 @@ export default function UserManagement() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4">
-                    <div
-                      className={`p-3 rounded-lg ${
-                        user.isActive
-                          ? "bg-green-100 dark:bg-green-900"
-                          : "bg-gray-100 dark:bg-gray-800"
-                      }`}
-                    >
-                      <Users
-                        className={`h-6 w-6 ${
-                          user.isActive
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-gray-400"
-                        }`}
-                      />
+                    <div className="relative h-12 w-12 flex-shrink-0">
+                      {user.profilePic ? (
+                        <img
+                          className="h-full w-full rounded-full object-cover border-2 border-white dark:border-gray-800"
+                          src={user.profilePic}
+                          alt={`${user.name}'s profile`}
+                          onError={(e) => {
+                            // Fallback if image fails to load
+                            (e.target as HTMLImageElement).src =
+                              "/default-avatar.png";
+                          }}
+                        />
+                      ) : (
+                        <div
+                          className={`h-full w-full rounded-full flex items-center justify-center ${
+                            user.isActive
+                              ? "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
+                              : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                          }`}
+                        >
+                          <span className="font-medium text-sm">
+                            {user.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      {user.isActive && (
+                        <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800"></span>
+                      )}
                     </div>
                     <div>
                       <h3 className="font-semibold text-lg">{user.name}</h3>
@@ -1697,9 +1867,47 @@ export default function UserManagement() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium">
-                              Emergency Contact
+                              Date of Birth
                             </Label>
-                            <p>{selectedUser.emergencyContact}</p>
+                            <p>
+                              {selectedUser?.dob
+                                ? new Date(
+                                    selectedUser.dob
+                                  ).toLocaleDateString()
+                                : "Not specified"}
+                            </p>
+                          </div>
+                          {/* Add this to the profile tab in the view dialog */}
+                          <div>
+                            <Label className="text-sm font-medium">
+                              Date of Birth
+                            </Label>
+                            <p>
+                              {selectedUser?.dob
+                                ? new Date(
+                                    selectedUser.dob
+                                  ).toLocaleDateString()
+                                : "Not specified"}
+                            </p>
+                          </div>
+
+                          <div className="col-span-full">
+                            <Label className="text-sm font-medium">
+                              Profile Picture
+                            </Label>
+                            <div className="mt-2">
+                              {selectedUser?.profilePic ? (
+                                <img
+                                  className="h-24 w-24 rounded-full object-cover"
+                                  src={selectedUser.profilePic}
+                                  alt="Profile"
+                                />
+                              ) : (
+                                <div className="h-24 w-24 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                  <Users className="h-12 w-12 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </CardContent>
