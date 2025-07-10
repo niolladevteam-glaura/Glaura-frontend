@@ -78,7 +78,7 @@ interface UserProfile {
     department: string;
     joining_date: string;
     profile_picture?: string;
-    accessLevel?: string;
+    access_level?: string;
   };
   preferences: {
     notifications: {
@@ -188,24 +188,32 @@ export default function ProfilePage() {
       return;
     }
     const user = JSON.parse(userData);
-    // Fetch from backend
-    fetchUserSettings(user.id, token)
-      .then((resp) => {
-        const { personal_info, preferences, security, theme } = resp.data;
-        // Map API shape to UI shape
+
+    // Fetch both user and settings
+    Promise.all([
+      fetch(`http://localhost:3080/api/user/${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((res) => res.json()),
+      fetchUserSettings(user.id, token),
+    ])
+      .then(([userRes, settingsRes]) => {
+        const userRaw = userRes.user; // <-- this contains access_level, etc.
+        const { preferences, security, theme } = settingsRes.data;
+
         const userProfile: UserProfile = {
-          id: user.id,
+          id: userRaw.user_id || userRaw.id,
           personal_info: {
-            first_name: personal_info.first_name,
-            last_name: personal_info.last_name,
-            email: personal_info.email,
-            phone: personal_info.phone,
-            dob: personal_info.dob,
-            address: personal_info.address,
-            role: personal_info.role,
-            department: personal_info.department,
-            joining_date: personal_info.joining_date,
-            profile_picture: personal_info.profile_picture,
+            first_name: userRaw.first_name,
+            last_name: userRaw.last_name,
+            email: userRaw.email,
+            phone: userRaw.contact_number,
+            dob: userRaw.dob,
+            address: userRaw.address || "",
+            role: userRaw.role,
+            department: userRaw.department,
+            joining_date: userRaw.createdAt,
+            profile_picture: userRaw.profile_picture,
+            access_level: userRaw.access_level, // <-- now mapped!
           },
           preferences: {
             notifications: {
@@ -213,7 +221,7 @@ export default function ProfilePage() {
               sms: preferences.notifications.sms,
               push: preferences.notifications.push,
             },
-            language: "en", // Default value
+            language: preferences.language || "en",
             theme: theme.color_theme,
           },
           security: {
@@ -224,11 +232,11 @@ export default function ProfilePage() {
             color_theme: theme.color_theme,
           },
         };
+
         setCurrentUser(userProfile);
         setFormData(userProfile);
       })
       .catch((e) => {
-        // Handle error or allow fallback
         setCurrentUser(null);
       })
       .finally(() => setLoading(false));
@@ -239,41 +247,26 @@ export default function ProfilePage() {
     const token = localStorage.getItem("token");
     if (!currentUser || !formData || !token) return;
 
+    // --------- FLATTENED request body ---------
     const updateBody = {
-      personal_info: {
-        first_name:
-          formData.personal_info?.first_name ||
-          currentUser.personal_info.first_name,
-        last_name:
-          formData.personal_info?.last_name ||
-          currentUser.personal_info.last_name,
-        email: formData.personal_info?.email || currentUser.personal_info.email,
-        phone: formData.personal_info?.phone || currentUser.personal_info.phone,
-        dob: formData.personal_info?.dob || currentUser.personal_info.dob,
-      },
-      preferences: {
-        notifications: {
-          email:
-            formData.preferences?.notifications?.email ??
-            currentUser.preferences.notifications.email,
-          sms:
-            formData.preferences?.notifications?.sms ??
-            currentUser.preferences.notifications.sms,
-          push:
-            formData.preferences?.notifications?.push ??
-            currentUser.preferences.notifications.push,
-        },
-      },
-      security: {
-        two_factor_authentication:
-          formData.security?.two_factor_authentication ??
-          currentUser.security.two_factor_authentication,
-      },
-      theme: {
-        theme: formData.theme?.theme || currentUser.theme.theme,
-        color_theme:
-          formData.theme?.color_theme || currentUser.theme.color_theme,
-      },
+      first_name:
+        formData.personal_info?.first_name ||
+        currentUser.personal_info.first_name,
+      last_name:
+        formData.personal_info?.last_name ||
+        currentUser.personal_info.last_name,
+      contact_number:
+        formData.personal_info?.phone || currentUser.personal_info.phone,
+      profile_picture:
+        formData.personal_info?.profile_picture ||
+        currentUser.personal_info.profile_picture ||
+        "",
+      dob: formData.personal_info?.dob || currentUser.personal_info.dob,
+      email: formData.personal_info?.email || currentUser.personal_info.email,
+      role: formData.personal_info?.role || currentUser.personal_info.role,
+      access_level:
+        formData.personal_info?.access_level ||
+        currentUser.personal_info.access_level,
     };
 
     try {
@@ -408,7 +401,7 @@ export default function ProfilePage() {
                   {currentUser.personal_info.role}
                 </p>
                 <Badge variant="outline" className="mb-4">
-                  Access Level: {currentUser.personal_info.accessLevel}
+                  Access Level: {currentUser.personal_info.access_level}
                 </Badge>
 
                 <Separator className="my-4" />
@@ -484,7 +477,10 @@ export default function ProfilePage() {
                             ""
                           }
                           onChange={(e) =>
-                            handleInputChange("lastName", e.target.value)
+                            handleInputChange(
+                              "personal_info.last_name",
+                              e.target.value
+                            )
                           }
                           disabled={!isEditing}
                           className="form-input"
@@ -501,7 +497,10 @@ export default function ProfilePage() {
                             ""
                           }
                           onChange={(e) =>
-                            handleInputChange("email", e.target.value)
+                            handleInputChange(
+                              "personal_info.email",
+                              e.target.value
+                            )
                           }
                           disabled={!isEditing}
                           className="form-input"
@@ -517,7 +516,10 @@ export default function ProfilePage() {
                             ""
                           }
                           onChange={(e) =>
-                            handleInputChange("phone", e.target.value)
+                            handleInputChange(
+                              "personal_info.phone",
+                              e.target.value
+                            )
                           }
                           disabled={!isEditing}
                           className="form-input"
@@ -534,7 +536,10 @@ export default function ProfilePage() {
                             ""
                           }
                           onChange={(e) =>
-                            handleInputChange("dob", e.target.value)
+                            handleInputChange(
+                              "personal_info.dob",
+                              e.target.value
+                            )
                           }
                           disabled={!isEditing}
                           className="form-input"
