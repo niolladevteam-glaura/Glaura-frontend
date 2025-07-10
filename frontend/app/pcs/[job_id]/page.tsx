@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
 import {
   Table,
@@ -35,15 +35,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080/api/servicetask";
+const API_BASE_URL = "http://localhost:3080/api/servicetask";
 
 interface ServiceTask {
   id: string;
   header_id: string;
   service_id: string;
   task_name: string;
-  status: boolean;
+  status: boolean | string;
   created_by: string;
   compleated_date?: string;
   compleated_time?: string;
@@ -53,8 +52,9 @@ interface ServiceTask {
 
 interface ServiceTaskHeader {
   id: string;
+  job_id: string;
   header_name: string;
-  status: boolean;
+  status: boolean | string;
   created_by: string;
   compleated_date?: string;
   compleated_time?: string;
@@ -63,7 +63,12 @@ interface ServiceTaskHeader {
   updatedAt?: string;
 }
 
-export default function ServiceTasksPage() {
+function isHeaderCompleted(header: ServiceTaskHeader) {
+  return header.status === true || header.status === "true";
+}
+
+export default function PCSJobPage() {
+  const { job_id } = useParams();
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [headers, setHeaders] = useState<ServiceTaskHeader[]>([]);
@@ -78,57 +83,60 @@ export default function ServiceTasksPage() {
   const [newHeaderName, setNewHeaderName] = useState("");
   const [adding, setAdding] = useState(false);
 
-  // Fetch headers on mount
-  useEffect(() => {
-    const fetchHeaders = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("No authentication token found");
+  // Fetch headers for this job on mount
+  const fetchHeaders = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No authentication token found");
 
-        const res = await fetch(`${API_BASE_URL}/headers`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      const res = await fetch(`${API_BASE_URL}/headers`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("currentUser");
-          router.push("/");
-          throw new Error("Session expired. Please login again.");
-        }
-        if (res.status === 404) {
-          setHeaders([]);
-          setLoading(false);
-          return;
-        }
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setHeaders(data);
-        } else if (data.success && Array.isArray(data.data)) {
-          setHeaders(data.data);
-        } else {
-          setHeaders([]);
-          toast({
-            title: "Error",
-            description: "Failed to load service headers.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        setHeaders([]);
-        toast({
-          title: "Error",
-          description: "Failed to fetch task headers.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("currentUser");
+        router.push("/");
+        throw new Error("Session expired. Please login again.");
       }
-    };
+      if (res.status === 404) {
+        setHeaders([]);
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      // Normalize status to boolean or string "true"
+      let filteredHeaders = Array.isArray(data)
+        ? data
+        : data.success && Array.isArray(data.data)
+        ? data.data
+        : [];
+      if (job_id) {
+        filteredHeaders = filteredHeaders
+          .filter((h: ServiceTaskHeader) => h.job_id === job_id)
+          .map((h: ServiceTaskHeader) => ({
+            ...h,
+            status: h.status === true || h.status === "true" ? "true" : "false",
+          }));
+      }
+      setHeaders(filteredHeaders);
+    } catch (error) {
+      setHeaders([]);
+      toast({
+        title: "Error",
+        description: "Failed to fetch service task headers.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     const userData = localStorage.getItem("currentUser");
     if (!userData) {
       router.push("/");
@@ -136,7 +144,7 @@ export default function ServiceTasksPage() {
     }
     setCurrentUser(JSON.parse(userData));
     fetchHeaders();
-  }, [router]);
+  }, [router, job_id]);
 
   // Delete header logic
   const openDeleteDialog = (header: ServiceTaskHeader) => {
@@ -170,7 +178,7 @@ export default function ServiceTasksPage() {
         setHeaders((prev) => prev.filter((h) => h.id !== headerId));
         toast({
           title: "Deleted",
-          description: "Header deleted successfully.",
+          description: "Service Task Header deleted successfully.",
           variant: "default",
         });
         setDeleteDialogOpen(false);
@@ -210,6 +218,7 @@ export default function ServiceTasksPage() {
       if (!token) throw new Error("No authentication token found");
 
       const body = {
+        job_id,
         header_name: newHeaderName,
         created_by: currentUser?.id || currentUser?.user_id || "unknown",
         status: false,
@@ -231,10 +240,11 @@ export default function ServiceTasksPage() {
       }
       const data = await response.json();
       if (data.success && data.data) {
-        setHeaders((prev) => [...prev, data.data]);
+        // Instead of updating state with POST response, re-fetch the headers from backend
+        await fetchHeaders(); // <-- call your fetchHeaders function here
         toast({
           title: "Added",
-          description: "Header added successfully.",
+          description: "Service Task Header added successfully.",
           variant: "default",
         });
         setAddDialogOpen(false);
@@ -273,63 +283,7 @@ export default function ServiceTasksPage() {
     );
   }
 
-  if (!headers.length) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="text-center p-8">
-          <h2 className="text-xl font-bold mb-4">
-            No Service Task Headers found
-          </h2>
-          <Button onClick={() => setAddDialogOpen(true)}>
-            Add Service Task Header
-          </Button>
-          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Service Task Header</DialogTitle>
-                <DialogDescription>
-                  Create a new Service Task Header. You can add tasks later.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleAddHeader} className="space-y-4">
-                <div>
-                  <Label>Header Name</Label>
-                  <Input
-                    value={newHeaderName}
-                    onChange={(e) => setNewHeaderName(e.target.value)}
-                    placeholder="Enter header name"
-                    required
-                  />
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setAddDialogOpen(false)}
-                    disabled={adding}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={adding || !newHeaderName.trim()}
-                  >
-                    {adding ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Add"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </Card>
-      </div>
-    );
-  }
-
-  const completedHeaders = headers.filter((h) => h.status === true).length;
+  const completedHeaders = headers.filter(isHeaderCompleted).length;
   const totalHeaders = headers.length;
 
   return (
@@ -338,10 +292,10 @@ export default function ServiceTasksPage() {
       <header className="glass-effect border-b px-6 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
+            <Link href="/port-calls">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Dashboard
+                Active Port Calls
               </Button>
             </Link>
             <div className="flex items-center space-x-3">
@@ -404,8 +358,12 @@ export default function ServiceTasksPage() {
                       {header.header_name}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={header.status ? "default" : "secondary"}>
-                        {header.status ? "Completed" : "Pending"}
+                      <Badge
+                        variant={
+                          isHeaderCompleted(header) ? "default" : "secondary"
+                        }
+                      >
+                        {isHeaderCompleted(header) ? "Completed" : "Pending"}
                       </Badge>
                     </TableCell>
                     <TableCell>{header.tasks?.length ?? 0}</TableCell>
@@ -455,7 +413,8 @@ export default function ServiceTasksPage() {
           <DialogHeader>
             <DialogTitle>Add Service Task Header</DialogTitle>
             <DialogDescription>
-              Create a new Service Task Header. You can add tasks later.
+              Create a new Service Task Header for this job. You can add tasks
+              later.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddHeader} className="space-y-4">
