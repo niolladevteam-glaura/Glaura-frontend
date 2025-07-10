@@ -38,6 +38,9 @@ import {
   Anchor,
 } from "lucide-react";
 import Link from "next/link";
+import ChangePasswordDialog from "@/components/ChangePasswordDialog";
+import { changeUserPassword } from "@/lib/api/changePassword";
+import { toast } from "sonner";
 
 // --- API utility functions ---
 const BASE_URL = "http://localhost:3080/api/usersetting";
@@ -82,15 +85,13 @@ interface UserProfile {
   };
   preferences: {
     notifications: {
-      email: boolean;
-      sms: boolean;
-      push: boolean;
+      email_notifications: boolean;
+      push_notifications: boolean;
     };
-    language?: string;
     theme?: string;
   };
   security: {
-    two_factor_authentication: boolean;
+    twoFactorAuth: boolean;
   };
   theme: {
     theme: string;
@@ -178,6 +179,9 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // Get user and token from localStorage
   useEffect(() => {
@@ -217,15 +221,13 @@ export default function ProfilePage() {
           },
           preferences: {
             notifications: {
-              email: preferences.notifications.email,
-              sms: preferences.notifications.sms,
-              push: preferences.notifications.push,
+              email_notifications: preferences.notifications?.email ?? false,
+              push_notifications: preferences.notifications?.push ?? false,
             },
-            language: preferences.language || "en",
-            theme: theme.color_theme,
+            theme: preferences.theme ?? "maritime",
           },
           security: {
-            two_factor_authentication: security.two_factor_authentication,
+            twoFactorAuth: security.twoFactorAuth,
           },
           theme: {
             theme: theme.theme,
@@ -247,7 +249,6 @@ export default function ProfilePage() {
     const token = localStorage.getItem("token");
     if (!currentUser || !formData || !token) return;
 
-    // --------- FLATTENED request body ---------
     const updateBody = {
       first_name:
         formData.personal_info?.first_name ||
@@ -255,18 +256,21 @@ export default function ProfilePage() {
       last_name:
         formData.personal_info?.last_name ||
         currentUser.personal_info.last_name,
-      contact_number:
-        formData.personal_info?.phone || currentUser.personal_info.phone,
       profile_picture:
         formData.personal_info?.profile_picture ||
         currentUser.personal_info.profile_picture ||
         "",
-      dob: formData.personal_info?.dob || currentUser.personal_info.dob,
       email: formData.personal_info?.email || currentUser.personal_info.email,
-      role: formData.personal_info?.role || currentUser.personal_info.role,
-      access_level:
-        formData.personal_info?.access_level ||
-        currentUser.personal_info.access_level,
+      contact_number:
+        formData.personal_info?.phone || currentUser.personal_info.phone,
+      dob: formData.personal_info?.dob || currentUser.personal_info.dob,
+      push_notifications:
+        formData.preferences?.notifications.push_notifications ??
+        currentUser.preferences.notifications.push_notifications,
+      email_notifications:
+        formData.preferences?.notifications.email_notifications ??
+        currentUser.preferences.notifications.email_notifications,
+      colorTheme: formData.preferences?.theme || currentUser.preferences.theme,
     };
 
     try {
@@ -294,18 +298,44 @@ export default function ProfilePage() {
   };
 
   const handlePreferenceChange = (field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      preferences: {
-        ...prev.preferences,
-        notifications: prev.preferences?.notifications || {
-          email: false,
-          sms: false,
-          push: false,
+    setFormData((prev) => {
+      const notificationKey =
+        field === "email" ? "email_notifications" : "push_notifications";
+      if (field === "email" || field === "push") {
+        return {
+          ...prev,
+          preferences: {
+            ...prev.preferences,
+            notifications: {
+              email_notifications:
+                notificationKey === "email_notifications"
+                  ? value
+                  : prev.preferences?.notifications?.email_notifications ??
+                    false,
+              push_notifications:
+                notificationKey === "push_notifications"
+                  ? value
+                  : prev.preferences?.notifications?.push_notifications ??
+                    false,
+            },
+            theme: prev.preferences?.theme,
+          },
+        };
+      }
+      return {
+        ...prev,
+        preferences: {
+          ...prev.preferences,
+          [field]: value,
+          notifications: {
+            email_notifications:
+              prev.preferences?.notifications?.email_notifications ?? false,
+            push_notifications:
+              prev.preferences?.notifications?.push_notifications ?? false,
+          },
         },
-        [field]: value,
-      },
-    }));
+      };
+    });
   };
 
   if (loading) {
@@ -316,6 +346,25 @@ export default function ProfilePage() {
     );
   }
   if (!currentUser) return null;
+
+  const handleChangePassword = async (current: string, next: string) => {
+    const userData = localStorage.getItem("currentUser");
+    const token = localStorage.getItem("token");
+    if (!userData || !token) return;
+    const user = JSON.parse(userData);
+    setPasswordLoading(true);
+    setPasswordError(null);
+    try {
+      await changeUserPassword(user.id, current, next, token);
+      toast.success("Password changed successfully!");
+      setShowPasswordDialog(false);
+    } catch (e: any) {
+      setPasswordError(e.message || "Failed to change password.");
+      toast.error("Failed to change password");
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -602,10 +651,11 @@ export default function ProfilePage() {
                       </div>
                       <Switch
                         checked={
-                          formData.preferences?.notifications.push || false
+                          formData.preferences?.notifications
+                            .push_notifications || false
                         }
                         onCheckedChange={(checked) =>
-                          handlePreferenceChange("notifications", checked)
+                          handlePreferenceChange("push", checked)
                         }
                         disabled={!isEditing}
                       />
@@ -622,10 +672,11 @@ export default function ProfilePage() {
                       </div>
                       <Switch
                         checked={
-                          formData.preferences?.notifications.email || false
+                          formData.preferences?.notifications
+                            .email_notifications || false
                         }
                         onCheckedChange={(checked) =>
-                          handlePreferenceChange("emailUpdates", checked)
+                          handlePreferenceChange("email", checked)
                         }
                         disabled={!isEditing}
                       />
@@ -633,7 +684,7 @@ export default function ProfilePage() {
 
                     <Separator />
 
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="language">Language</Label>
                       <Select
                         value={formData.preferences?.language || "en"}
@@ -651,7 +702,7 @@ export default function ProfilePage() {
                           <SelectItem value="ta">Tamil</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
+                    </div> */}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -676,9 +727,21 @@ export default function ProfilePage() {
                             Update your account password
                           </p>
                         </div>
-                        <Button variant="outline">Change</Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowPasswordDialog(true)}
+                        >
+                          Change
+                        </Button>
                       </div>
-
+                      {/* Change Password Dialog */}
+                      <ChangePasswordDialog
+                        open={showPasswordDialog}
+                        onClose={() => setShowPasswordDialog(false)}
+                        onChangePassword={handleChangePassword}
+                        loading={passwordLoading}
+                        error={passwordError || undefined}
+                      />
                       <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-medium">
@@ -691,7 +754,7 @@ export default function ProfilePage() {
                         <Button variant="outline">Enable</Button>
                       </div>
 
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                      {/* <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-medium">Active Sessions</h4>
                           <p className="text-sm text-muted-foreground">
@@ -699,7 +762,7 @@ export default function ProfilePage() {
                           </p>
                         </div>
                         <Button variant="outline">View</Button>
-                      </div>
+                      </div> */}
                     </div>
                   </CardContent>
                 </Card>

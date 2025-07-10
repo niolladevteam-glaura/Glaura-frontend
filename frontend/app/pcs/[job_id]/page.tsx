@@ -42,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Eye } from "lucide-react"; // or wherever your icons are from
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080/api";
@@ -493,23 +494,17 @@ export default function PortCallServicesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        {/* View Button */}
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="icon"
-                          onClick={() => handleStatusChange(service.id)}
-                          disabled={!service.status || updating[service.id]}
-                          title={
-                            !service.status
-                              ? "Already completed"
-                              : "Mark as completed"
-                          }
+                          aria-label="View service"
+                          title="View service"
+                          className="bg-blue-100 hover:bg-gray-100 focus:ring-2 focus:ring-primary focus:outline-none"
                         >
-                          {updating[service.id] ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Check className="h-4 w-4 text-green-500" />
-                          )}
+                          <Eye className="h-4 w-4 text-gray-700" />
                         </Button>
+                        {/* Delete Button */}
                         <Button
                           variant="destructive"
                           size="icon"
