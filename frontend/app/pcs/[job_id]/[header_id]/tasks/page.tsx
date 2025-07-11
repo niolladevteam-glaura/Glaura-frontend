@@ -393,7 +393,7 @@ export default function PCSTasksPage() {
       <header className="glass-effect border-b px-6 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Link href={`/pcs/${job_id}`}>
+            <Link href={`/pcs/${job_id}/services`}>
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Headers

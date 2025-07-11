@@ -508,7 +508,7 @@ export default function ActivePortCalls() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Link href={`/pcs/${portCall.job_id}`}>
+                      <Link href={`/pcs/${portCall.job_id}/services`}>
                         <Button variant="outline" size="sm">
                           <Eye className="h-4 w-4 mr-2" />
                           Services

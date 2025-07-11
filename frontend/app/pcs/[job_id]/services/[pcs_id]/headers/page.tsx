@@ -36,6 +36,16 @@ import {
 
 const API_BASE_URL = "http://localhost:3080/api/servicetask";
 
+interface PCS {
+  id: string;
+  job_id: string;
+  service_id: string;
+  service_name: string;
+  vendor_id: string;
+  vendor_name: string;
+  status: boolean;
+}
+
 interface ServiceTask {
   id: string;
   header_id: string;
@@ -54,6 +64,7 @@ interface ServiceTaskHeader {
   _id?: string; // for backend compatibility
   header_id?: string;
   job_id: string;
+  service_id: string;
   header_name: string;
   status: boolean | string;
   created_by: string;
@@ -73,9 +84,12 @@ function isHeaderCompletedByTasks(header: ServiceTaskHeader): boolean {
 }
 
 export default function PCSJobPage() {
-  const { job_id } = useParams();
+  // Get both job_id and pcs_id from route params
+  const { job_id, pcs_id } = useParams();
   const router = useRouter();
+
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [pcs, setPCS] = useState<PCS | null>(null); // The PCS record
   const [headers, setHeaders] = useState<ServiceTaskHeader[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
@@ -89,19 +103,43 @@ export default function PCSJobPage() {
   const [newHeaderName, setNewHeaderName] = useState("");
   const [adding, setAdding] = useState(false);
 
-  // Fetch headers for this job on mount
+  // Fetch PCS (service) for this page (to get service_id)
+  useEffect(() => {
+    if (!pcs_id) return;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/");
+      return;
+    }
+    fetch(`http://localhost:3080/api/pcs/${pcs_id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setPCS(data.data))
+      .catch(() => setPCS(null));
+  }, [pcs_id, router]);
+
+  // Fetch headers for this PCS (job_id + service_id)
   const fetchHeaders = async () => {
+    if (!pcs || !pcs.service_id || !job_id) return;
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
 
-      const res = await fetch(`${API_BASE_URL}/headers`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Only fetch headers where job_id and service_id match
+      const res = await fetch(
+        `${API_BASE_URL}/headers?job_id=${job_id}&service_id=${pcs.service_id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (res.status === 401) {
         localStorage.removeItem("token");
@@ -123,19 +161,16 @@ export default function PCSJobPage() {
         ? data.data
         : [];
 
-      if (job_id) {
-        filteredHeaders = filteredHeaders
-          .filter((h: ServiceTaskHeader) => h.job_id === job_id)
-          .map((h: ServiceTaskHeader) => ({
-            ...h,
-            id: h.id ?? h._id,
-          }));
-      } else {
-        filteredHeaders = filteredHeaders.map((h: ServiceTaskHeader) => ({
+      // Filter by both job_id and service_id
+      filteredHeaders = filteredHeaders
+        .filter(
+          (h: ServiceTaskHeader) =>
+            h.job_id === job_id && h.service_id === pcs.service_id
+        )
+        .map((h: ServiceTaskHeader) => ({
           ...h,
           id: h.id ?? h._id,
         }));
-      }
 
       setHeaders(filteredHeaders);
     } catch (error) {
@@ -150,6 +185,7 @@ export default function PCSJobPage() {
     }
   };
 
+  // Only fetch headers when PCS is loaded
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
     if (!userData) {
@@ -157,8 +193,11 @@ export default function PCSJobPage() {
       return;
     }
     setCurrentUser(JSON.parse(userData));
-    fetchHeaders();
-  }, [router, job_id]);
+    if (pcs && pcs.service_id && job_id) {
+      fetchHeaders();
+    }
+    // eslint-disable-next-line
+  }, [router, job_id, pcs]);
 
   // Delete header logic
   const openDeleteDialog = (header: ServiceTaskHeader) => {
@@ -249,6 +288,7 @@ export default function PCSJobPage() {
       });
       return;
     }
+    if (!pcs) return;
     setAdding(true);
     try {
       const token = localStorage.getItem("token");
@@ -256,6 +296,7 @@ export default function PCSJobPage() {
 
       const body = {
         job_id,
+        service_id: pcs.service_id, // ensure correct service
         header_name: newHeaderName,
         created_by: currentUser?.id || currentUser?.user_id || "unknown",
         status: false,
@@ -313,7 +354,7 @@ export default function PCSJobPage() {
   const progress =
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  if (!currentUser) {
+  if (!currentUser || !pcs) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin" />
@@ -339,10 +380,10 @@ export default function PCSJobPage() {
       <header className="glass-effect border-b px-6 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Link href="/port-calls">
+            <Link href={`/pcs/${job_id}/services`}>
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Active Port Calls
+                Port Call Services
               </Button>
             </Link>
             <div className="flex items-center space-x-3">
@@ -351,7 +392,7 @@ export default function PCSJobPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gradient">
-                  Service Task Headers
+                  Service Task Headers for {pcs.service_name}
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   Greek Lanka PCMS
@@ -375,7 +416,7 @@ export default function PCSJobPage() {
         {/* Progress Bar Section */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Job Progress</CardTitle>
+            <CardTitle>Service Progress</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="mb-4">
@@ -419,67 +460,89 @@ export default function PCSJobPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {headers.map((header) => (
-                  <TableRow
-                    key={header.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    <TableCell className="font-medium">
-                      {header.header_name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          isHeaderCompletedByTasks(header)
-                            ? "default"
-                            : "secondary"
-                        }
-                      >
-                        {isHeaderCompletedByTasks(header)
-                          ? "Completed"
-                          : "Pending"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {header.tasks?.filter(
-                        (t) => t.status === true || t.status === "true"
-                      ).length ?? 0}
-                      /{header.tasks?.length ?? 0}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="View header"
-                          title="View header"
-                          className="bg-blue-100 hover:bg-gray-100 focus:ring-2 focus:ring-primary focus:outline-none"
-                        >
-                          <Link
-                            href={`/pcs/${job_id}/${
-                              header.id || header.header_id
-                            }/tasks`}
-                          >
-                            <Eye className="h-4 w-4 text-gray-700" />
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => openDeleteDialog(header)}
-                          disabled={deleting[header.id || ""]}
-                          title="Delete header"
-                        >
-                          {deleting[header.id || ""] ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
+                {headers.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="text-center text-muted-foreground py-8"
+                    >
+                      <div>
+                        <div className="mb-2">
+                          <Eye className="mx-auto h-10 w-10 text-gray-400" />
+                        </div>
+                        <div className="font-semibold mb-2">
+                          No headers found for this service.
+                        </div>
+                        <Button onClick={() => setAddDialogOpen(true)}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Service Task Header
                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  headers.map((header) => (
+                    <TableRow
+                      key={header.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <TableCell className="font-medium">
+                        {header.header_name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            isHeaderCompletedByTasks(header)
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          {isHeaderCompletedByTasks(header)
+                            ? "Completed"
+                            : "Pending"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {header.tasks?.filter(
+                          (t) => t.status === true || t.status === "true"
+                        ).length ?? 0}
+                        /{header.tasks?.length ?? 0}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="View header"
+                            title="View header"
+                            className="bg-blue-100 hover:bg-gray-100 focus:ring-2 focus:ring-primary focus:outline-none"
+                          >
+                            <Link
+                              href={`/pcs/${job_id}/${
+                                header.id || header.header_id
+                              }/tasks`}
+                            >
+                              <Eye className="h-4 w-4 text-gray-700" />
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => openDeleteDialog(header)}
+                            disabled={deleting[header.id || ""]}
+                            title="Delete header"
+                          >
+                            {deleting[header.id || ""] ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -497,8 +560,8 @@ export default function PCSJobPage() {
           <DialogHeader>
             <DialogTitle>Add Service Task Header</DialogTitle>
             <DialogDescription>
-              Create a new Service Task Header for this job. You can add tasks
-              later.
+              Create a new Service Task Header for this service. You can add
+              tasks later.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddHeader} className="space-y-4">
