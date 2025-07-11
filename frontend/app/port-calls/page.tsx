@@ -23,7 +23,6 @@ import {
   Clock,
   Users,
   FileText,
-  MoreHorizontal,
   Eye,
   LogOut,
   Anchor,
@@ -35,6 +34,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+interface ServiceHeader {
+  header_id: string;
+  header_name: string;
+  tasks: {
+    status: boolean | string;
+  }[];
+}
+
 interface PortCall {
   job_id: string;
   vessel_name: string;
@@ -43,12 +50,10 @@ interface PortCall {
   eta: string;
   etd?: string;
   port: string;
-  status: "Pending" | "Completed";
   assigned_pic: string;
   priority: "High" | "Medium" | "Low";
   created: string;
   updatedAt: string;
-  services: any[];
 }
 
 export default function ActivePortCalls() {
@@ -62,16 +67,21 @@ export default function ActivePortCalls() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // Store headers for each port call by job_id
+  const [portCallHeaders, setPortCallHeaders] = useState<
+    Record<string, ServiceHeader[]>
+  >({});
+  const [headersLoading, setHeadersLoading] = useState<Record<string, boolean>>(
+    {}
+  );
+
   useEffect(() => {
     const fetchPortCalls = async () => {
       try {
         setLoading(true);
 
-        // Get token from localStorage
         const token = localStorage.getItem("token");
-        if (!token) {
-          throw new Error("No authentication token found");
-        }
+        if (!token) throw new Error("No authentication token found");
 
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/portcall`,
@@ -83,7 +93,6 @@ export default function ActivePortCalls() {
           }
         );
 
-        // Handle 401 Unauthorized
         if (response.status === 401) {
           localStorage.removeItem("token");
           localStorage.removeItem("currentUser");
@@ -93,27 +102,9 @@ export default function ActivePortCalls() {
 
         const data = await response.json();
 
-        console.log(data);
-
         if (data.success && data.data) {
-          const mappedPortCalls = data.data.map((pc: any) => ({
-            job_id: pc.job_id,
-            vessel_name: pc.vessel_name,
-            vessel_imo: pc.vessel_imo,
-            client_company: pc.client_company,
-            eta: pc.eta,
-            etd: pc.etd || undefined,
-            port: pc.port,
-            status: mapStatus(pc.status, pc.services || []), // <-- modified line
-            assigned_pic: pc.assigned_pic || "Not assigned",
-            priority: pc.priority || "Medium",
-            created: pc.created,
-            updatedAt: pc.updatedAt,
-            services: pc.services || [],
-          }));
-
-          setPortCalls(mappedPortCalls);
-          setFilteredPortCalls(mappedPortCalls);
+          setPortCalls(data.data);
+          setFilteredPortCalls(data.data);
         } else {
           console.error("Failed to fetch port calls:", data.message);
         }
@@ -130,41 +121,59 @@ export default function ActivePortCalls() {
       return;
     }
 
-    const user = JSON.parse(userData);
-    setCurrentUser(user);
+    setCurrentUser(JSON.parse(userData));
     fetchPortCalls();
   }, [router]);
 
-  // Helper function to map API status and check if all services are completed
-  const mapStatus = (status: string, services: any[]): PortCall["status"] => {
-    // If there are services and all are completed, return Completed
-    if (
-      Array.isArray(services) &&
-      services.length > 0 &&
-      services.every(
-        (s) =>
-          s.status === false ||
-          s.status === "Completed" ||
-          s.status === "completed"
-      )
-    ) {
-      return "Completed";
-    }
+  // Fetch headers for each port call
+  useEffect(() => {
+    const fetchHeadersForPortCalls = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      // Only fetch if we haven't already
+      portCalls.forEach((pc) => {
+        if (portCallHeaders[pc.job_id] || headersLoading[pc.job_id]) return;
+        setHeadersLoading((prev) => ({ ...prev, [pc.job_id]: true }));
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/servicetask/headers?job_id=${pc.job_id}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            // `data.data` can be array or object, normalize to array
+            let headers: ServiceHeader[] = [];
+            if (Array.isArray(data.data)) headers = data.data;
+            else if (data.data && typeof data.data === "object")
+              headers = [data.data];
+            setPortCallHeaders((prev) => ({
+              ...prev,
+              [pc.job_id]: headers,
+            }));
+          })
+          .catch((err) => {
+            setPortCallHeaders((prev) => ({
+              ...prev,
+              [pc.job_id]: [],
+            }));
+          })
+          .finally(() =>
+            setHeadersLoading((prev) => ({ ...prev, [pc.job_id]: false }))
+          );
+      });
+    };
+    if (portCalls.length > 0) fetchHeadersForPortCalls();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portCalls]);
 
-    switch (status.toLowerCase()) {
-      case "open":
-        return "Pending";
-      case "completed":
-        return "Completed";
-      default:
-        return "Pending";
-    }
-  };
-
+  // Filtering (same as before)
   useEffect(() => {
     let filtered = portCalls;
 
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(
         (pc) =>
@@ -174,36 +183,84 @@ export default function ActivePortCalls() {
           pc.vessel_imo.includes(searchTerm)
       );
     }
-
-    // Apply status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter(
-        (pc) => pc.status.toLowerCase() === statusFilter
-      );
+      filtered = filtered.filter((pc) => {
+        const headers = portCallHeaders[pc.job_id] || [];
+        const status = getPortCallStatus(headers);
+        return status.toLowerCase() === statusFilter;
+      });
     }
-
-    // Apply port filter
     if (portFilter !== "all") {
       filtered = filtered.filter((pc) => pc.port.toLowerCase() === portFilter);
     }
-
-    // Apply tab filter
     if (selectedTab !== "all") {
-      switch (selectedTab) {
-        case "active":
-          filtered = filtered.filter((pc) => pc.status === "Pending");
-          break;
-        case "completed":
-          filtered = filtered.filter((pc) => pc.status === "Completed");
-          break;
-        case "urgent":
-          filtered = filtered.filter((pc) => pc.priority === "High");
-          break;
-      }
+      filtered = filtered.filter((pc) => {
+        const headers = portCallHeaders[pc.job_id] || [];
+        const status = getPortCallStatus(headers);
+        switch (selectedTab) {
+          case "active":
+            return status === "Pending";
+          case "completed":
+            return status === "Completed";
+          case "urgent":
+            return pc.priority === "High";
+          default:
+            return true;
+        }
+      });
     }
-
     setFilteredPortCalls(filtered);
-  }, [searchTerm, statusFilter, portFilter, selectedTab, portCalls]);
+  }, [
+    searchTerm,
+    statusFilter,
+    portFilter,
+    selectedTab,
+    portCalls,
+    portCallHeaders,
+  ]);
+
+  // Helper: Mark port call as completed only if ALL service headers are completed
+  const getPortCallStatus = (
+    headers: ServiceHeader[]
+  ): "Pending" | "Completed" => {
+    if (
+      Array.isArray(headers) &&
+      headers.length > 0 &&
+      headers.every(
+        (header) =>
+          Array.isArray(header.tasks) &&
+          header.tasks.length > 0 &&
+          header.tasks.every(
+            (task) => task.status === true || task.status === "true"
+          )
+      )
+    ) {
+      return "Completed";
+    }
+    return "Pending";
+  };
+
+  const getHeaderStats = (headers: ServiceHeader[]) => {
+    const totalHeaders = headers.length;
+    const completedHeaders = headers.filter(
+      (header) =>
+        Array.isArray(header.tasks) &&
+        header.tasks.length > 0 &&
+        header.tasks.every(
+          (task) => task.status === true || task.status === "true"
+        )
+    ).length;
+    return { totalHeaders, completedHeaders };
+  };
+
+  const getHeaderProgress = (headers: ServiceHeader[]) => {
+    const { totalHeaders, completedHeaders } = getHeaderStats(headers);
+    const progress =
+      totalHeaders > 0
+        ? Math.round((completedHeaders / totalHeaders) * 100)
+        : 0;
+    return { progress, totalHeaders, completedHeaders };
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
@@ -251,23 +308,6 @@ export default function ActivePortCalls() {
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
-  };
-
-  // Calculate service stats
-  const getServiceStats = (services: any[]) => {
-    const totalServices = services.length;
-    const completedServices = services.filter(
-      (s) =>
-        s.status === false ||
-        s.status === "Completed" ||
-        s.status === "completed"
-    ).length;
-    const progress =
-      totalServices > 0
-        ? Math.round((completedServices / totalServices) * 100)
-        : 0;
-
-    return { totalServices, completedServices, progress };
   };
 
   if (!currentUser) {
@@ -390,11 +430,23 @@ export default function ActivePortCalls() {
                 <TabsTrigger value="all">All ({portCalls.length})</TabsTrigger>
                 <TabsTrigger value="active">
                   Active (
-                  {portCalls.filter((pc) => pc.status === "Pending").length})
+                  {
+                    portCalls.filter((pc) => {
+                      const headers = portCallHeaders[pc.job_id] || [];
+                      return getPortCallStatus(headers) === "Pending";
+                    }).length
+                  }
+                  )
                 </TabsTrigger>
                 <TabsTrigger value="completed">
                   Completed (
-                  {portCalls.filter((pc) => pc.status === "Completed").length})
+                  {
+                    portCalls.filter((pc) => {
+                      const headers = portCallHeaders[pc.job_id] || [];
+                      return getPortCallStatus(headers) === "Completed";
+                    }).length
+                  }
+                  )
                 </TabsTrigger>
                 <TabsTrigger value="urgent">
                   Urgent (
@@ -408,8 +460,24 @@ export default function ActivePortCalls() {
         {/* Port Calls List */}
         <div className="space-y-4">
           {filteredPortCalls.map((portCall) => {
-            const { totalServices, completedServices, progress } =
-              getServiceStats(portCall.services);
+            const headers = portCallHeaders[portCall.job_id] || [];
+            const headersAreLoading = headersLoading[portCall.job_id];
+
+            const { progress, totalHeaders, completedHeaders } =
+              getHeaderProgress(headers);
+            const remainingHeaders = totalHeaders - completedHeaders;
+            let completionPhrase = "";
+            if (remainingHeaders === 0 && totalHeaders > 0) {
+              completionPhrase =
+                "All headers completed. This port call is marked as completed!";
+            } else if (remainingHeaders > 0) {
+              completionPhrase = `${remainingHeaders} more header${
+                remainingHeaders > 1 ? "s" : ""
+              } to be completed.`;
+            } else {
+              completionPhrase = "No headers found.";
+            }
+            const status = getPortCallStatus(headers);
 
             return (
               <Card
@@ -420,7 +488,7 @@ export default function ActivePortCalls() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2">
-                        {getStatusIcon(portCall.status)}
+                        {getStatusIcon(status)}
                         <div>
                           <h3 className="font-semibold text-lg">
                             {portCall.vessel_name}
@@ -431,8 +499,8 @@ export default function ActivePortCalls() {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <Badge className={getStatusColor(portCall.status)}>
-                          {portCall.status}
+                        <Badge className={getStatusColor(status)}>
+                          {status}
                         </Badge>
                         <Badge className={getPriorityColor(portCall.priority)}>
                           {portCall.priority}
@@ -523,28 +591,71 @@ export default function ActivePortCalls() {
                     </div>
                   </div>
 
-                  {/* Services Progress */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <FileText className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-600 dark:text-gray-300">
-                          Services: {completedServices}/{totalServices}
-                        </span>
-                      </div>
-                      <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full transition-all"
-                          style={{
-                            width: `${progress}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {progress}%
+                  {/* Service Headers Progress Bar */}
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 font-semibold mb-2 text-gray-700 dark:text-gray-200">
+                      <FileText className="h-5 w-5 text-gray-400" />
+                      <span>
+                        {headersAreLoading
+                          ? "Loading..."
+                          : `${completedHeaders}/${totalHeaders} headers completed`}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {/* Progress Bar */}
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 mb-2">
+                      <div
+                        className="bg-blue-600 h-4 rounded-full transition-all"
+                        style={{
+                          width: `${progress}%`,
+                        }}
+                      ></div>
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-2">
+                      {headersAreLoading
+                        ? "Loading header data..."
+                        : completionPhrase}
+                    </div>
+                    {/* Service Headers List */}
+                    <div className="space-y-2">
+                      {headersAreLoading ? (
+                        <div className="text-gray-500 dark:text-gray-400">
+                          Loading headers...
+                        </div>
+                      ) : (
+                        headers.map((header, idx) => {
+                          const isHeaderCompleted =
+                            Array.isArray(header.tasks) &&
+                            header.tasks.length > 0 &&
+                            header.tasks.every(
+                              (task) =>
+                                task.status === true || task.status === "true"
+                            );
+                          return (
+                            <div
+                              key={header.header_id || idx}
+                              className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded px-3 py-2"
+                            >
+                              <span className="font-medium">
+                                {header.header_name || `Header ${idx + 1}`}
+                              </span>
+                              <Badge
+                                variant={
+                                  isHeaderCompleted ? "default" : "secondary"
+                                }
+                                className={
+                                  isHeaderCompleted
+                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                    : ""
+                                }
+                              >
+                                {isHeaderCompleted ? "Completed" : "Pending"}
+                              </Badge>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                       Created: {new Date(portCall.created).toLocaleDateString()}
                     </div>
                   </div>

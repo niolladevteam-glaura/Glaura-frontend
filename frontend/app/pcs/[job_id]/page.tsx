@@ -4,17 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
   CardFooter,
@@ -34,6 +25,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const API_BASE_URL = "http://localhost:3080/api/servicetask";
 
@@ -130,7 +129,6 @@ export default function PCSJobPage() {
           .map((h: ServiceTaskHeader) => ({
             ...h,
             id: h.id ?? h._id,
-            // DO NOT set status here; calculate in UI
           }));
       } else {
         filteredHeaders = filteredHeaders.map((h: ServiceTaskHeader) => ({
@@ -306,6 +304,15 @@ export default function PCSJobPage() {
     }
   };
 
+  // Progress Calculation (NEW)
+  const allTasks = headers.flatMap((header) => header.tasks || []);
+  const totalTasks = allTasks.length;
+  const completedTasks = allTasks.filter(
+    (task) => task.status === true || task.status === "true"
+  ).length;
+  const progress =
+    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -365,6 +372,29 @@ export default function PCSJobPage() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Progress Bar Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Job Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4">
+              <div className="text-lg font-semibold">
+                {completedTasks}/{totalTasks} tasks completed
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-5 mt-2 mb-2">
+                <div
+                  className="bg-blue-600 h-5 rounded-full transition-all"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <div className="text-right text-sm text-muted-foreground">
+                {progress}%
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="flex justify-end mb-4">
           <Button onClick={() => setAddDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -374,9 +404,9 @@ export default function PCSJobPage() {
         <Card className="border rounded-xl overflow-hidden">
           <CardHeader className="bg-gray-100 dark:bg-gray-800 py-4">
             <CardTitle className="text-lg">Service Task Headers</CardTitle>
-            <CardDescription>
+            <CardFooter>
               {completedHeaders} of {totalHeaders} headers completed
-            </CardDescription>
+            </CardFooter>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -410,7 +440,12 @@ export default function PCSJobPage() {
                           : "Pending"}
                       </Badge>
                     </TableCell>
-                    <TableCell>{header.tasks?.length ?? 0}</TableCell>
+                    <TableCell>
+                      {header.tasks?.filter(
+                        (t) => t.status === true || t.status === "true"
+                      ).length ?? 0}
+                      /{header.tasks?.length ?? 0}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
