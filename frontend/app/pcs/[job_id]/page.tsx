@@ -52,6 +52,8 @@ interface ServiceTask {
 
 interface ServiceTaskHeader {
   id: string;
+  _id?: string; // for backend compatibility
+  header_id?: string;
   job_id: string;
   header_name: string;
   status: boolean | string;
@@ -77,6 +79,7 @@ export default function PCSJobPage() {
   const [headerToDelete, setHeaderToDelete] =
     useState<ServiceTaskHeader | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [newTasks, setNewTasks] = useState([{ task_name: "", status: false }]);
 
   // Add Header Dialog State
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -109,20 +112,29 @@ export default function PCSJobPage() {
         return;
       }
       const data = await res.json();
-      // Normalize status to boolean or string "true"
+
+      // Normalize headers: always use id (even if backend returns _id)
       let filteredHeaders = Array.isArray(data)
         ? data
         : data.success && Array.isArray(data.data)
         ? data.data
         : [];
+
       if (job_id) {
         filteredHeaders = filteredHeaders
           .filter((h: ServiceTaskHeader) => h.job_id === job_id)
           .map((h: ServiceTaskHeader) => ({
             ...h,
+            id: h.id ?? h._id, // Ensure id is set (fixes dialog bug)
             status: h.status === true || h.status === "true" ? "true" : "false",
           }));
+      } else {
+        filteredHeaders = filteredHeaders.map((h: ServiceTaskHeader) => ({
+          ...h,
+          id: h.id ?? h._id, // Ensure id is set
+        }));
       }
+
       setHeaders(filteredHeaders);
     } catch (error) {
       setHeaders([]);
@@ -148,24 +160,41 @@ export default function PCSJobPage() {
 
   // Delete header logic
   const openDeleteDialog = (header: ServiceTaskHeader) => {
+    console.log("openDeleteDialog called with header:", header); // <--- Add this
     setHeaderToDelete(header);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteHeader = async () => {
-    if (!headerToDelete) return;
-    const headerId = headerToDelete.id;
+    const headerId =
+      headerToDelete?.id ||
+      headerToDelete?._id ||
+      headerToDelete?.header_id || // Add this!
+      "";
+    console.log("Deleting header with ID:", headerId); // This should now show a value
+
+    if (!headerId) {
+      toast({
+        title: "Error",
+        description: "No header selected for deletion.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       setDeleting((prev) => ({ ...prev, [headerId]: true }));
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
 
-      const response = await fetch(`${API_BASE_URL}/headers/${headerId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `http://localhost:3080/api/servicetask/headers/${headerId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.status === 401) {
         localStorage.removeItem("token");
@@ -173,9 +202,18 @@ export default function PCSJobPage() {
         router.push("/");
         throw new Error("Session expired. Please login again.");
       }
+
       const data = await response.json();
-      if (data.success || response.status === 200) {
-        setHeaders((prev) => prev.filter((h) => h.id !== headerId));
+
+      if (response.ok || data.success) {
+        setHeaders((prev) =>
+          prev.filter(
+            (h) =>
+              h.id !== headerId &&
+              h._id !== headerId &&
+              h.header_id !== headerId // Remove by header_id too!
+          )
+        );
         toast({
           title: "Deleted",
           description: "Service Task Header deleted successfully.",
@@ -222,8 +260,11 @@ export default function PCSJobPage() {
         header_name: newHeaderName,
         created_by: currentUser?.id || currentUser?.user_id || "unknown",
         status: false,
-        tasks: [],
+        tasks: newTasks,
       };
+
+      console.log("Sending to backend:", body);
+
       const response = await fetch(`${API_BASE_URL}/headers`, {
         method: "POST",
         headers: {
@@ -240,8 +281,7 @@ export default function PCSJobPage() {
       }
       const data = await response.json();
       if (data.success && data.data) {
-        // Instead of updating state with POST response, re-fetch the headers from backend
-        await fetchHeaders(); // <-- call your fetchHeaders function here
+        await fetchHeaders();
         toast({
           title: "Added",
           description: "Service Task Header added successfully.",
@@ -285,6 +325,7 @@ export default function PCSJobPage() {
 
   const completedHeaders = headers.filter(isHeaderCompleted).length;
   const totalHeaders = headers.length;
+  const headerId = headerToDelete?.id || headerToDelete?._id || "";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -383,10 +424,10 @@ export default function PCSJobPage() {
                           variant="destructive"
                           size="icon"
                           onClick={() => openDeleteDialog(header)}
-                          disabled={deleting[header.id]}
+                          disabled={deleting[header.id || ""]}
                           title="Delete header"
                         >
-                          {deleting[header.id] ? (
+                          {deleting[header.id || ""] ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Trash2 className="h-4 w-4" />
@@ -427,6 +468,46 @@ export default function PCSJobPage() {
                 required
               />
             </div>
+            {newTasks.map((task, idx) => (
+              <div key={idx} className="flex gap-2 mb-2">
+                <Input
+                  value={task.task_name}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewTasks((tasks) =>
+                      tasks.map((t, i) =>
+                        i === idx ? { ...t, task_name: val } : t
+                      )
+                    );
+                  }}
+                  placeholder="Task name"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setNewTasks((tasks) => tasks.filter((_, i) => i !== idx))
+                  }
+                  disabled={newTasks.length === 1}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-2"
+              onClick={() =>
+                setNewTasks((tasks) => [
+                  ...tasks,
+                  { task_name: "", status: false },
+                ])
+              }
+            >
+              Add Task
+            </Button>
             <DialogFooter>
               <Button
                 type="button"
@@ -445,32 +526,42 @@ export default function PCSJobPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) setHeaderToDelete(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Header</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-semibold text-destructive">
-                {headerToDelete?.header_name}
-              </span>
-              ? This action cannot be undone and will delete all its tasks.
+              {headerToDelete ? (
+                <>
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-destructive">
+                    {headerToDelete.header_name}
+                  </span>
+                  ? This action cannot be undone and will delete all its tasks.
+                </>
+              ) : (
+                <span className="text-destructive">No header selected.</span>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-end gap-2">
             <Button
               variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-              disabled={deleting[headerToDelete?.id ?? ""]}
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setHeaderToDelete(null);
+              }}
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteHeader}
-              disabled={deleting[headerToDelete?.id ?? ""]}
-            >
-              {deleting[headerToDelete?.id ?? ""] ? (
+            <Button variant="destructive" onClick={handleDeleteHeader}>
+              {deleting[headerId] ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 "Delete"
