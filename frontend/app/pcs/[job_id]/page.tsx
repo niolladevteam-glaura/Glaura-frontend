@@ -65,8 +65,12 @@ interface ServiceTaskHeader {
   updatedAt?: string;
 }
 
-function isHeaderCompleted(header: ServiceTaskHeader) {
-  return header.status === true || header.status === "true";
+// Helper: header is completed if all tasks are completed
+function isHeaderCompletedByTasks(header: ServiceTaskHeader): boolean {
+  if (!header.tasks || header.tasks.length === 0) return false;
+  return header.tasks.every(
+    (task) => task.status === true || task.status === "true"
+  );
 }
 
 export default function PCSJobPage() {
@@ -125,13 +129,13 @@ export default function PCSJobPage() {
           .filter((h: ServiceTaskHeader) => h.job_id === job_id)
           .map((h: ServiceTaskHeader) => ({
             ...h,
-            id: h.id ?? h._id, // Ensure id is set (fixes dialog bug)
-            status: h.status === true || h.status === "true" ? "true" : "false",
+            id: h.id ?? h._id,
+            // DO NOT set status here; calculate in UI
           }));
       } else {
         filteredHeaders = filteredHeaders.map((h: ServiceTaskHeader) => ({
           ...h,
-          id: h.id ?? h._id, // Ensure id is set
+          id: h.id ?? h._id,
         }));
       }
 
@@ -160,7 +164,6 @@ export default function PCSJobPage() {
 
   // Delete header logic
   const openDeleteDialog = (header: ServiceTaskHeader) => {
-    console.log("openDeleteDialog called with header:", header); // <--- Add this
     setHeaderToDelete(header);
     setDeleteDialogOpen(true);
   };
@@ -169,10 +172,8 @@ export default function PCSJobPage() {
     const headerId =
       headerToDelete?.id ||
       headerToDelete?._id ||
-      headerToDelete?.header_id || // Add this!
+      headerToDelete?.header_id ||
       "";
-    console.log("Deleting header with ID:", headerId); // This should now show a value
-
     if (!headerId) {
       toast({
         title: "Error",
@@ -211,7 +212,7 @@ export default function PCSJobPage() {
             (h) =>
               h.id !== headerId &&
               h._id !== headerId &&
-              h.header_id !== headerId // Remove by header_id too!
+              h.header_id !== headerId
           )
         );
         toast({
@@ -262,8 +263,6 @@ export default function PCSJobPage() {
         status: false,
         tasks: newTasks,
       };
-
-      console.log("Sending to backend:", body);
 
       const response = await fetch(`${API_BASE_URL}/headers`, {
         method: "POST",
@@ -323,7 +322,7 @@ export default function PCSJobPage() {
     );
   }
 
-  const completedHeaders = headers.filter(isHeaderCompleted).length;
+  const completedHeaders = headers.filter(isHeaderCompletedByTasks).length;
   const totalHeaders = headers.length;
   const headerId = headerToDelete?.id || headerToDelete?._id || "";
 
@@ -401,10 +400,14 @@ export default function PCSJobPage() {
                     <TableCell>
                       <Badge
                         variant={
-                          isHeaderCompleted(header) ? "default" : "secondary"
+                          isHeaderCompletedByTasks(header)
+                            ? "default"
+                            : "secondary"
                         }
                       >
-                        {isHeaderCompleted(header) ? "Completed" : "Pending"}
+                        {isHeaderCompletedByTasks(header)
+                          ? "Completed"
+                          : "Pending"}
                       </Badge>
                     </TableCell>
                     <TableCell>{header.tasks?.length ?? 0}</TableCell>
@@ -416,9 +419,14 @@ export default function PCSJobPage() {
                           aria-label="View header"
                           title="View header"
                           className="bg-blue-100 hover:bg-gray-100 focus:ring-2 focus:ring-primary focus:outline-none"
-                          // onClick={() => viewHeader(header.id)}
                         >
-                          <Eye className="h-4 w-4 text-gray-700" />
+                          <Link
+                            href={`/pcs/${job_id}/${
+                              header.id || header.header_id
+                            }/tasks`}
+                          >
+                            <Eye className="h-4 w-4 text-gray-700" />
+                          </Link>
                         </Button>
                         <Button
                           variant="destructive"
