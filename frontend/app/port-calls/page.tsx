@@ -593,16 +593,16 @@ export default function ActivePortCalls() {
 
                   {/* Service Headers Progress Bar */}
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2 font-semibold mb-2 text-gray-700 dark:text-gray-200">
+                    {/* <div className="flex items-center gap-2 font-semibold mb-2 text-gray-700 dark:text-gray-200">
                       <FileText className="h-5 w-5 text-gray-400" />
                       <span>
                         {headersAreLoading
                           ? "Loading..."
                           : `${completedHeaders}/${totalHeaders} headers completed`}
                       </span>
-                    </div>
+                    </div> */}
                     {/* Progress Bar */}
-                    <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 mb-2">
+                    {/* <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 mb-2">
                       <div
                         className="bg-blue-600 h-4 rounded-full transition-all"
                         style={{
@@ -614,9 +614,9 @@ export default function ActivePortCalls() {
                       {headersAreLoading
                         ? "Loading header data..."
                         : completionPhrase}
-                    </div>
+                    </div> */}
                     {/* Service Headers List */}
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       {headersAreLoading ? (
                         <div className="text-gray-500 dark:text-gray-400">
                           Loading headers...
@@ -654,7 +654,7 @@ export default function ActivePortCalls() {
                           );
                         })
                       )}
-                    </div>
+                    </div> */}
                     <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                       Created: {new Date(portCall.created).toLocaleDateString()}
                     </div>
