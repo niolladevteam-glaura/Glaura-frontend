@@ -79,7 +79,8 @@ function isTaskCompleted(task: ServiceTask) {
 }
 
 export default function PCSTasksPage() {
-  const { job_id, header_id } = useParams();
+  // Get all params, including pcs_id for correct back navigation
+  const { job_id, pcs_id, header_id } = useParams();
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [header, setHeader] = useState<ServiceTaskHeader | null>(null);
@@ -100,6 +101,42 @@ export default function PCSTasksPage() {
   // Add Task Dialog State
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [adding, setAdding] = useState(false);
+
+  // PATCH header status in DB if all tasks are completed
+  async function patchHeaderIfAllTasksCompleted(tasksList: ServiceTask[]) {
+    if (tasksList.length > 0 && tasksList.every((t) => isTaskCompleted(t))) {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      // Fetch current header status to avoid unnecessary PATCH
+      let headerStatus = false;
+      try {
+        const res = await fetch(`${API_BASE_URL}/headers/${header_id}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        headerStatus = !!(
+          data?.data?.status === true || data?.data?.status === "true"
+        );
+      } catch {}
+
+      if (!headerStatus) {
+        try {
+          await fetch(`${API_BASE_URL}/headers/${header_id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status: true }),
+          });
+          // Optionally refetch header here or rely on next fetchTasks
+        } catch {}
+      }
+    }
+  }
 
   // Fetch tasks for this header on mount
   const fetchTasks = async () => {
@@ -155,6 +192,9 @@ export default function PCSTasksPage() {
         : [];
 
       setTasks(tasksList);
+
+      // PATCH header if needed (if all tasks are completed)
+      await patchHeaderIfAllTasksCompleted(tasksList);
     } catch (error) {
       setTasks([]);
       toast({
@@ -224,6 +264,8 @@ export default function PCSTasksPage() {
         });
         setDeleteDialogOpen(false);
         setTaskToDelete(null);
+        // Refetch after delete to update header status if needed
+        await fetchTasks();
       } else {
         toast({
           title: "Error",
@@ -341,7 +383,7 @@ export default function PCSTasksPage() {
       });
       const data = await response.json();
       if (response.ok || data.success) {
-        await fetchTasks();
+        await fetchTasks(); // Will also patch header if needed
         toast({
           title: "Task completed",
           description: "Task marked as completed.",
@@ -393,7 +435,8 @@ export default function PCSTasksPage() {
       <header className="glass-effect border-b px-6 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Link href={`/pcs/${job_id}/services`}>
+            {/* FIXED: Back link uses correct params! */}
+            <Link href={`/pcs/${job_id}/services/${pcs_id}/headers`}>
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Headers

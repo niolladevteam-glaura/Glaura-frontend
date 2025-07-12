@@ -471,7 +471,7 @@ export default function Dashboard() {
                                 dark:bg-white/20 dark:text-white dark:border-white/30
                               "
                   >
-                    0.1.0-pre-alpha
+                    0.2.0-alpha
                   </Badge>
                 </h1>
 

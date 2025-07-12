@@ -413,29 +413,6 @@ export default function PCSJobPage() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Progress Bar Section */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Service Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              <div className="text-lg font-semibold">
-                {completedTasks}/{totalTasks} tasks completed
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-5 mt-2 mb-2">
-                <div
-                  className="bg-blue-600 h-5 rounded-full transition-all"
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-              <div className="text-right text-sm text-muted-foreground">
-                {progress}%
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         <div className="flex justify-end mb-4">
           <Button onClick={() => setAddDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -518,7 +495,7 @@ export default function PCSJobPage() {
                             className="bg-blue-100 hover:bg-gray-100 focus:ring-2 focus:ring-primary focus:outline-none"
                           >
                             <Link
-                              href={`/pcs/${job_id}/${
+                              href={`/pcs/${job_id}/services/${pcs_id}/headers/${
                                 header.id || header.header_id
                               }/tasks`}
                             >

@@ -74,12 +74,16 @@ interface Service {
 }
 
 interface ServiceTaskHeader {
-  id: string;
+  header_id: string;
   job_id: string;
   service_id: string;
   header_name: string;
   status: boolean | string;
-  tasks: { status: boolean | string }[];
+  created_by: string;
+  compleated_time?: string | null;
+  compleated_date?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default function PortCallServicesPage() {
@@ -178,60 +182,54 @@ export default function PortCallServicesPage() {
       .then((data) => setVendors(data.data || []));
   }, []);
 
-  // Fetch headers stats for all services
+  // Fetch headers stats for all services (using correct endpoint and logic)
   useEffect(() => {
     async function fetchStats() {
       const token = getTokenOrRedirect();
       if (!token || pcsList.length === 0) return;
 
       const stats: Record<string, { total: number; completed: number }> = {};
-      await Promise.all(
-        pcsList.map(async (pcs) => {
-          // get all headers for this service
-          const res = await fetch(
-            `http://localhost:3080/api/servicetask/headers?job_id=${pcs.job_id}&service_id=${pcs.service_id}`,
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          const data = await res.json();
-          const headers: ServiceTaskHeader[] = Array.isArray(data.data)
-            ? data.data
-            : [];
-          const total = headers.length;
-          const completed = headers.filter(
-            (h) =>
-              h.tasks &&
-              h.tasks.length > 0 &&
-              h.tasks.every(
-                (task: any) => task.status === true || task.status === "true"
-              )
-          ).length;
-          stats[pcs.id] = { total, completed };
 
-          // Update PCS status if all headers completed
-          if (total > 0 && completed === total && !pcs.status) {
-            // Optionally, update status in backend here (only if you want auto status update)
-            await fetch(`http://localhost:3080/api/pcs/${pcs.id}`, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ status: true }),
-            });
-            // Update status in local state
-            setPCSList((oldList) =>
-              oldList.map((item) =>
-                item.id === pcs.id ? { ...item, status: true } : item
-              )
-            );
+      for (const pcs of pcsList) {
+        // Use the correct endpoint and service_id!
+        const headersRes = await fetch(
+          `http://localhost:3080/api/servicetask/headers/service/${pcs.service_id}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
           }
-        })
-      );
+        );
+        const headersData = await headersRes.json();
+        const headers: ServiceTaskHeader[] = Array.isArray(headersData.data)
+          ? headersData.data
+          : [];
+
+        const completed = headers.filter(
+          (h: any) => h.status === true || h.status === "true"
+        ).length;
+
+        stats[pcs.id] = { total: headers.length, completed };
+
+        // Update PCS status if all headers completed
+        if (headers.length > 0 && completed === headers.length && !pcs.status) {
+          await fetch(`http://localhost:3080/api/pcs/${pcs.id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status: true }),
+          });
+          setPCSList((oldList) =>
+            oldList.map((item) =>
+              item.id === pcs.id ? { ...item, status: true } : item
+            )
+          );
+        }
+      }
+
       setHeadersStats(stats);
     }
     fetchStats();
@@ -454,8 +452,8 @@ export default function PortCallServicesPage() {
                 <TableRow>
                   <TableHead>Service Name</TableHead>
                   <TableHead>Vendor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Headers</TableHead>
+                  {/* <TableHead>Status</TableHead> */}
+                  {/* <TableHead>Headers</TableHead> */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -474,7 +472,7 @@ export default function PortCallServicesPage() {
                         {pcs.service_name}
                       </TableCell>
                       <TableCell>{pcs.vendor_name}</TableCell>
-                      <TableCell>
+                      {/* <TableCell>
                         <Badge
                           variant={pcs.status ? "default" : "secondary"}
                           className="flex items-center gap-1"
@@ -486,15 +484,15 @@ export default function PortCallServicesPage() {
                           )}
                           {pcs.status ? "Completed" : "Pending"}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
+                      </TableCell> */}
+                      {/* <TableCell>
                         <span className="font-semibold text-sm">
                           {stats.completed}/{stats.total}
                         </span>
                         <span className="text-xs text-muted-foreground ml-1">
                           headers completed
                         </span>
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
