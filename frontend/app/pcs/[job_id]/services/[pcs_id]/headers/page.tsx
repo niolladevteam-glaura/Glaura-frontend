@@ -34,7 +34,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const API_BASE_URL = "http://localhost:3080/api/servicetask";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/servicetask";
+
+const API_BASE_URL_NORMAL = process.env.NEXT_PUBLIC_API_URL;
 
 interface PCS {
   id: string;
@@ -111,7 +113,7 @@ export default function PCSJobPage() {
       router.push("/");
       return;
     }
-    fetch(`http://localhost:3080/api/pcs/${pcs_id}`, {
+    fetch(`${API_BASE_URL_NORMAL}/pcs/${pcs_id}`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -225,7 +227,7 @@ export default function PCSJobPage() {
       if (!token) throw new Error("No authentication token found");
 
       const response = await fetch(
-        `http://localhost:3080/api/servicetask/headers/${headerId}`,
+        `${API_BASE_URL_NORMAL}/servicetask/headers/${headerId}`,
         {
           method: "DELETE",
           headers: {

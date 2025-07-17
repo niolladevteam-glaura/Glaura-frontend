@@ -54,7 +54,7 @@ import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_ENDPOINTS = {
   CUSTOMERS: `${API_BASE_URL}/customer`,
   CUSTOMER: (id: string) => `${API_BASE_URL}/customer/${id}`,

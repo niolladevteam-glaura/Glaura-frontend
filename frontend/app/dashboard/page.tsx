@@ -56,6 +56,8 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
 interface UserType {
   id: number;
   name: string;
@@ -171,7 +173,7 @@ export default function Dashboard() {
     // Fetch dashboard data
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch("http://localhost:3080/api/dashboard", {
+        const response = await fetch(`${API_BASE_URL}/dashboard`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

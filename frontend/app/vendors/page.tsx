@@ -60,7 +60,7 @@ import Link from "next/link";
 
 // API Configuration
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_ENDPOINTS = {
   VENDORS: `${API_BASE_URL}/vendor`,
 };

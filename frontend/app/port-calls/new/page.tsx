@@ -36,8 +36,7 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 // API Configuration - Replace with your actual API endpoints
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // API Endpoints
 const API_ENDPOINTS = {

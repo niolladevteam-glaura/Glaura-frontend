@@ -25,6 +25,8 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus, Trash2, Anchor, LogOut } from "lucide-react";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
 type Vessel = {
   id: string;
   vessel_name: string;
@@ -86,7 +88,7 @@ export default function OKTBPage() {
       const token = localStorage.getItem("token");
       console.log("Token:", token);
       try {
-        const res = await fetch("http://localhost:3080/api/vessel", {
+        const res = await fetch(`${API_BASE_URL}/vessel`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -187,7 +189,7 @@ export default function OKTBPage() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:3080/api/documents/oktb", {
+      const res = await fetch(`${API_BASE_URL}/documents/oktb`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

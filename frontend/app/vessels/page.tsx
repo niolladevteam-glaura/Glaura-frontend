@@ -49,6 +49,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
 interface Vessel {
   id: string;
   name: string;
@@ -177,7 +179,7 @@ export default function VesselManagement() {
 
   // Vessel-specific API functions
   const fetchVessels = async (): Promise<Vessel[]> => {
-    const response = await apiCall("http://localhost:3080/api/vessel");
+    const response = await apiCall(`${API_BASE_URL}/vessel`);
 
     // Check if response has data array
     if (response && response.success && Array.isArray(response.data)) {
@@ -189,21 +191,21 @@ export default function VesselManagement() {
   };
 
   const createVessel = async (vesselData: any) => {
-    return await apiCall("http://localhost:3080/api/vessel", {
+    return await apiCall(`${API_BASE_URL}/vessel`, {
       method: "POST",
       body: JSON.stringify(vesselData),
     });
   };
 
   const updateVessel = async (id: string, vesselData: any) => {
-    return await apiCall(`http://localhost:3080/api/vessel/${id}`, {
+    return await apiCall(`${API_BASE_URL}/vessel/${id}`, {
       method: "PUT",
       body: JSON.stringify(vesselData),
     });
   };
 
   const deleteVessel = async (id: string) => {
-    return await apiCall(`http://localhost:3080/api/vessel/${id}`, {
+    return await apiCall(`${API_BASE_URL}/vessel/${id}`, {
       method: "DELETE",
     });
   };

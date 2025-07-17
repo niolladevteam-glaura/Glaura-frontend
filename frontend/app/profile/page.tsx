@@ -42,8 +42,10 @@ import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 import { changeUserPassword } from "@/lib/api/changePassword";
 import { toast } from "sonner";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
 // --- API utility functions ---
-const BASE_URL = "http://localhost:3080/api/usersetting";
+const BASE_URL = `${API_BASE_URL}/usersetting`;
 
 async function fetchUserSettings(userId: string, token: string) {
   const res = await fetch(`${BASE_URL}/${userId}`, {
@@ -195,7 +197,7 @@ export default function ProfilePage() {
 
     // Fetch both user and settings
     Promise.all([
-      fetch(`http://localhost:3080/api/user/${user.id}`, {
+      fetch(`${API_BASE_URL}/user/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((res) => res.json()),
       fetchUserSettings(user.id, token),
