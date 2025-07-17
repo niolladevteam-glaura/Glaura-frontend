@@ -477,11 +477,11 @@ export default function ProfilePage() {
           {/* Main Content */}
           <div className="lg:col-span-3">
             <Tabs defaultValue="personal" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="personal">Personal Info</TabsTrigger>
                 <TabsTrigger value="preferences">Preferences</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
-                <TabsTrigger value="appearance">Appearance</TabsTrigger>
+                {/* <TabsTrigger value="appearance">Appearance</TabsTrigger> */}
               </TabsList>
 
               <TabsContent value="personal">
@@ -742,7 +742,7 @@ export default function ProfilePage() {
                         loading={passwordLoading}
                         error={passwordError || undefined}
                       />
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                      {/* <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-medium">
                             Two-Factor Authentication
@@ -752,7 +752,7 @@ export default function ProfilePage() {
                           </p>
                         </div>
                         <Button variant="outline">Enable</Button>
-                      </div>
+                      </div> */}
 
                       {/* <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>

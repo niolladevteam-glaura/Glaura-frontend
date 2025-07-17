@@ -335,12 +335,12 @@ export default function Dashboard() {
     ...(currentUser.accessLevel === "A"
       ? [{ href: "/users", icon: Users, label: "User Management" }]
       : []),
-    { href: "/messages", icon: FileText, label: "Messages" },
-    { href: "/feedback", icon: MessageSquare, label: "Feedback & Complaints" },
+    //{ href: "/messages", icon: FileText, label: "Messages" },
+    //{ href: "/feedback", icon: MessageSquare, label: "Feedback & Complaints" },
     { href: "/vessels", icon: Ship, label: "Vessel Management" },
     { href: "/pic-management", icon: UserCog, label: "PIC Management" },
-    { href: "/whatsapp", icon: MessageCircle, label: "GL Chat" },
-    { href: "/phonebook", icon: Phone, label: "Phone Book" },
+    //{ href: "/whatsapp", icon: MessageCircle, label: "GL Chat" },
+    //{ href: "/phonebook", icon: Phone, label: "Phone Book" },
   ];
 
   const WelcomeCard = ({ user }: { user: UserType }) => (
@@ -430,13 +430,13 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon">
+            {/* <Button variant="ghost" size="icon">
               <Camera className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="relative">
+            </Button> */}
+            {/* <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
-            </Button>
+            </Button> */}
             <ThemeToggle />
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
@@ -494,13 +494,13 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon">
+            {/* <Button variant="ghost" size="icon">
               <Camera className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="relative">
+            </Button> */}
+            {/* <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
-            </Button>
+            </Button> */}
             <ThemeToggle />
             <Link href="/profile">
               <Avatar className="h-8 w-8 cursor-pointer">
