@@ -43,7 +43,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const API_BASE_URL = "http://localhost:3080/api/servicetask";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/servicetask";
 
 interface ServiceTask {
   id: string;
@@ -432,37 +432,50 @@ export default function PCSTasksPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <header className="glass-effect border-b px-6 py-4 sticky top-0 z-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            {/* FIXED: Back link uses correct params! */}
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left Section */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Back Button */}
             <Link href={`/pcs/${job_id}/services/${pcs_id}/headers`}>
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Headers
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
               </Button>
             </Link>
-            <div className="flex items-center space-x-3">
-              <div className="bg-primary p-2 rounded-xl">
-                <Anchor className="h-6 w-6 text-primary-foreground" />
+
+            {/* Page Title & Icon */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gradient">
-                  {header?.header_name || "Service Tasks"}
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
+                  Service Tasks for {header?.header_name}
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  Greek Lanka PCMS
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  GLAURA
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+
+          {/* Right Section */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
               variant="outline"
-              className="bg-primary/10 text-primary border-primary/20"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
             >
-              {currentUser.name} - Level {currentUser.accessLevel}
+              <span className="truncate">{currentUser.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser.accessLevel}
+              </span>
             </Badge>
           </div>
         </div>

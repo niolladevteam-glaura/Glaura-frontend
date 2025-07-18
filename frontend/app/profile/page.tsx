@@ -371,48 +371,41 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <header className="glass-effect border-b px-6 py-4 sticky top-0 z-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left Section */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Back Button */}
+            <Link href="/dashboard" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
               </Button>
             </Link>
-            <div className="flex items-center space-x-3">
-              <div className="bg-primary p-2 rounded-xl">
-                <Anchor className="h-6 w-6 text-primary-foreground" />
+
+            {/* Page Title & Icon */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gradient">
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
                   User Profile
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  Manage your account and preferences
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  GLAURA
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          {/* Right Section */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
-            <Button
-              onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-              className="professional-button-primary"
-            >
-              {isEditing ? (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </>
-              ) : (
-                <>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Edit Profile
-                </>
-              )}
-            </Button>
           </div>
         </div>
       </header>
@@ -421,10 +414,10 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Profile Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="professional-card">
-              <CardContent className="p-6 text-center">
+            <Card className="professional-card mb-4 lg:mb-0">
+              <CardContent className="p-6 text-center flex flex-col items-center">
                 <div className="relative inline-block mb-4">
-                  <Avatar className="w-24 h-24">
+                  <Avatar className="w-24 h-24 mx-auto">
                     <AvatarImage
                       src={
                         currentUser.personal_info.profile_picture ||
@@ -444,7 +437,6 @@ export default function ProfilePage() {
                     </Button>
                   )}
                 </div>
-
                 <h3 className="font-semibold text-lg mb-1">
                   {currentUser.personal_info.first_name}
                 </h3>
@@ -454,15 +446,13 @@ export default function ProfilePage() {
                 <Badge variant="outline" className="mb-4">
                   Access Level: {currentUser.personal_info.access_level}
                 </Badge>
-
                 <Separator className="my-4" />
-
                 <div className="space-y-3 text-sm">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center space-x-2">
                     <Building className="h-4 w-4 text-muted-foreground" />
                     <span>{currentUser.personal_info.department}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center space-x-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>
                       Joined{" "}
@@ -716,9 +706,7 @@ export default function ProfilePage() {
                       <Shield className="mr-2 h-5 w-5" />
                       Security Settings
                     </CardTitle>
-                    <CardDescription>
-                      Manage your account security and access permissions
-                    </CardDescription>
+                    <CardDescription>Manage Your Account</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="space-y-4">
@@ -816,6 +804,28 @@ export default function ProfilePage() {
                 </Card>
               </TabsContent>
             </Tabs>
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-4">
+              <div className="flex flex-col sm:flex-row justify-end w-full">
+                <Button
+                  onClick={() =>
+                    isEditing ? handleSave() : setIsEditing(true)
+                  }
+                  className="w-full sm:w-auto professional-button-primary"
+                >
+                  {isEditing ? (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </>
+                  ) : (
+                    <>
+                      <Settings className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

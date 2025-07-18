@@ -43,6 +43,7 @@ import {
   Shield,
   Calendar,
   Activity,
+  ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -806,38 +807,51 @@ export default function UserManagement() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-600 p-2 rounded-lg">
-                  <Anchor className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    User Management
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Manage system users and permissions
-                  </p>
-                </div>
-              </div>
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left Section */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Back Button */}
+            <Link href="/dashboard" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
             </Link>
+
+            {/* Page Title & Icon */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
+                  User Management
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Manage System Users and Permissions
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          {/* Right Section */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
               variant="outline"
-              className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
             >
-              {currentUser.name} - {currentUser.role}
+              <span className="truncate">{currentUser.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser.accessLevel}
+              </span>
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
           </div>
         </div>
       </header>

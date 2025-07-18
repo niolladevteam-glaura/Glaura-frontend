@@ -379,36 +379,50 @@ export default function PCSJobPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <header className="glass-effect border-b px-6 py-4 sticky top-0 z-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left Section */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Back Button */}
             <Link href={`/pcs/${job_id}/services`}>
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Port Call Services
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
               </Button>
             </Link>
-            <div className="flex items-center space-x-3">
-              <div className="bg-primary p-2 rounded-xl">
-                <Anchor className="h-6 w-6 text-primary-foreground" />
+
+            {/* Page Title & Icon */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gradient">
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
                   Service Task Headers for {pcs.service_name}
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  Greek Lanka PCMS
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  GLAURA
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+
+          {/* Right Section */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
               variant="outline"
-              className="bg-primary/10 text-primary border-primary/20"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
             >
-              {currentUser.name} - Level {currentUser.accessLevel}
+              <span className="truncate">{currentUser.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser.accessLevel}
+              </span>
             </Badge>
           </div>
         </div>
@@ -423,10 +437,12 @@ export default function PCSJobPage() {
         </div>
         <Card className="border rounded-xl overflow-hidden">
           <CardHeader className="bg-gray-100 dark:bg-gray-800 py-4">
-            <CardTitle className="text-lg">Service Task Headers</CardTitle>
-            <CardFooter>
+            <CardTitle className="text-lg">
+              Service Task Headers for {pcs.service_name}
+            </CardTitle>
+            {/* <CardFooter>
               {completedHeaders} of {totalHeaders} headers completed
-            </CardFooter>
+            </CardFooter> */}
           </CardHeader>
           <CardContent className="p-0">
             <Table>

@@ -49,6 +49,7 @@ import {
   X,
   Trash2,
   CheckCircle,
+  ArrowLeft,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -58,7 +59,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 
-// API Configuration
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_ENDPOINTS = {
@@ -267,7 +267,6 @@ export default function VendorManagement() {
 
   const router = useRouter();
 
-  // API Functions
   // API Functions
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     try {
@@ -727,38 +726,51 @@ export default function VendorManagement() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <header className="glass-effect border-b px-6 py-4 sticky top-0 z-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <div className="flex items-center space-x-2">
-                <div className="bg-primary p-2 rounded-xl">
-                  <Anchor className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gradient">
-                    Vendor Management
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Manage service providers
-                  </p>
-                </div>
-              </div>
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left Section */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Back Button */}
+            <Link href="/dashboard" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
             </Link>
+
+            {/* Page Title & Icon */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
+                  Vendor Management
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Manage Service Providers
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          {/* Right Section */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
               variant="outline"
-              className="bg-primary/10 text-primary border-primary/20"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
             >
-              {currentUser.name} - Level {currentUser.accessLevel}
+              <span className="truncate">{currentUser.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser.accessLevel}
+              </span>
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
           </div>
         </div>
       </header>
@@ -878,369 +890,383 @@ export default function VendorManagement() {
             {/* Search and Filters */}
             <Card className="professional-card">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+                <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <span>Vendor Management</span>
-                  <Dialog
-                    open={isAddVendorOpen}
-                    onOpenChange={setIsAddVendorOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button
-                        className="professional-button-primary"
-                        disabled={loading}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Vendor
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>
-                          {editingVendor ? "Edit Vendor" : "Add New Vendor"}
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-6">
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">
-                            Company Information
-                          </h3>
-                          <div>
-                            <Label htmlFor="name" className="form-label">
-                              Company Name *
-                            </Label>
-                            <Input
-                              id="name"
-                              value={vendorForm.name}
-                              onChange={(e) =>
-                                setVendorForm((prev) => ({
-                                  ...prev,
-                                  name: e.target.value,
-                                }))
-                              }
-                              placeholder="Enter company name"
-                              className="form-input"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="companyType" className="form-label">
-                              Company Type
-                            </Label>
-                            <Input
-                              id="companyType"
-                              value={vendorForm.company_type}
-                              onChange={(e) =>
-                                setVendorForm((prev) => ({
-                                  ...prev,
-                                  company_type: e.target.value,
-                                }))
-                              }
-                              placeholder="e.g., Launch Boat Operator"
-                              className="form-input"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="address" className="form-label">
-                              Address
-                            </Label>
-                            <Textarea
-                              id="address"
-                              value={vendorForm.address}
-                              onChange={(e) =>
-                                setVendorForm((prev) => ({
-                                  ...prev,
-                                  address: e.target.value,
-                                }))
-                              }
-                              placeholder="Enter company address"
-                              className="form-input"
-                              rows={3}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="phoneNumber" className="form-label">
-                              Phone Number
-                            </Label>
-                            <Input
-                              id="phoneNumber"
-                              value={vendorForm.phone_number}
-                              onChange={(e) =>
-                                setVendorForm((prev) => ({
-                                  ...prev,
-                                  phone_number: e.target.value,
-                                }))
-                              }
-                              placeholder="+94112223344"
-                              className="form-input"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="email" className="form-label">
-                              Email
-                            </Label>
-                            <Input
-                              id="email"
-                              value={vendorForm.email}
-                              onChange={(e) =>
-                                setVendorForm((prev) => ({
-                                  ...prev,
-                                  email: e.target.value,
-                                }))
-                              }
-                              placeholder="email@company.com"
-                              className="form-input"
-                            />
-                          </div>
-
-                          <div>
-                            <Label className="form-label">
-                              Service Categories
-                            </Label>
-                            <br />
-                            <Link
-                              href="/services"
-                              className="text-primary text-sm mt-1 inline-block hover:underline"
-                            >
-                              Go to Service Management to add services
-                            </Link>
-                            {loadingServices ? (
-                              <div className="flex items-center space-x-2 py-2">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                                <span className="text-sm text-muted-foreground">
-                                  Loading services...
-                                </span>
-                              </div>
-                            ) : serviceCategories.length > 0 ? (
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 max-h-60 overflow-y-auto p-2 border rounded-lg">
-                                {serviceCategories.map((category) => (
-                                  <div
-                                    key={category}
-                                    className="flex items-center space-x-2"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      id={`service-${category}`}
-                                      checked={vendorForm.services.includes(
-                                        category
-                                      )}
-                                      onChange={() =>
-                                        toggleServiceCategory(category)
-                                      }
-                                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
-                                    />
-                                    <Label
-                                      htmlFor={`service-${category}`}
-                                      className="text-sm cursor-pointer truncate"
-                                      title={category}
-                                    >
-                                      {category}
-                                    </Label>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mt-2">
-                                <p className="text-yellow-800 text-sm">
-                                  No service categories found.
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <Label htmlFor="kycStatus" className="form-label">
-                              KYC Status
-                            </Label>
-                            <Select
-                              value={
-                                vendorForm.status.status
-                                  ? "Approved"
-                                  : "Pending"
-                              }
-                              onValueChange={(value) =>
-                                setVendorForm((prev) => ({
-                                  ...prev,
-                                  status: { status: value === "Approved" },
-                                }))
-                              }
-                            >
-                              <SelectTrigger className="form-input">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Approved">
-                                  Approved
-                                </SelectItem>
-                                <SelectItem value="Pending">Pending</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <Dialog
+                      open={isAddVendorOpen}
+                      onOpenChange={setIsAddVendorOpen}
+                    >
+                      <DialogTrigger asChild>
+                        <Button
+                          className="professional-button-primary"
+                          disabled={loading}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Vendor
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-[98vw] sm:max-w-4xl max-h-[95vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>
+                            {editingVendor ? "Edit Vendor" : "Add New Vendor"}
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-6">
                           <div className="space-y-4">
-                            <h3 className="text-lg font-medium flex items-center gap-2">
-                              <Users className="h-4 w-4" /> Primary Contact
-                              (PIC)
+                            <h3 className="text-lg font-medium">
+                              Company Information
                             </h3>
-
-                            {/* PIC Name Field */}
+                            {/* Company fields */}
                             <div>
-                              <Label htmlFor="picName">PIC Name *</Label>
+                              <Label htmlFor="name" className="form-label">
+                                Company Name *
+                              </Label>
                               <Input
-                                id="picName"
-                                value={vendorForm.pic.name}
+                                id="name"
+                                value={vendorForm.name}
                                 onChange={(e) =>
                                   setVendorForm((prev) => ({
                                     ...prev,
-                                    pic: { ...prev.pic, name: e.target.value },
+                                    name: e.target.value,
                                   }))
                                 }
-                                placeholder="John Doe"
+                                placeholder="Enter company name"
                                 className="form-input"
                               />
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor="picPhone">Phone Number</Label>
-                                <Input
-                                  id="picPhone"
-                                  value={vendorForm.pic.phone_number}
-                                  onChange={(e) =>
-                                    setVendorForm((prev) => ({
-                                      ...prev,
-                                      pic: {
-                                        ...prev.pic,
-                                        phone_number: e.target.value,
-                                      },
-                                    }))
-                                  }
-                                  placeholder="+94771234567"
-                                  className="form-input"
-                                />
-                              </div>
-
-                              <div>
-                                <Label htmlFor="picEmail">Email</Label>
-                                <Input
-                                  id="picEmail"
-                                  value={vendorForm.pic.email}
-                                  onChange={(e) =>
-                                    setVendorForm((prev) => ({
-                                      ...prev,
-                                      pic: {
-                                        ...prev.pic,
-                                        email: e.target.value,
-                                      },
-                                    }))
-                                  }
-                                  placeholder="contact@company.com"
-                                  className="form-input"
-                                />
-                              </div>
-                            </div>
-
-                            {/* PIC Remark Field */}
                             <div>
-                              <Label htmlFor="picRemark">Remarks</Label>
-                              <Textarea
-                                id="picRemark"
-                                value={vendorForm.pic.remark}
+                              <Label
+                                htmlFor="companyType"
+                                className="form-label"
+                              >
+                                Company Type
+                              </Label>
+                              <Input
+                                id="companyType"
+                                value={vendorForm.company_type}
                                 onChange={(e) =>
                                   setVendorForm((prev) => ({
                                     ...prev,
-                                    pic: {
-                                      ...prev.pic,
-                                      remark: e.target.value,
-                                    },
+                                    company_type: e.target.value,
                                   }))
                                 }
-                                placeholder="Contact person details"
+                                placeholder="e.g., Launch Boat Operator"
+                                className="form-input"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="address" className="form-label">
+                                Address
+                              </Label>
+                              <Textarea
+                                id="address"
+                                value={vendorForm.address}
+                                onChange={(e) =>
+                                  setVendorForm((prev) => ({
+                                    ...prev,
+                                    address: e.target.value,
+                                  }))
+                                }
+                                placeholder="Enter company address"
+                                className="form-input"
+                                rows={3}
+                              />
+                            </div>
+                            <div>
+                              <Label
+                                htmlFor="phoneNumber"
+                                className="form-label"
+                              >
+                                Phone Number
+                              </Label>
+                              <Input
+                                id="phoneNumber"
+                                value={vendorForm.phone_number}
+                                onChange={(e) =>
+                                  setVendorForm((prev) => ({
+                                    ...prev,
+                                    phone_number: e.target.value,
+                                  }))
+                                }
+                                placeholder="+94112223344"
+                                className="form-input"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="email" className="form-label">
+                                Email
+                              </Label>
+                              <Input
+                                id="email"
+                                value={vendorForm.email}
+                                onChange={(e) =>
+                                  setVendorForm((prev) => ({
+                                    ...prev,
+                                    email: e.target.value,
+                                  }))
+                                }
+                                placeholder="email@company.com"
+                                className="form-input"
+                              />
+                            </div>
+                            {/* Service categories */}
+                            <div>
+                              <Label className="form-label">
+                                Service Categories
+                              </Label>
+                              <br />
+                              <Link
+                                href="/services"
+                                className="text-primary text-sm mt-1 inline-block hover:underline"
+                              >
+                                Go to Service Management to add services
+                              </Link>
+                              {loadingServices ? (
+                                <div className="flex items-center space-x-2 py-2">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                  <span className="text-sm text-muted-foreground">
+                                    Loading services...
+                                  </span>
+                                </div>
+                              ) : serviceCategories.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 max-h-60 overflow-y-auto p-2 border rounded-lg">
+                                  {serviceCategories.map((category) => (
+                                    <div
+                                      key={category}
+                                      className="flex items-center space-x-2"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        id={`service-${category}`}
+                                        checked={vendorForm.services.includes(
+                                          category
+                                        )}
+                                        onChange={() =>
+                                          toggleServiceCategory(category)
+                                        }
+                                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                                      />
+                                      <Label
+                                        htmlFor={`service-${category}`}
+                                        className="text-sm cursor-pointer truncate"
+                                        title={category}
+                                      >
+                                        {category}
+                                      </Label>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mt-2">
+                                  <p className="text-yellow-800 text-sm">
+                                    No service categories found.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                            {/* KYC Status */}
+                            <div>
+                              <Label htmlFor="kycStatus" className="form-label">
+                                KYC Status
+                              </Label>
+                              <Select
+                                value={
+                                  vendorForm.status.status
+                                    ? "Approved"
+                                    : "Pending"
+                                }
+                                onValueChange={(value) =>
+                                  setVendorForm((prev) => ({
+                                    ...prev,
+                                    status: { status: value === "Approved" },
+                                  }))
+                                }
+                              >
+                                <SelectTrigger className="form-input">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Approved">
+                                    Approved
+                                  </SelectItem>
+                                  <SelectItem value="Pending">
+                                    Pending
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {/* Primary Contact */}
+                            <div className="space-y-4">
+                              <h3 className="text-lg font-medium flex items-center gap-2">
+                                <Users className="h-4 w-4" /> Primary Contact
+                                (PIC)
+                              </h3>
+                              <div>
+                                <Label htmlFor="picName">PIC Name *</Label>
+                                <Input
+                                  id="picName"
+                                  value={vendorForm.pic.name}
+                                  onChange={(e) =>
+                                    setVendorForm((prev) => ({
+                                      ...prev,
+                                      pic: {
+                                        ...prev.pic,
+                                        name: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                  placeholder="John Doe"
+                                  className="form-input"
+                                />
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="picPhone">Phone Number</Label>
+                                  <Input
+                                    id="picPhone"
+                                    value={vendorForm.pic.phone_number}
+                                    onChange={(e) =>
+                                      setVendorForm((prev) => ({
+                                        ...prev,
+                                        pic: {
+                                          ...prev.pic,
+                                          phone_number: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                    placeholder="+94771234567"
+                                    className="form-input"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="picEmail">Email</Label>
+                                  <Input
+                                    id="picEmail"
+                                    value={vendorForm.pic.email}
+                                    onChange={(e) =>
+                                      setVendorForm((prev) => ({
+                                        ...prev,
+                                        pic: {
+                                          ...prev.pic,
+                                          email: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                    placeholder="contact@company.com"
+                                    className="form-input"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <Label htmlFor="picRemark">Remarks</Label>
+                                <Textarea
+                                  id="picRemark"
+                                  value={vendorForm.pic.remark}
+                                  onChange={(e) =>
+                                    setVendorForm((prev) => ({
+                                      ...prev,
+                                      pic: {
+                                        ...prev.pic,
+                                        remark: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                  placeholder="Contact person details"
+                                  className="form-input"
+                                  rows={3}
+                                />
+                              </div>
+                            </div>
+                            {/* Company Remarks */}
+                            <div>
+                              <Label htmlFor="remark" className="form-label">
+                                Company Remarks
+                              </Label>
+                              <Textarea
+                                id="remark"
+                                value={vendorForm.remark}
+                                onChange={(e) =>
+                                  setVendorForm((prev) => ({
+                                    ...prev,
+                                    remark: e.target.value,
+                                  }))
+                                }
+                                placeholder="Additional notes about the vendor"
                                 className="form-input"
                                 rows={3}
                               />
                             </div>
                           </div>
-                          <div>
-                            <Label htmlFor="remark" className="form-label">
-                              Company Remarks
-                            </Label>
-                            <Textarea
-                              id="remark"
-                              value={vendorForm.remark}
-                              onChange={(e) =>
-                                setVendorForm((prev) => ({
-                                  ...prev,
-                                  remark: e.target.value,
-                                }))
-                              }
-                              placeholder="Additional notes about the vendor"
-                              className="form-input"
-                              rows={3}
-                            />
-                          </div>
                         </div>
-                      </div>
-
-                      <div className="flex justify-end space-x-2 mt-6">
-                        <Button
-                          variant="outline"
-                          onClick={() => setIsAddVendorOpen(false)}
-                          disabled={loading}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={saveVendor}
-                          className="professional-button-primary"
-                          disabled={loading || !vendorForm.name.trim()}
-                        >
-                          {loading
-                            ? "Saving..."
-                            : editingVendor
-                            ? "Update Vendor"
-                            : "Add Vendor"}
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                  {/* Delete Confirmation Dialog */}
-                  <Dialog
-                    open={deleteDialogOpen}
-                    onOpenChange={setDeleteDialogOpen}
-                  >
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Confirm Deletion</DialogTitle>
-                        <DialogDescription>
-                          Are you sure you want to delete{" "}
-                          <span className="font-semibold">
-                            {vendorToDelete?.name}
-                          </span>
-                          ? This action cannot be undone.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="flex justify-end space-x-2 mt-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => setDeleteDialogOpen(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          onClick={() => {
-                            if (vendorToDelete) {
-                              deleteVendor(
-                                vendorToDelete.id,
-                                vendorToDelete.name
-                              );
-                              setDeleteDialogOpen(false);
-                            }
-                          }}
-                          disabled={loading}
-                        >
-                          {loading ? "Deleting..." : "Delete Vendor"}
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                        {/* Dialog Buttons */}
+                        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsAddVendorOpen(false)}
+                            disabled={loading}
+                            className="w-full sm:w-auto"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={saveVendor}
+                            className="professional-button-primary w-full sm:w-auto"
+                            disabled={loading || !vendorForm.name.trim()}
+                          >
+                            {loading
+                              ? "Saving..."
+                              : editingVendor
+                              ? "Update Vendor"
+                              : "Add Vendor"}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    {/* Delete Confirmation Dialog */}
+                    <Dialog
+                      open={deleteDialogOpen}
+                      onOpenChange={setDeleteDialogOpen}
+                    >
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Confirm Deletion</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to delete{" "}
+                            <span className="font-semibold">
+                              {vendorToDelete?.name}
+                            </span>
+                            ? This action cannot be undone.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
+                          <Button
+                            variant="outline"
+                            onClick={() => setDeleteDialogOpen(false)}
+                            className="w-full sm:w-auto"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => {
+                              if (vendorToDelete) {
+                                deleteVendor(
+                                  vendorToDelete.id,
+                                  vendorToDelete.name
+                                );
+                                setDeleteDialogOpen(false);
+                              }
+                            }}
+                            disabled={loading}
+                            className="w-full sm:w-auto"
+                          >
+                            {loading ? "Deleting..." : "Delete Vendor"}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1256,9 +1282,9 @@ export default function VendorManagement() {
                       />
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
-                      <SelectTrigger className="w-48 form-input">
+                      <SelectTrigger className="w-full sm:w-48 form-input">
                         <SelectValue placeholder="Service Type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1275,7 +1301,7 @@ export default function VendorManagement() {
                       value={statusFilter}
                       onValueChange={setStatusFilter}
                     >
-                      <SelectTrigger className="w-40 form-input">
+                      <SelectTrigger className="w-full sm:w-40 form-input">
                         <SelectValue placeholder="KYC Status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1301,47 +1327,50 @@ export default function VendorManagement() {
                     key={vendor.id}
                     className="professional-card hover:shadow-lg transition-all duration-200"
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-4">
-                          <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-xl">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2 sm:gap-0">
+                        {/* Info section */}
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                          <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-xl flex-shrink-0">
                             <Building className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-lg">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-base sm:text-lg truncate">
                               {vendor.name}
                             </h3>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Badge variant="outline">
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <Badge variant="outline" className="truncate">
                                 {vendor.company_type}
                               </Badge>
                               <Badge
-                                className={getKycStatusColor(
+                                className={`truncate ${getKycStatusColor(
                                   vendor.kycStatus || "Pending"
-                                )}
+                                )}`}
                               >
                                 {vendor.kycStatus || "Pending"}
                               </Badge>
                             </div>
                           </div>
                         </div>
-                        {/* Actions remain the same */}
-                        <div className="flex items-center space-x-2">
+                        {/* Action buttons: wrap and stack on mobile */}
+                        <div className="flex flex-row flex-wrap gap-2 mt-2 sm:mt-0">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setSelectedVendor(vendor)}
+                            className="flex-1 sm:flex-none min-w-[90px]"
                           >
                             <Eye className="h-4 w-4 mr-2" />
-                            View
+                            <span className="hidden xs:inline">View</span>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => editVendor(vendor)}
+                            className="flex-1 sm:flex-none min-w-[90px]"
                           >
                             <Edit className="h-4 w-4 mr-2" />
-                            Edit
+                            <span className="hidden xs:inline">Edit</span>
                           </Button>
                           <Button
                             variant="outline"
@@ -1353,37 +1382,42 @@ export default function VendorManagement() {
                               });
                               setDeleteDialogOpen(true);
                             }}
+                            className="flex-1 sm:flex-none min-w-[50px] text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                           >
-                            <Trash2 className="h-4 w-4 text-red-600" />
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
                           </Button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div className="flex items-center space-x-2">
+                      {/* Responsive grid for vendor info */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+                        <div className="flex items-center gap-2 min-w-0">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               Address
                             </p>
-                            <p className="font-medium text-sm">
+                            <p className="font-medium text-xs sm:text-sm truncate">
                               {vendor.address}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <Phone className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               Phone
                             </p>
-                            <p className="font-medium">{vendor.phone_number}</p>
+                            <p className="font-medium text-xs sm:text-sm truncate">
+                              {vendor.phone_number}
+                            </p>
                           </div>
                         </div>
                       </div>
 
                       <div className="mb-4">
-                        <p className="text-sm text-muted-foreground mb-2">
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-2">
                           Services
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -1391,7 +1425,7 @@ export default function VendorManagement() {
                             <Badge
                               key={index}
                               variant="secondary"
-                              className="text-xs"
+                              className="text-xs truncate"
                             >
                               {typeof service === "string"
                                 ? service

@@ -49,6 +49,7 @@ import {
   Cake,
   X,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -678,38 +679,51 @@ export default function CustomerCompanies() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <header className="glass-effect border-b px-6 py-4 sticky top-0 z-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <div className="flex items-center space-x-2">
-                <div className="bg-primary p-2 rounded-xl">
-                  <Anchor className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gradient">
-                    Customer Companies
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Manage client relationships
-                  </p>
-                </div>
-              </div>
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left Section */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Back Button */}
+            <Link href="/dashboard" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
             </Link>
+
+            {/* Page Title & Icon */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
+                  Customer Companies
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Manage Client Relationships
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          {/* Right Section */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
               variant="outline"
-              className="bg-primary/10 text-primary border-primary/20"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
             >
-              {currentUser.name} - Level {currentUser.accessLevel}
+              <span className="truncate">{currentUser.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser.accessLevel}
+              </span>
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
           </div>
         </div>
       </header>
@@ -1016,7 +1030,7 @@ export default function CustomerCompanies() {
                       </div>
                       {/* PIC Management Section */}
                       <div className="space-y-4 pt-6 border-t">
-                        <h3 className="text-lg font-medium">
+                        <h3 className="text-lg sm:text-xl font-medium">
                           Persons In Charge (PICs)
                         </h3>
 
@@ -1028,39 +1042,44 @@ export default function CustomerCompanies() {
                                 key={pic.id}
                                 className="p-3 border rounded-lg"
                               >
-                                <div className="flex items-center justify-between mb-2">
-                                  <div>
-                                    <p className="font-medium">{pic.name}</p>
-                                    <p className="text-sm text-muted-foreground">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2 sm:gap-0">
+                                  <div className="min-w-0">
+                                    <p className="font-medium truncate">
+                                      {pic.name}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground truncate">
                                       {pic.department}
                                     </p>
                                   </div>
-                                  <div className="flex space-x-2">
+                                  <div className="flex flex-row sm:flex-row flex-wrap gap-2 w-full sm:w-auto">
                                     <Button
                                       variant="outline"
                                       size="sm"
                                       onClick={() => editPic(index)}
+                                      className="flex-1 sm:flex-none"
                                     >
                                       <Edit className="h-4 w-4" />
+                                      <span className="sr-only">Edit</span>
                                     </Button>
                                     <Button
                                       variant="outline"
                                       size="sm"
                                       onClick={() => removePic(index)}
-                                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 flex-1 sm:flex-none"
                                     >
                                       <Trash2 className="h-4 w-4" />
+                                      <span className="sr-only">Delete</span>
                                     </Button>
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                                  <div>
+                                  <div className="truncate">
                                     <span className="text-muted-foreground">
                                       Contact:{" "}
                                     </span>
                                     {pic.contactNumbers.join(", ")}
                                   </div>
-                                  <div>
+                                  <div className="truncate">
                                     <span className="text-muted-foreground">
                                       Email:{" "}
                                     </span>
@@ -1396,6 +1415,7 @@ export default function CustomerCompanies() {
             </Card>
 
             {/* Customer List */}
+            {/* Customer List */}
             <div className="space-y-4">
               {loading ? (
                 <div className="flex justify-center py-8">
@@ -1407,17 +1427,18 @@ export default function CustomerCompanies() {
                     key={customer.id}
                     className="professional-card hover:shadow-lg transition-all duration-200"
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-4">
-                          <div className="bg-primary/10 p-3 rounded-xl">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2 sm:gap-0">
+                        {/* Info section */}
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                          <div className="bg-primary/10 p-3 rounded-xl flex-shrink-0">
                             <Building className="h-6 w-6 text-primary" />
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-lg">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-base sm:text-lg truncate">
                               {customer.companyName}
                             </h3>
-                            <div className="flex items-center space-x-2 mt-1">
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
                               <Badge variant="outline">
                                 {customer.companyType}
                               </Badge>
@@ -1427,22 +1448,25 @@ export default function CustomerCompanies() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        {/* Action buttons: wrap and stack on mobile */}
+                        <div className="flex flex-row flex-wrap gap-2 mt-2 sm:mt-0">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setSelectedCustomer(customer)}
+                            className="flex-1 sm:flex-none min-w-[90px]"
                           >
                             <Eye className="h-4 w-4 mr-2" />
-                            View
+                            <span className="hidden xs:inline">View</span>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => editCustomer(customer)}
+                            className="flex-1 sm:flex-none min-w-[90px]"
                           >
                             <Edit className="h-4 w-4 mr-2" />
-                            Edit
+                            <span className="hidden xs:inline">Edit</span>
                           </Button>
                           <Button
                             variant="outline"
@@ -1451,72 +1475,75 @@ export default function CustomerCompanies() {
                               setCustomerToDelete(customer);
                               setDeleteDialogOpen(true);
                             }}
-                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 flex-1 sm:flex-none min-w-[50px]"
                           >
                             <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
                           </Button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                        <div className="flex items-center space-x-2">
+                      {/* Responsive grid for customer info */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
+                        <div className="flex items-center gap-2 min-w-0">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               Address
                             </p>
-                            <p className="font-medium text-sm">
+                            <p className="font-medium text-xs sm:text-sm truncate">
                               {customer.address}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <Phone className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               Phone
                             </p>
-                            <p className="font-medium">
+                            <p className="font-medium text-xs sm:text-sm truncate">
                               {customer.landlineCountryCode}{" "}
                               {customer.landlineNumber}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <Mail className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               Emails
                             </p>
-                            <p className="font-medium text-sm">
+                            <p className="font-medium text-xs sm:text-sm truncate">
                               {customer.groupEmails.length} addresses
                             </p>
                           </div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+                      {/* Responsive grid for statistics */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-4 border-t">
                         <div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             Total Port Calls
                           </p>
-                          <p className="font-semibold text-lg">
+                          <p className="font-semibold text-base sm:text-lg">
                             {customer.totalPortCalls}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             Active Port Calls
                           </p>
-                          <p className="font-semibold text-lg text-primary">
+                          <p className="font-semibold text-base sm:text-lg text-primary">
                             {customer.activePortCalls}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             Last Updated
                           </p>
-                          <p className="font-medium">
+                          <p className="font-medium text-xs sm:text-sm">
                             {new Date(
                               customer.lastUpdated
                             ).toLocaleDateString()}

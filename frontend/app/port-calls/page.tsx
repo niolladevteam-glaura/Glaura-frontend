@@ -31,6 +31,7 @@ import {
   CheckCircle,
   AlertCircle,
   XCircle,
+  ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -67,7 +68,6 @@ export default function ActivePortCalls() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Store headers for each port call by job_id
   const [portCallHeaders, setPortCallHeaders] = useState<
     Record<string, ServiceHeader[]>
   >({});
@@ -79,10 +79,8 @@ export default function ActivePortCalls() {
     const fetchPortCalls = async () => {
       try {
         setLoading(true);
-
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No authentication token found");
-
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/portcall`,
           {
@@ -92,16 +90,13 @@ export default function ActivePortCalls() {
             },
           }
         );
-
         if (response.status === 401) {
           localStorage.removeItem("token");
           localStorage.removeItem("currentUser");
           router.push("/");
           throw new Error("Session expired. Please login again.");
         }
-
         const data = await response.json();
-
         if (data.success && data.data) {
           setPortCalls(data.data);
           setFilteredPortCalls(data.data);
@@ -120,17 +115,14 @@ export default function ActivePortCalls() {
       router.push("/");
       return;
     }
-
     setCurrentUser(JSON.parse(userData));
     fetchPortCalls();
   }, [router]);
 
-  // Fetch headers for each port call
   useEffect(() => {
     const fetchHeadersForPortCalls = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
-      // Only fetch if we haven't already
       portCalls.forEach((pc) => {
         if (portCallHeaders[pc.job_id] || headersLoading[pc.job_id]) return;
         setHeadersLoading((prev) => ({ ...prev, [pc.job_id]: true }));
@@ -145,7 +137,6 @@ export default function ActivePortCalls() {
         )
           .then((res) => res.json())
           .then((data) => {
-            // `data.data` can be array or object, normalize to array
             let headers: ServiceHeader[] = [];
             if (Array.isArray(data.data)) headers = data.data;
             else if (data.data && typeof data.data === "object")
@@ -155,7 +146,7 @@ export default function ActivePortCalls() {
               [pc.job_id]: headers,
             }));
           })
-          .catch((err) => {
+          .catch(() => {
             setPortCallHeaders((prev) => ({
               ...prev,
               [pc.job_id]: [],
@@ -170,10 +161,8 @@ export default function ActivePortCalls() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portCalls]);
 
-  // Filtering (same as before)
   useEffect(() => {
     let filtered = portCalls;
-
     if (searchTerm) {
       filtered = filtered.filter(
         (pc) =>
@@ -219,7 +208,6 @@ export default function ActivePortCalls() {
     portCallHeaders,
   ]);
 
-  // Helper: Mark port call as completed only if ALL service headers are completed
   const getPortCallStatus = (
     headers: ServiceHeader[]
   ): "Pending" | "Completed" => {
@@ -329,54 +317,70 @@ export default function ActivePortCalls() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-600 p-2 rounded-lg">
-                  <Anchor className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    Active Port Calls
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Manage vessel operations
-                  </p>
-                </div>
-              </div>
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left Section */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Back Button */}
+            <Link href="/dashboard" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
             </Link>
+
+            {/* Page Title & Icon */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
+                  Active Port Calls
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Manage Vessel Operations
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          {/* Right Section */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
               variant="outline"
-              className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
             >
-              {currentUser.name} - Level {currentUser.accessLevel}
+              <span className="truncate">{currentUser.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser.accessLevel}
+              </span>
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
         {/* Filters and Search */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <span>Port Call Management</span>
-              <div className="flex items-center space-x-2">
-                <Badge variant="outline">
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                <Badge
+                  variant="outline"
+                  className="w-full sm:w-auto text-center"
+                >
                   {filteredPortCalls.length} calls
                 </Badge>
-                <Link href="/port-calls/new">
-                  <Button size="sm">
+                <Link href="/port-calls/new" className="w-full sm:w-auto">
+                  <Button size="sm" className="w-full sm:w-auto">
                     <Ship className="h-4 w-4 mr-2" />
                     New Port Call
                   </Button>
@@ -397,9 +401,9 @@ export default function ActivePortCalls() {
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -411,7 +415,7 @@ export default function ActivePortCalls() {
                   </SelectContent>
                 </Select>
                 <Select value={portFilter} onValueChange={setPortFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue placeholder="Port" />
                   </SelectTrigger>
                   <SelectContent>
@@ -424,45 +428,63 @@ export default function ActivePortCalls() {
                 </Select>
               </div>
             </div>
-
-            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-              <TabsList>
-                <TabsTrigger value="all">All ({portCalls.length})</TabsTrigger>
-                <TabsTrigger value="active">
-                  Active (
-                  {
-                    portCalls.filter((pc) => {
-                      const headers = portCallHeaders[pc.job_id] || [];
-                      return getPortCallStatus(headers) === "Pending";
-                    }).length
-                  }
-                  )
-                </TabsTrigger>
-                <TabsTrigger value="completed">
-                  Completed (
-                  {
-                    portCalls.filter((pc) => {
-                      const headers = portCallHeaders[pc.job_id] || [];
-                      return getPortCallStatus(headers) === "Completed";
-                    }).length
-                  }
-                  )
-                </TabsTrigger>
-                <TabsTrigger value="urgent">
-                  Urgent (
-                  {portCalls.filter((pc) => pc.priority === "High").length})
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {/* Tabs: Responsive row/scroll on mobile, row on desktop */}
+            <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <Tabs
+                value={selectedTab}
+                onValueChange={setSelectedTab}
+                className="w-full"
+              >
+                <TabsList className="w-full flex flex-nowrap overflow-x-auto no-scrollbar bg-muted rounded-lg p-1 sm:overflow-x-visible sm:justify-start sm:gap-0">
+                  <TabsTrigger
+                    value="all"
+                    className="flex-1 min-w-[120px] text-center px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition sm:min-w-[150px] sm:flex-none"
+                  >
+                    All ({portCalls.length})
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="active"
+                    className="flex-1 min-w-[120px] text-center px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition sm:min-w-[150px] sm:flex-none"
+                  >
+                    Active (
+                    {
+                      portCalls.filter((pc) => {
+                        const headers = portCallHeaders[pc.job_id] || [];
+                        return getPortCallStatus(headers) === "Pending";
+                      }).length
+                    }
+                    )
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="completed"
+                    className="flex-1 min-w-[120px] text-center px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition sm:min-w-[150px] sm:flex-none"
+                  >
+                    Completed (
+                    {
+                      portCalls.filter((pc) => {
+                        const headers = portCallHeaders[pc.job_id] || [];
+                        return getPortCallStatus(headers) === "Completed";
+                      }).length
+                    }
+                    )
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="urgent"
+                    className="flex-1 min-w-[120px] text-center px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition sm:min-w-[150px] sm:flex-none"
+                  >
+                    Urgent (
+                    {portCalls.filter((pc) => pc.priority === "High").length})
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </CardContent>
         </Card>
-
         {/* Port Calls List */}
         <div className="space-y-4">
           {filteredPortCalls.map((portCall) => {
             const headers = portCallHeaders[portCall.job_id] || [];
             const headersAreLoading = headersLoading[portCall.job_id];
-
             const { progress, totalHeaders, completedHeaders } =
               getHeaderProgress(headers);
             const remainingHeaders = totalHeaders - completedHeaders;
@@ -478,27 +500,26 @@ export default function ActivePortCalls() {
               completionPhrase = "No headers found.";
             }
             const status = getPortCallStatus(headers);
-
             return (
               <Card
                 key={portCall.job_id}
                 className="hover:shadow-md transition-shadow"
               >
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+                      <div className="flex items-center gap-2">
                         {getStatusIcon(status)}
                         <div>
-                          <h3 className="font-semibold text-lg">
+                          <h3 className="font-semibold text-base sm:text-lg truncate">
                             {portCall.vessel_name}
                           </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                             {portCall.job_id}
                           </p>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
                         <Badge className={getStatusColor(status)}>
                           {status}
                         </Badge>
@@ -507,20 +528,27 @@ export default function ActivePortCalls() {
                         </Badge>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-row flex-wrap gap-2 mt-2 sm:mt-0">
                       <Link href={`/pcs/${portCall.job_id}/services`}>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          Services
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2 flex-1 sm:flex-none min-w-[90px]"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span className="text-xs sm:text-sm">Services</span>
                         </Button>
                       </Link>
-                      <Button variant="outline" size="sm">
+                      {/* <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-none min-w-[50px]"
+                      >
                         <SquareSlash />
-                      </Button>
+                      </Button> */}
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         Client
@@ -552,8 +580,7 @@ export default function ActivePortCalls() {
                       </div>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <div>
@@ -590,71 +617,7 @@ export default function ActivePortCalls() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Service Headers Progress Bar */}
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    {/* <div className="flex items-center gap-2 font-semibold mb-2 text-gray-700 dark:text-gray-200">
-                      <FileText className="h-5 w-5 text-gray-400" />
-                      <span>
-                        {headersAreLoading
-                          ? "Loading..."
-                          : `${completedHeaders}/${totalHeaders} headers completed`}
-                      </span>
-                    </div> */}
-                    {/* Progress Bar */}
-                    {/* <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-4 mb-2">
-                      <div
-                        className="bg-blue-600 h-4 rounded-full transition-all"
-                        style={{
-                          width: `${progress}%`,
-                        }}
-                      ></div>
-                    </div>
-                    <div className="text-sm text-muted-foreground mb-2">
-                      {headersAreLoading
-                        ? "Loading header data..."
-                        : completionPhrase}
-                    </div> */}
-                    {/* Service Headers List */}
-                    {/* <div className="space-y-2">
-                      {headersAreLoading ? (
-                        <div className="text-gray-500 dark:text-gray-400">
-                          Loading headers...
-                        </div>
-                      ) : (
-                        headers.map((header, idx) => {
-                          const isHeaderCompleted =
-                            Array.isArray(header.tasks) &&
-                            header.tasks.length > 0 &&
-                            header.tasks.every(
-                              (task) =>
-                                task.status === true || task.status === "true"
-                            );
-                          return (
-                            <div
-                              key={header.header_id || idx}
-                              className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded px-3 py-2"
-                            >
-                              <span className="font-medium">
-                                {header.header_name || `Header ${idx + 1}`}
-                              </span>
-                              <Badge
-                                variant={
-                                  isHeaderCompleted ? "default" : "secondary"
-                                }
-                                className={
-                                  isHeaderCompleted
-                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                                    : ""
-                                }
-                              >
-                                {isHeaderCompleted ? "Completed" : "Pending"}
-                              </Badge>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div> */}
                     <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                       Created: {new Date(portCall.created).toLocaleDateString()}
                     </div>
@@ -663,7 +626,6 @@ export default function ActivePortCalls() {
               </Card>
             );
           })}
-
           {filteredPortCalls.length === 0 && !loading && (
             <Card>
               <CardContent className="text-center py-12">
@@ -677,7 +639,7 @@ export default function ActivePortCalls() {
                     : "No active port calls at the moment"}
                 </p>
                 <Link href="/port-calls/new">
-                  <Button>
+                  <Button className="w-full sm:w-auto">
                     <Ship className="h-4 w-4 mr-2" />
                     Create New Port Call
                   </Button>

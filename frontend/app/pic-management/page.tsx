@@ -41,10 +41,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, ArrowLeft, Anchor } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/context/AuthContext";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
@@ -63,6 +62,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -97,7 +98,28 @@ type PIC = VendorPIC | CustomerPIC;
 export default function PICManagement() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
+  // 1. Get current user from localStorage, fallback to Demo User
+  const [currentUser, setCurrentUser] = useState<{
+    name: string;
+    accessLevel: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let user = null;
+    try {
+      const userData = localStorage.getItem("currentUser");
+      if (userData) {
+        user = JSON.parse(userData);
+      }
+    } catch (err) {}
+    setCurrentUser(
+      user && user.name && user.accessLevel
+        ? { name: user.name, accessLevel: user.accessLevel }
+        : { name: "Demo User", accessLevel: "A" }
+    );
+  }, []);
+
+  // PIC logic unchanged
   const [pics, setPics] = useState<PIC[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -155,7 +177,7 @@ export default function PICManagement() {
           phone_number: item.phone_number || "N/A",
           email: item.email || "N/A",
           remark: item.remark || "",
-          vendor_id: item.vendor_id || "N/A", // Ensure this exists
+          vendor_id: item.vendor_id || "N/A",
           type: "vendor",
         }));
 
@@ -166,7 +188,7 @@ export default function PICManagement() {
           phone_number: item.phone_number || "N/A",
           email: item.email || "N/A",
           remark: item.remark || "",
-          customer_id: item.customer_id || "N/A", // Ensure this exists
+          customer_id: item.customer_id || "N/A",
           birthday: item.birthday || "",
           receiveUpdates: item.receiveUpdates || false,
           department: item.department || "",
@@ -189,8 +211,6 @@ export default function PICManagement() {
 
     fetchPICs();
   }, [toast]);
-
-  // (Removed duplicate/early definition and usage of fetchPICs and filteredPICs.map)
 
   const handleCreatePIC = async () => {
     // Validate common fields
@@ -221,15 +241,6 @@ export default function PICManagement() {
       return;
     }
 
-    if (!user) {
-      toast({
-        title: "Authentication Error",
-        description: "You must be logged in to create PICs",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
@@ -247,7 +258,7 @@ export default function PICManagement() {
               phone_number: newPic.phone_number,
               email: newPic.email,
               remark: newPic.remark,
-              created_by: user.id,
+              created_by: currentUser?.name || "Demo User",
             }
           : {
               customer_id: newPic.customer_id,
@@ -258,7 +269,7 @@ export default function PICManagement() {
               birthday: newPic.birthday,
               receiveUpdates: newPic.receiveUpdates,
               department: newPic.department,
-              created_by: user.id,
+              created_by: currentUser?.name || "Demo User",
             };
 
       const response = await fetch(endpoint, {
@@ -371,7 +382,6 @@ export default function PICManagement() {
 
       const updatedPIC = await fetchUpdatedPIC();
 
-      // Update state with fresh data
       setPics((prevPICs) =>
         prevPICs.map((p) => (p.pic_id === currentPic.pic_id ? updatedPIC : p))
       );
@@ -480,9 +490,7 @@ export default function PICManagement() {
 
   // Filter PICs based on search query (by name, email, phone, or ID)
   const filteredPICs = pics.filter((pic) => {
-    // Filter by type first
     if (filterType !== "all" && pic.type !== filterType) return false;
-
     const query = searchQuery.toLowerCase();
     return (
       (pic.name ?? "").toLowerCase().includes(query) ||
@@ -498,9 +506,57 @@ export default function PICManagement() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Header */}
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left Section */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Back Button */}
+            <Link href="/dashboard" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
+            </Link>
+            {/* Page Title & Icon */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
+                  PIC Management
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Manage Vendor and Customer Points of Contact
+                </p>
+              </div>
+            </div>
+          </div>
+          {/* Right Section */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <ThemeToggle />
+            <Badge
+              variant="outline"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
+            >
+              <span className="truncate">{currentUser?.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser?.accessLevel}
+              </span>
+            </Badge>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {/* Controls */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">PIC Management</h1>
@@ -508,8 +564,7 @@ export default function PICManagement() {
               Manage Vendor and Customer Points of Contact
             </p>
           </div>
-
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 w-full md:w-auto">
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -519,8 +574,6 @@ export default function PICManagement() {
                 className="pl-10 w-full"
               />
             </div>
-
-            {/*  filter dropdown */}
             <Select
               value={filterType}
               onValueChange={(value: "all" | "vendor" | "customer") =>
@@ -536,264 +589,6 @@ export default function PICManagement() {
                 <SelectItem value="customer">Customer</SelectItem>
               </SelectContent>
             </Select>
-
-            {/* <Dialog open={isCreating} onOpenChange={setIsCreating}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add PIC
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>Create New PIC</DialogTitle>
-                  <DialogDescription>
-                    Add a new Point of Contact (Vendor or Customer)
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="picType" className="text-right">
-                      PIC Type
-                    </Label>
-                    <RadioGroup
-                      id="picType"
-                      defaultValue="vendor"
-                      className="col-span-3 flex gap-6"
-                      onValueChange={(value: "vendor" | "customer") => {
-                        setNewPic({ ...newPic, type: value });
-                        setPicType(value);
-                      }}
-                      value={picType}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="vendor" id="vendor" />
-                        <Label htmlFor="vendor">Vendor PIC</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="customer" id="customer" />
-                        <Label htmlFor="customer">Customer PIC</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="entityId" className="text-right">
-                      {picType === "vendor" ? "Vendor ID" : "Customer ID"}
-                    </Label>
-                    <Input
-                      id="entityId"
-                      placeholder={picType === "vendor" ? "VEN001" : "CUS001"}
-                      className="col-span-3"
-                      value={
-                        picType === "vendor"
-                          ? newPic.vendor_id
-                          : newPic.customer_id
-                      }
-                      onChange={(e) =>
-                        setNewPic({
-                          ...newPic,
-                          [picType === "vendor" ? "vendor_id" : "customer_id"]:
-                            e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      Name
-                    </Label>
-                    <Input
-                      id="name"
-                      placeholder="John Doe"
-                      className="col-span-3"
-                      value={newPic.name}
-                      onChange={(e) =>
-                        setNewPic({
-                          ...newPic,
-                          name: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="phone" className="text-right">
-                      Phone Number
-                    </Label>
-                    <Input
-                      id="phone"
-                      placeholder="0771234567"
-                      className="col-span-3"
-                      value={newPic.phone_number}
-                      onChange={(e) =>
-                        setNewPic({
-                          ...newPic,
-                          phone_number: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email" className="text-right">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="john@example.com"
-                      className="col-span-3"
-                      value={newPic.email}
-                      onChange={(e) =>
-                        setNewPic({
-                          ...newPic,
-                          email: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  {picType === "customer" && (
-                    <>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="birthday" className="text-right">
-                          Birthday
-                        </Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "col-span-3 justify-start text-left font-normal",
-                                !newPic.birthday && "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {newPic.birthday ? (
-                                format(new Date(newPic.birthday), "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={
-                                newPic.birthday
-                                  ? new Date(newPic.birthday)
-                                  : undefined
-                              }
-                              onSelect={(date) =>
-                                setNewPic({
-                                  ...newPic,
-                                  birthday: date
-                                    ? format(date, "yyyy-MM-dd")
-                                    : "",
-                                })
-                              }
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="department" className="text-right">
-                          Department
-                        </Label>
-                        <Select
-                          value={newPic.department}
-                          onValueChange={(value) =>
-                            setNewPic({
-                              ...newPic,
-                              department: value,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Select department" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Procurement">
-                              Procurement
-                            </SelectItem>
-                            <SelectItem value="Finance">Finance</SelectItem>
-                            <SelectItem value="Operations">
-                              Operations
-                            </SelectItem>
-                            <SelectItem value="Logistics">Logistics</SelectItem>
-                            <SelectItem value="Management">
-                              Management
-                            </SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="receiveUpdates" className="text-right">
-                          Receive Updates
-                        </Label>
-                        <div className="col-span-3 flex items-center space-x-2">
-                          <Checkbox
-                            id="receiveUpdates"
-                            checked={newPic.receiveUpdates}
-                            onCheckedChange={(checked) =>
-                              setNewPic({
-                                ...newPic,
-                                receiveUpdates: checked as boolean,
-                              })
-                            }
-                          />
-                          <Label
-                            htmlFor="receiveUpdates"
-                            className="font-normal"
-                          >
-                            Subscribe to email updates
-                          </Label>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="remark" className="text-right">
-                      Remark
-                    </Label>
-                    <Input
-                      id="remark"
-                      placeholder="Additional notes"
-                      className="col-span-3"
-                      value={newPic.remark}
-                      onChange={(e) =>
-                        setNewPic({
-                          ...newPic,
-                          remark: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setIsCreating(false);
-                      resetNewPICForm();
-                    }}
-                    disabled={isLoading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreatePIC} disabled={isLoading}>
-                    {isLoading ? "Creating..." : "Create PIC"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog> */}
           </div>
         </div>
 
@@ -824,7 +619,6 @@ export default function PICManagement() {
                     {picType === "vendor" ? "Vendor ID" : "Customer ID"}
                   </TableHead>
                   <TableHead>Remark</TableHead>
-                  {/* <TableHead>Created At</TableHead> */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -881,7 +675,6 @@ export default function PICManagement() {
                           </span>
                         </div>
                       </TableCell>
-                      {/* // In your table cell that shows the ID, modify it to: */}
                       <TableCell>
                         {pic?.type === "vendor"
                           ? (pic as VendorPIC)?.vendor_id || "N/A"
@@ -890,7 +683,6 @@ export default function PICManagement() {
                       <TableCell className="max-w-[200px] truncate">
                         {pic.remark}
                       </TableCell>
-                      {/* <TableCell>{formatDateTime(pic.created_by)}</TableCell> */}
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Dialog
@@ -929,7 +721,6 @@ export default function PICManagement() {
                                     disabled
                                   />
                                 </div>
-
                                 <div className="grid grid-cols-4 items-center gap-4">
                                   <Label
                                     htmlFor="picType"
@@ -948,7 +739,6 @@ export default function PICManagement() {
                                     disabled
                                   />
                                 </div>
-
                                 <div className="grid grid-cols-4 items-center gap-4">
                                   <Label
                                     htmlFor="entityId"
@@ -971,7 +761,6 @@ export default function PICManagement() {
                                     disabled
                                   />
                                 </div>
-
                                 <div className="grid grid-cols-4 items-center gap-4">
                                   <Label htmlFor="name" className="text-right">
                                     Name
@@ -990,7 +779,6 @@ export default function PICManagement() {
                                     }
                                   />
                                 </div>
-
                                 <div className="grid grid-cols-4 items-center gap-4">
                                   <Label htmlFor="phone" className="text-right">
                                     Phone Number
@@ -1009,7 +797,6 @@ export default function PICManagement() {
                                     }
                                   />
                                 </div>
-
                                 <div className="grid grid-cols-4 items-center gap-4">
                                   <Label htmlFor="email" className="text-right">
                                     Email
@@ -1029,7 +816,6 @@ export default function PICManagement() {
                                     }
                                   />
                                 </div>
-
                                 {currentPic?.type === "customer" && (
                                   <>
                                     <div className="grid grid-cols-4 items-center gap-4">
@@ -1087,7 +873,6 @@ export default function PICManagement() {
                                         </PopoverContent>
                                       </Popover>
                                     </div>
-
                                     <div className="grid grid-cols-4 items-center gap-4">
                                       <Label
                                         htmlFor="department"
@@ -1132,7 +917,6 @@ export default function PICManagement() {
                                         </SelectContent>
                                       </Select>
                                     </div>
-
                                     <div className="grid grid-cols-4 items-center gap-4">
                                       <Label
                                         htmlFor="receiveUpdates"
@@ -1165,7 +949,6 @@ export default function PICManagement() {
                                     </div>
                                   </>
                                 )}
-
                                 <div className="grid grid-cols-4 items-center gap-4">
                                   <Label
                                     htmlFor="remark"
@@ -1205,7 +988,6 @@ export default function PICManagement() {
                               </DialogFooter>
                             </DialogContent>
                           </Dialog>
-
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="destructive" size="icon">

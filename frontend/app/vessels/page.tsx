@@ -46,6 +46,7 @@ import {
   Flag,
   Building,
   Trash2,
+  ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -158,18 +159,13 @@ export default function VesselManagement() {
         } catch (e) {
           throw new Error(response.statusText || "Request failed");
         }
-
-        // Handle duplicate IMO case (assuming backend returns 400 with message)
         if (response.status === 400 && errorData.message?.includes("IMO")) {
           throw new Error(errorData.message);
         }
-
         throw new Error(
           errorData.message || `Request failed with status ${response.status}`
         );
       }
-
-      // Return parsed JSON for successful responses
       return await response.json();
     } catch (error: any) {
       console.error("API Error:", error);
@@ -180,12 +176,9 @@ export default function VesselManagement() {
   // Vessel-specific API functions
   const fetchVessels = async (): Promise<Vessel[]> => {
     const response = await apiCall(`${API_BASE_URL}/vessel`);
-
-    // Check if response has data array
     if (response && response.success && Array.isArray(response.data)) {
       return response.data;
     }
-
     console.error("Unexpected API response format:", response);
     throw new Error("Invalid vessels data format received from server");
   };
@@ -212,18 +205,19 @@ export default function VesselManagement() {
 
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
-    if (!userData) {
-      router.push("/");
-      return;
-    }
-
-    const user = JSON.parse(userData);
-    setCurrentUser(user);
+    let user = null;
+    try {
+      if (userData) user = JSON.parse(userData);
+    } catch (err) {}
+    setCurrentUser(
+      user && user.name && user.accessLevel
+        ? { name: user.name, accessLevel: user.accessLevel }
+        : { name: "Demo User", accessLevel: "A" }
+    );
 
     const loadVessels = async () => {
       try {
         const data = await fetchVessels();
-
         // Transform the backend data to match our frontend interface
         const transformedVessels = data.map((vessel: any) => ({
           id: vessel.vessel_id || vessel.id,
@@ -251,7 +245,6 @@ export default function VesselManagement() {
           lastUpdated:
             vessel.updatedAt || vessel.lastUpdated || new Date().toISOString(),
         }));
-
         setVessels(transformedVessels);
         setFilteredVessels(transformedVessels);
       } catch (error) {
@@ -276,16 +269,15 @@ export default function VesselManagement() {
     const daysUntilExpiry = Math.floor(
       (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
     );
-
     return daysUntilExpiry < 0
       ? "Expired"
       : daysUntilExpiry <= 30
       ? "Expiring"
       : "Valid";
   };
+
   const handleAddVessel = async () => {
     try {
-      // First check if IMO already exists in the current vessels list
       const imoExists = vessels.some((v) => v.imo === newVessel.imo);
       if (imoExists) {
         toast({
@@ -295,7 +287,6 @@ export default function VesselManagement() {
         });
         return;
       }
-
       const vesselData = {
         vessel_name: newVessel.name,
         imo_number: newVessel.imo,
@@ -311,12 +302,10 @@ export default function VesselManagement() {
         nrt: newVessel.nrt,
         p_and_i_club: newVessel.piClub,
       };
-
       const response = await createVessel(vesselData);
-
       const vesselWithId: Vessel = {
         ...newVessel,
-        id: response.vessel_id, // Use ID from backend
+        id: response.vessel_id,
         sscecStatus: calculateSSCECStatus(newVessel.sscecExpiry),
         createdAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
@@ -324,22 +313,7 @@ export default function VesselManagement() {
         totalPortCalls: 0,
         manager: newVessel.owner,
       };
-
-      setVessels((prevVessels) => {
-        const vesselWithId: Vessel = {
-          ...newVessel,
-          id: response.vessel_id,
-          sscecStatus: calculateSSCECStatus(newVessel.sscecExpiry),
-          createdAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString(),
-          lastPortCall: new Date().toISOString().split("T")[0],
-          totalPortCalls: 0,
-          manager: newVessel.owner,
-        };
-        return [...prevVessels, vesselWithId];
-      });
-
-      // Reset form
+      setVessels((prevVessels) => [...prevVessels, vesselWithId]);
       setNewVessel({
         name: "",
         imo: "",
@@ -355,21 +329,16 @@ export default function VesselManagement() {
         owner: "",
         piClub: "",
       });
-
       setIsDialogOpen(false);
-
       toast({
         title: "Success",
         description: "Vessel added successfully",
       });
-
       setSearchTerm("");
       setTypeFilter("all");
       setStatusFilter("all");
     } catch (error: any) {
       console.error("Failed to add vessel:", error);
-
-      // Check for duplicate IMO error from backend
       if (
         error.message.includes("IMO") ||
         error.message.includes("duplicate")
@@ -391,7 +360,6 @@ export default function VesselManagement() {
 
   useEffect(() => {
     let filtered = vessels;
-
     if (searchTerm) {
       filtered = filtered.filter(
         (vessel) =>
@@ -401,19 +369,16 @@ export default function VesselManagement() {
           vessel.flag.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
     if (typeFilter !== "all") {
       filtered = filtered.filter((vessel) =>
         vessel.vesselType.toLowerCase().includes(typeFilter.toLowerCase())
       );
     }
-
     if (statusFilter !== "all") {
       filtered = filtered.filter(
         (vessel) => vessel.sscecStatus.toLowerCase() === statusFilter
       );
     }
-
     if (selectedTab !== "all") {
       switch (selectedTab) {
         case "Valid":
@@ -433,7 +398,6 @@ export default function VesselManagement() {
           break;
       }
     }
-
     setFilteredVessels(filtered);
   }, [searchTerm, typeFilter, statusFilter, selectedTab, vessels]);
 
@@ -477,53 +441,64 @@ export default function VesselManagement() {
     setVesselToEdit(vessel);
     setEditDialogOpen(true);
   }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-600 p-2 rounded-lg">
-                  <Anchor className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    Vessel Management
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Manage vessel details and SSCEC status
-                  </p>
-                </div>
-              </div>
+      {/* Header - fully responsive */}
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 w-full">
+          {/* Left Section */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 min-w-0 w-full sm:w-auto">
+            <Link href="/dashboard" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
             </Link>
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
+                  Vessel Management
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Manage Vessel Details and SSCEC Status
+                </p>
+              </div>
+            </div>
           </div>
-
-          <div className="flex items-center space-x-4">
+          {/* Right Section - responsive */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 mt-3 sm:mt-0 w-full sm:w-auto justify-start sm:justify-end">
             <ThemeToggle />
             <Badge
               variant="outline"
-              className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
             >
-              {currentUser.name} - Level {currentUser.accessLevel}
+              <span className="truncate">{currentUser?.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser?.accessLevel}
+              </span>
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
         <Tabs
           value={selectedTab}
           onValueChange={setSelectedTab}
           className="space-y-6"
         >
-          <div className="flex items-center justify-between">
-            <TabsList>
+          {/* Tabs + Add Vessel Button - Responsive */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 w-full">
+            {/* <TabsList className="flex flex-wrap gap-2 sm:gap-0">
               <TabsTrigger value="all">
                 All Vessels ({vessels.length})
               </TabsTrigger>
@@ -539,12 +514,12 @@ export default function VesselManagement() {
                 Expired (
                 {vessels.filter((v) => v.sscecStatus === "Expired").length})
               </TabsTrigger>
-            </TabsList>
+            </TabsList> */}
 
-            {/*Add new vessel dialog */}
+            {/* Add new vessel dialog: Responsive */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="ml-4">
+                <Button className="mt-3 sm:mt-0 sm:ml-4 w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Vessel
                 </Button>
@@ -559,7 +534,6 @@ export default function VesselManagement() {
                     with *
                   </DialogDescription>
                 </DialogHeader>
-
                 <div className="grid gap-4 py-4 px-2">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Column 1 */}
@@ -579,7 +553,6 @@ export default function VesselManagement() {
                           className="w-full"
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="imo">IMO Number *</Label>
                         <Input
@@ -594,7 +567,6 @@ export default function VesselManagement() {
                           title="7-digit IMO number"
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="vesselType">Vessel Type *</Label>
                         <Select
@@ -629,7 +601,6 @@ export default function VesselManagement() {
                           </SelectContent>
                         </Select>
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="owner">Company (Owner) *</Label>
                         <Input
@@ -645,7 +616,6 @@ export default function VesselManagement() {
                           required
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="flag">Flag *</Label>
                         <Input
@@ -659,7 +629,6 @@ export default function VesselManagement() {
                         />
                       </div>
                     </div>
-
                     {/* Column 2 */}
                     <div className="space-y-4">
                       <div className="space-y-2">
@@ -679,7 +648,6 @@ export default function VesselManagement() {
                           className="w-full"
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="builtYear">Built Year *</Label>
                         <Input
@@ -697,7 +665,6 @@ export default function VesselManagement() {
                           required
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="grt">GRT</Label>
                         <Input
@@ -714,7 +681,6 @@ export default function VesselManagement() {
                           }
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="nrt">NRT</Label>
                         <Input
@@ -731,7 +697,6 @@ export default function VesselManagement() {
                           }
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="loa">LOA (m)</Label>
                         <Input
@@ -749,7 +714,6 @@ export default function VesselManagement() {
                           }
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="dwt">DWT</Label>
                         <Input
@@ -766,7 +730,6 @@ export default function VesselManagement() {
                           }
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="sscecExpiry">SSCEC Expiry Date</Label>
                         <Input
@@ -781,7 +744,6 @@ export default function VesselManagement() {
                           }
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="piClub">P&I Club</Label>
                         <Input
@@ -799,7 +761,7 @@ export default function VesselManagement() {
                     </div>
                   </div>
                 </div>
-                <DialogFooter className="border-t pt-4 gap-2 sm:gap-0">
+                <DialogFooter className="border-t pt-4 flex flex-col sm:flex-row gap-2">
                   <Button
                     variant="outline"
                     onClick={() => setIsDialogOpen(false)}
@@ -819,7 +781,7 @@ export default function VesselManagement() {
             </Dialog>
           </div>
 
-          {/* Detailed View Dialog */}
+          {/* Detailed View Dialog - Responsive grid */}
           <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               {selectedVessel && (
@@ -827,7 +789,6 @@ export default function VesselManagement() {
                   <DialogHeader>
                     <DialogTitle>{selectedVessel.name} Details</DialogTitle>
                   </DialogHeader>
-
                   <div className="space-y-6">
                     {/* Basic Information Section */}
                     <div className="space-y-4">
@@ -859,7 +820,6 @@ export default function VesselManagement() {
                         </div>
                       </div>
                     </div>
-
                     {/* Technical Specifications Section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">
@@ -893,7 +853,6 @@ export default function VesselManagement() {
                         </div>
                       </div>
                     </div>
-
                     {/* Certification Section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Certifications</h3>
@@ -922,7 +881,6 @@ export default function VesselManagement() {
                         </div>
                       </div>
                     </div>
-
                     {/* Activity Section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Activity</h3>
@@ -946,7 +904,6 @@ export default function VesselManagement() {
                       </div>
                     </div>
                   </div>
-
                   <div className="flex justify-end mt-6">
                     <Button
                       variant="outline"
@@ -960,7 +917,7 @@ export default function VesselManagement() {
             </DialogContent>
           </Dialog>
 
-          {/* Edit Vessel Dialog */}
+          {/* Edit Vessel Dialog - Responsive grid */}
           <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               {vesselToEdit && (
@@ -972,7 +929,6 @@ export default function VesselManagement() {
                       {new Date(vesselToEdit.lastUpdated).toLocaleDateString()}
                     </DialogDescription>
                   </DialogHeader>
-
                   <div className="space-y-6">
                     {/* Basic Information Section */}
                     <div className="space-y-4">
@@ -1090,7 +1046,6 @@ export default function VesselManagement() {
                         </div>
                       </div>
                     </div>
-
                     {/* Technical Specifications Section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">
@@ -1152,7 +1107,6 @@ export default function VesselManagement() {
                         </div>
                       </div>
                     </div>
-
                     {/* Certification Section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Certifications</h3>
@@ -1169,14 +1123,12 @@ export default function VesselManagement() {
                                 (expiryDate.getTime() - today.getTime()) /
                                   (1000 * 60 * 60 * 24)
                               );
-
                               const sscecStatus =
                                 daysUntilExpiry < 0
                                   ? "Expired"
                                   : daysUntilExpiry <= 30
                                   ? "Expiring"
                                   : "Valid";
-
                               setVesselToEdit({
                                 ...vesselToEdit,
                                 sscecExpiry: e.target.value,
@@ -1201,11 +1153,11 @@ export default function VesselManagement() {
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex justify-end gap-2 mt-6">
+                  <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
                     <Button
                       variant="outline"
                       onClick={() => setEditDialogOpen(false)}
+                      className="w-full sm:w-auto"
                     >
                       Cancel
                     </Button>
@@ -1228,17 +1180,13 @@ export default function VesselManagement() {
                               nrt: vesselToEdit.nrt,
                               p_and_i_club: vesselToEdit.piClub,
                             };
-
                             await updateVessel(vesselToEdit.id, vesselData);
-
-                            // Update local state
                             setVessels(
                               vessels.map((v) =>
                                 v.id === vesselToEdit.id ? vesselToEdit : v
                               )
                             );
                             setEditDialogOpen(false);
-
                             toast({
                               title: "Success",
                               description: "Vessel updated successfully",
@@ -1248,6 +1196,7 @@ export default function VesselManagement() {
                           console.error("Failed to update vessel:", error);
                         }
                       }}
+                      className="w-full sm:w-auto"
                     >
                       Save Changes
                     </Button>
@@ -1257,7 +1206,7 @@ export default function VesselManagement() {
             </DialogContent>
           </Dialog>
 
-          {/* Delete Confirmation Dialog */}
+          {/* Delete Confirmation Dialog - Responsive buttons */}
           <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <DialogContent>
               <DialogHeader>
@@ -1274,10 +1223,11 @@ export default function VesselManagement() {
                 Warning: All vessel data including port call history will be
                 permanently removed.
               </div>
-              <DialogFooter>
+              <DialogFooter className="flex flex-col sm:flex-row gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setDeleteDialogOpen(false)}
+                  className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
@@ -1296,7 +1246,6 @@ export default function VesselManagement() {
                           )
                         );
                         setDeleteDialogOpen(false);
-
                         toast({
                           title: "Success",
                           description: "Vessel deleted successfully",
@@ -1306,6 +1255,7 @@ export default function VesselManagement() {
                       console.error("Failed to delete vessel:", error);
                     }
                   }}
+                  className="w-full sm:w-auto"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Permanently
@@ -1315,7 +1265,7 @@ export default function VesselManagement() {
           </Dialog>
 
           <TabsContent value={selectedTab} className="space-y-6">
-            {/* Search and Filters */}
+            {/* Search and Filters - Responsive */}
             <Card>
               <CardHeader>
                 <CardTitle>Vessel Database</CardTitle>
@@ -1336,9 +1286,9 @@ export default function VesselManagement() {
                       />
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className="w-full sm:w-48">
                         <SelectValue placeholder="Vessel Type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1355,7 +1305,7 @@ export default function VesselManagement() {
                       value={statusFilter}
                       onValueChange={setStatusFilter}
                     >
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-full sm:w-40">
                         <SelectValue placeholder="SSCEC Status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1369,28 +1319,27 @@ export default function VesselManagement() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Vessels List */}
+            {/* Vessels List - Responsive */}
             <div className="space-y-4">
               {filteredVessels.map((vessel) => (
                 <Card
                   key={vessel.id}
                   className="hover:shadow-md transition-shadow"
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2 sm:gap-0">
+                      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                        <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg flex-shrink-0">
                           <Ship className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-lg">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-base sm:text-lg truncate">
                             {vessel.name}
                           </h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             IMO: {vessel.imo}
                           </p>
-                          <div className="flex items-center space-x-2 mt-1">
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
                             <Badge variant="outline">{vessel.vesselType}</Badge>
                             <Badge
                               className={getSSCECStatusColor(
@@ -1403,38 +1352,42 @@ export default function VesselManagement() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      {/* Action buttons: wrap and stack on mobile */}
+                      <div className="flex flex-row flex-wrap gap-2 mt-2 sm:mt-0">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleViewVessel(vessel)}
+                          className="flex-1 sm:flex-none min-w-[90px]"
                         >
                           <Eye className="h-4 w-4 mr-2" />
-                          View
+                          <span className="hidden xs:inline">View</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditClick(vessel)}
+                          className="flex-1 sm:flex-none min-w-[90px]"
                         >
                           <Edit className="h-4 w-4 mr-2" />
-                          Edit
+                          <span className="hidden xs:inline">Edit</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          className="flex-1 sm:flex-none min-w-[50px] text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
                           onClick={() => {
                             setVesselToDelete(vessel);
                             setDeleteDialogOpen(true);
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
                         </Button>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    {/* Responsive info grids */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div className="flex items-center space-x-2">
                         <Flag className="h-4 w-4 text-gray-400" />
                         <div>
@@ -1466,8 +1419,7 @@ export default function VesselManagement() {
                         <p className="font-medium">{vessel.builtYear}</p>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           GRT
@@ -1497,9 +1449,8 @@ export default function VesselManagement() {
                         <p className="font-medium">{vessel.totalPortCalls}</p>
                       </div>
                     </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center space-x-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-200 dark:border-gray-700 gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
                           <span className="text-sm text-gray-600 dark:text-gray-300">
@@ -1523,7 +1474,6 @@ export default function VesselManagement() {
                   </CardContent>
                 </Card>
               ))}
-
               {filteredVessels.length === 0 && (
                 <Card>
                   <CardContent className="text-center py-12">
@@ -1538,7 +1488,7 @@ export default function VesselManagement() {
                         ? "Try adjusting your search criteria"
                         : "No vessels registered yet"}
                     </p>
-                    <Button>
+                    <Button onClick={() => setIsDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add First Vessel
                     </Button>

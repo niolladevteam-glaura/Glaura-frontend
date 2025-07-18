@@ -51,6 +51,8 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "@/components/ui/use-toast";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
 interface PCS {
   id: string;
   job_id: string;
@@ -134,7 +136,7 @@ export default function PortCallServicesPage() {
     const token = getTokenOrRedirect();
     if (!token) return;
     setLoading(true);
-    fetch(`http://localhost:3080/api/pcs/job/${job_id}`, {
+    fetch(`${API_BASE_URL}/pcs/job/${job_id}`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -158,7 +160,8 @@ export default function PortCallServicesPage() {
   useEffect(() => {
     const token = getTokenOrRedirect();
     if (!token) return;
-    fetch("http://localhost:3080/api/service", {
+
+    fetch(`${API_BASE_URL}/service`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -172,7 +175,8 @@ export default function PortCallServicesPage() {
   useEffect(() => {
     const token = getTokenOrRedirect();
     if (!token) return;
-    fetch("http://localhost:3080/api/vendor", {
+
+    fetch(`${API_BASE_URL}/vendor`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -193,7 +197,7 @@ export default function PortCallServicesPage() {
       for (const pcs of pcsList) {
         // Use the correct endpoint and service_id!
         const headersRes = await fetch(
-          `http://localhost:3080/api/servicetask/headers/service/${pcs.service_id}`,
+          `${API_BASE_URL}/servicetask/headers/service/${pcs.service_id}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -214,7 +218,7 @@ export default function PortCallServicesPage() {
 
         // Update PCS status if all headers completed
         if (headers.length > 0 && completed === headers.length && !pcs.status) {
-          await fetch(`http://localhost:3080/api/pcs/${pcs.id}`, {
+          await fetch(`${API_BASE_URL}/pcs/${pcs.id}`, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
@@ -283,7 +287,7 @@ export default function PortCallServicesPage() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3080/api/pcs", {
+      const response = await fetch(`${API_BASE_URL}/pcs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -310,15 +314,12 @@ export default function PortCallServicesPage() {
       setSearchVendor("");
 
       // Refetch services
-      const refetchResponse = await fetch(
-        `http://localhost:3080/api/pcs/job/${job_id}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const refetchResponse = await fetch(`${API_BASE_URL}/pcs/job/${job_id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const refetchData = await refetchResponse.json();
       setPCSList(refetchData.data || []);
     } catch (error: any) {
@@ -346,7 +347,7 @@ export default function PortCallServicesPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3080/api/pcs/${serviceToDelete.id}`,
+        `${API_BASE_URL}/pcs/${serviceToDelete.id}`,
         {
           method: "DELETE",
           headers: {
@@ -391,36 +392,50 @@ export default function PortCallServicesPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <header className="glass-effect border-b px-6 py-4 sticky top-0 z-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/port-calls">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Active Port Calls
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left Section */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Back Button */}
+            <Link href="/port-calls" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
               </Button>
             </Link>
-            <div className="flex items-center space-x-3">
-              <div className="bg-primary p-2 rounded-xl">
-                <Anchor className="h-6 w-6 text-primary-foreground" />
+
+            {/* Page Title & Icon */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gradient">
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
                   Port Call Services
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  Greek Lanka PCMS
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  GLAURA
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+
+          {/* Right Section */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
               variant="outline"
-              className="bg-primary/10 text-primary border-primary/20"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
             >
-              {currentUser.name} - Level {currentUser.accessLevel}
+              <span className="truncate">{currentUser.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser.accessLevel}
+              </span>
             </Badge>
           </div>
         </div>

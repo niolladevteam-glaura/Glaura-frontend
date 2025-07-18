@@ -87,7 +87,6 @@ interface BirthdayAlert {
   daysUntil: number;
 }
 
-// Add DashboardData interface
 interface DashboardData {
   active_port_calls: {
     today_count: number;
@@ -181,7 +180,6 @@ export default function Dashboard() {
           },
         });
 
-        // Handle 401 Unauthorized
         if (response.status === 401) {
           localStorage.removeItem("token");
           localStorage.removeItem("currentUser");
@@ -195,12 +193,10 @@ export default function Dashboard() {
 
         const data = await response.json();
 
-        // Set stats
         setActivePortCallsCount(data.active_port_calls.today_count);
         setPendingServicesCount(data.pending_services);
         setBirthdayCount(data.Birthday_count);
 
-        // Calculate trend
         const trendValue =
           data.active_port_calls.today_count -
           data.active_port_calls.from_yesterday;
@@ -208,7 +204,6 @@ export default function Dashboard() {
           trendValue >= 0 ? `+${trendValue}` : `${trendValue}`
         );
 
-        // Map recent port calls
         const mappedPortCalls = data.recent_port_calls.map(
           (item: any, index: number) => ({
             id: `temp-${index}`,
@@ -225,7 +220,6 @@ export default function Dashboard() {
         );
         setActivePortCalls(mappedPortCalls);
 
-        // Transform vessel volume data
         const transformedVesselVolume = Object.entries(
           data.port_vessel_volume
         ).map(([port, vessels]) => ({
@@ -235,7 +229,6 @@ export default function Dashboard() {
         setVesselVolumeData(transformedVesselVolume);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        // Handle error (e.g., show toast notification)
       } finally {
         setIsLoading(false);
       }
@@ -243,14 +236,6 @@ export default function Dashboard() {
 
     fetchDashboardData();
   }, [router]);
-
-  // Chart data
-  // const vesselVolumeData = [
-  //   { port: "Colombo", vessels: 45 },
-  //   { port: "Galle", vessels: 23 },
-  //   { port: "Hambantota", vessels: 18 },
-  //   { port: "Trincomalee", vessels: 12 },
-  // ];
 
   const growthTrendData = [
     { month: "Sep", vessels: 78, revenue: 2.4 },
@@ -331,18 +316,11 @@ export default function Dashboard() {
     { href: "/vendors", icon: Handshake, label: "Vendor Management" },
     { href: "/services", icon: ClipboardList, label: "Services Management" },
     { href: "/documents", icon: FileText, label: "Documents" },
-    // ...(canViewReports()
-    //   ? [{ href: "/reports", icon: BarChart3, label: "Reports" }]
-    //   : []),
     ...(currentUser.accessLevel === "A"
       ? [{ href: "/users", icon: Users, label: "User Management" }]
       : []),
-    //{ href: "/messages", icon: FileText, label: "Messages" },
-    //{ href: "/feedback", icon: MessageSquare, label: "Feedback & Complaints" },
     { href: "/vessels", icon: Ship, label: "Vessel Management" },
     { href: "/pic-management", icon: UserCog, label: "PIC Management" },
-    //{ href: "/whatsapp", icon: MessageCircle, label: "GL Chat" },
-    //{ href: "/phonebook", icon: Phone, label: "Phone Book" },
   ];
 
   const WelcomeCard = ({ user }: { user: UserType }) => (
@@ -389,6 +367,27 @@ export default function Dashboard() {
     </Card>
   );
 
+  // Mobile profile card to display user info
+  const MobileProfileCard = ({ user }: { user: UserType }) => (
+    <Card className="mb-6 lg:hidden">
+      <CardContent className="flex items-center gap-4 py-4">
+        <Link href="/profile">
+          <Avatar className="h-14 w-14 cursor-pointer">
+            <AvatarImage src={user.avatar || "/placeholder.svg"} />
+            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+        </Link>
+        <div>
+          <p className="text-base font-semibold">{user.name}</p>
+          <p className="text-xs text-muted-foreground">{user.role}</p>
+          <Badge className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs mt-2">
+            Level {user.accessLevel}
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Enhanced Mobile Header */}
@@ -417,7 +416,6 @@ export default function Dashboard() {
                 </nav>
               </SheetContent>
             </Sheet>
-
             <div className="flex items-center space-x-2">
               <div className="bg-primary p-2 rounded-xl">
                 <Anchor className="h-6 w-6 text-primary-foreground" />
@@ -425,20 +423,9 @@ export default function Dashboard() {
               <div>
                 <h1 className="text-xl font-bold text-gradient">GLAURA</h1>
               </div>
-              <Badge className="bg-white/20 text-white border-white/30 mb-4">
-                test
-              </Badge>
             </div>
           </div>
-
           <div className="flex items-center space-x-2">
-            {/* <Button variant="ghost" size="icon">
-              <Camera className="h-5 w-5" />
-            </Button> */}
-            {/* <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
-            </Button> */}
             <ThemeToggle />
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
@@ -469,21 +456,18 @@ export default function Dashboard() {
                   GLAURA
                   <Badge
                     className="
-                                bg-white/20 text-black border border-black/30 px-3 py-1 rounded-md
-                                dark:bg-white/20 dark:text-white dark:border-white/30
-                              "
+                      bg-white/20 text-black border border-black/30 px-3 py-1 rounded-md
+                      dark:bg-white/20 dark:text-white dark:border-white/30
+                    "
                   >
                     0.2.0-alpha
                   </Badge>
                 </h1>
-
                 <p className="text-sm text-muted-foreground">
                   The Aura of Excellence in Port Service
                 </p>
               </div>
             </div>
-
-            {/* Enhanced Search Bar */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -494,15 +478,7 @@ export default function Dashboard() {
               />
             </div>
           </div>
-
           <div className="flex items-center space-x-4">
-            {/* <Button variant="ghost" size="icon">
-              <Camera className="h-5 w-5" />
-            </Button> */}
-            {/* <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
-            </Button> */}
             <ThemeToggle />
             <Link href="/profile">
               <Avatar className="h-8 w-8 cursor-pointer">
@@ -544,12 +520,15 @@ export default function Dashboard() {
           </nav>
         </aside>
 
-        {/*  Main Content */}
+        {/* Main Content */}
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
+          {/* Mobile Profile Card */}
+          <MobileProfileCard user={currentUser} />
+
           {/* Welcome Card */}
           <WelcomeCard user={currentUser} />
 
-          {/*  Stats Cards */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
               title="Active Port Calls"
@@ -593,7 +572,6 @@ export default function Dashboard() {
                 </Button>
               </Link>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {activePortCalls.slice(0, 3).map((portCall, index) => (
                 <Card
@@ -636,9 +614,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Enhanced Charts Section */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
-            {/* Charts using real data */}
+          {/* Responsive Charts Section */}
+          <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 xl:gap-8 mb-8">
             <Card className="professional-card animate-fade-in-up">
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -650,96 +627,37 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ChartContainer
-                  config={{
-                    vessels: {
-                      label: "Vessels",
-                      color: "hsl(var(--primary))",
-                    },
-                  }}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={vesselVolumeData}>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        className="stroke-muted"
-                      />
-                      <XAxis dataKey="port" className="text-xs" />
-                      <YAxis className="text-xs" />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar
-                        dataKey="vessels"
-                        fill="hsl(var(--primary))"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                {/* Responsive chart container */}
+                <div className="w-full overflow-x-auto">
+                  <ChartContainer
+                    config={{
+                      vessels: {
+                        label: "Vessels",
+                        color: "hsl(var(--primary))",
+                      },
+                    }}
+                    className="h-[200px] sm:h-[300px] min-w-[320px]" // Chart is shorter on mobile
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={vesselVolumeData}>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          className="stroke-muted"
+                        />
+                        <XAxis dataKey="port" className="text-xs" />
+                        <YAxis className="text-xs" />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar
+                          dataKey="vessels"
+                          fill="hsl(var(--primary))"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                </div>
               </CardContent>
             </Card>
-
-            {/* <Card
-              className="professional-card animate-fade-in-up"
-              style={{ animationDelay: "0.2s" }}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="mr-2 h-5 w-5" />
-                  Growth Trends
-                </CardTitle>
-                <CardDescription>Monthly performance metrics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    vessels: {
-                      label: "Vessels",
-                      color: "hsl(var(--primary))",
-                    },
-                    revenue: {
-                      label: "Revenue (M USD)",
-                      color: "hsl(var(--maritime-success))",
-                    },
-                  }}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={growthTrendData}>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        className="stroke-muted"
-                      />
-                      <XAxis dataKey="month" className="text-xs" />
-                      <YAxis className="text-xs" />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line
-                        type="monotone"
-                        dataKey="vessels"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={2}
-                        dot={{
-                          fill: "hsl(var(--primary))",
-                          strokeWidth: 2,
-                          r: 4,
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="revenue"
-                        stroke="hsl(var(--maritime-success))"
-                        strokeWidth={2}
-                        dot={{
-                          fill: "hsl(var(--maritime-success))",
-                          strokeWidth: 2,
-                          r: 4,
-                        }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </CardContent>
-            </Card> */}
           </div>
         </main>
       </div>
