@@ -18,7 +18,7 @@ interface Props {
 
 const documentOptions = [
   { label: "OKTB Documents", path: "/documents/oktb" },
-  { label: "Ship Spares Documents", path: "/documents/ship-spares" },
+  { label: "Crew Sign On Documents", path: "/documents/crew-signon" },
   { label: "Port Disbursement Account", path: "/documents/pda" },
   { label: "Customs Letters", path: "/documents/customs" },
   { label: "FDA Applications", path: "/documents/fda" },

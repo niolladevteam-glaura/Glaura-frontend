@@ -28,15 +28,13 @@ import {
   Plus,
   Download,
   Eye,
-  Edit,
-  LogOut,
+  Printer,
+  Trash2,
+  ArrowLeft,
   Anchor,
   Calendar,
   User,
   Ship,
-  Printer,
-  Trash2,
-  ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -46,41 +44,19 @@ interface Document {
   id: string;
   name: string;
   type: string;
-  category:
-    | "OKTB"
-    | "PDA"
-    | "Immigration"
-    | "Customs"
-    | "FDA"
-    | "Permissions"
-    | "Waybill"
-    | "TW Applications"
-    | "Other";
-  portCallId?: string;
+  category: string;
   vesselName: string;
-  client?: string;
   principle: string;
   generatedAt: string;
   format?: "PDF" | "Word";
-  hasLetterhead?: boolean;
   status: "Draft" | "Generated" | "Sent" | "Approved";
-  downloadUrl?: string;
-  fileSize?: string;
-}
-
-interface DocumentTemplate {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-  fields: string[];
-  lastUsed: string;
 }
 
 export default function DocumentManagement() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
+  const [oktbDocs, setOKTBDocs] = useState<Document[]>([]);
+  const [signOnDocs, setSignOnDocs] = useState<Document[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -92,49 +68,22 @@ export default function DocumentManagement() {
   const docTypes = [
     {
       label: "OKTB Documents",
-      description: "Generate crew sign on/off letters with flight details",
+      description: "Generate OKTB Documents with flight details",
       color: "bg-blue-100 dark:bg-blue-900",
       iconColor: "text-blue-600 dark:text-blue-400",
       route: "/documents/oktb",
     },
     {
-      label: "Ship Spares Documents",
-      description: "Generate waybill and clearance letters for ship spares",
+      label: "Crew Sign On Documents",
+      description: "Generates required document for crew sign-on.",
       color: "bg-green-100 dark:bg-green-900",
       iconColor: "text-green-600 dark:text-green-400",
-      route: "/documents/ship-spares",
+      route: "/documents/crew-signon",
     },
-    {
-      label: "Port Disbursement Account",
-      description: "Generate PDA with all service charges and details",
-      color: "bg-purple-100 dark:bg-purple-900",
-      iconColor: "text-purple-600 dark:text-purple-400",
-      route: "/documents/pda",
-    },
-    {
-      label: "Customs Letters",
-      description: "Generate customs clearance and permission letters",
-      color: "bg-orange-100 dark:bg-orange-900",
-      iconColor: "text-orange-600 dark:text-orange-400",
-      route: "/documents/customs",
-    },
-    {
-      label: "FDA Applications",
-      description: "Generate FDA applications and related documents",
-      color: "bg-teal-100 dark:bg-teal-900",
-      iconColor: "text-teal-600 dark:text-teal-400",
-      route: "/documents/fda",
-    },
-    {
-      label: "TW Applications",
-      description: "Generate temporary work permit applications",
-      color: "bg-red-100 dark:bg-red-900",
-      iconColor: "text-red-600 dark:text-red-400",
-      route: "/documents/tw-applications",
-    },
+    // ...other docTypes
   ];
 
-  // Fetch only OKTB documents from backend
+  // Fetch OKTB and Crew Sign On documents on mount
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
     if (!userData) {
@@ -143,13 +92,14 @@ export default function DocumentManagement() {
     }
     setCurrentUser(JSON.parse(userData));
 
-    const fetchOKTBDocuments = async () => {
+    const fetchDocuments = async () => {
       try {
-        const res = await fetch(`${API_URL}/documents/oktb`);
-        const json = await res.json();
-        const oktbDocs: Document[] = (json.data || []).map((d: any) => ({
+        // OKTB
+        const oktbRes = await fetch(`${API_URL}/documents/oktb`);
+        const oktbJson = await oktbRes.json();
+        const oktbDocs: Document[] = (oktbJson.data || []).map((d: any) => ({
           id: d.ccd_id,
-          name: "Crew Sign On/Off Letter",
+          name: "OKTB Document",
           type: "OKTB",
           category: "OKTB",
           vesselName: d.vessel,
@@ -158,41 +108,40 @@ export default function DocumentManagement() {
           status: "Generated",
           format: "PDF",
         }));
-        setDocuments(oktbDocs);
-        setFilteredDocuments(oktbDocs);
+
+        setOKTBDocs(oktbDocs);
+
+        // Crew Sign On
+        const signOnRes = await fetch(`${API_URL}/documents/signon`);
+        const signOnJson = await signOnRes.json();
+        const signOnDocs: Document[] = (signOnJson.data || []).map(
+          (d: any) => ({
+            id: d.csd_id,
+            name: "Crew Sign On Document",
+            type: "Crew Sign On",
+            category: "Crew Sign On",
+            vesselName: d.VesselName,
+            principle: d.authorizePerson,
+            generatedAt: d.date,
+            status: "Generated",
+            format: "PDF",
+          })
+        );
+
+        setSignOnDocs(signOnDocs);
+
+        // Combine for the main documents tab
+        setDocuments([...oktbDocs, ...signOnDocs]);
+        setFilteredDocuments([...oktbDocs, ...signOnDocs]);
       } catch (err) {
+        setOKTBDocs([]);
+        setSignOnDocs([]);
         setDocuments([]);
         setFilteredDocuments([]);
       }
     };
-    fetchOKTBDocuments();
 
-    // Keep mock templates for now
-    setTemplates([
-      {
-        id: "t1",
-        name: "Crew Sign On/Off Letter",
-        category: "Immigration",
-        description:
-          "Standard template for crew embarkation and disembarkation",
-        fields: [
-          "Vessel Name",
-          "IMO",
-          "Crew Details",
-          "Flight Information",
-          "Port",
-        ],
-        lastUsed: "2024-01-15T09:00:00Z",
-      },
-      {
-        id: "t2",
-        name: "Ship Spares Clearance",
-        category: "Customs",
-        description: "Template for ship spares customs clearance",
-        fields: ["Vessel Name", "AWB Number", "Package Details", "Consignee"],
-        lastUsed: "2024-01-14T16:30:00Z",
-      },
-    ]);
+    fetchDocuments();
   }, [router]);
 
   useEffect(() => {
@@ -208,7 +157,7 @@ export default function DocumentManagement() {
     }
     if (categoryFilter !== "all") {
       filtered = filtered.filter(
-        (doc) => doc.category.toLowerCase() === categoryFilter
+        (doc) => doc.category.toLowerCase() === categoryFilter.toLowerCase()
       );
     }
     if (statusFilter !== "all") {
@@ -243,49 +192,52 @@ export default function DocumentManagement() {
     switch (category) {
       case "OKTB":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "PDA":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "Immigration":
+      case "Crew Sign On":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "Customs":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
-      case "FDA":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
-      case "Waybill":
-        return "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
   };
 
-  // OKTB Actions
+  // Document Actions
   const handlePreview = (document: Document) => {
     if (document.category === "OKTB") {
       router.push(`/documents/oktb/${document.id}`);
+    } else if (document.category === "Crew Sign On") {
+      router.push(`/documents/crew-signon/${document.id}`);
     }
   };
   const handlePrint = (document: Document) => {
     if (document.category === "OKTB") {
       window.open(`${API_URL}/documents/oktb/${document.id}/pdf`, "_blank");
+    } else if (document.category === "Crew Sign On") {
+      window.open(`${API_URL}/documents/signon/${document.id}/pdf`, "_blank");
     }
   };
   const handleDownload = (document: Document) => {
     if (document.category === "OKTB") {
       window.open(`${API_URL}/documents/oktb/${document.id}/pdf`, "_blank");
+    } else if (document.category === "Crew Sign On") {
+      window.open(`${API_URL}/documents/signon/${document.id}/pdf`, "_blank");
     }
   };
   const handleDelete = async (document: Document) => {
-    if (document.category === "OKTB") {
-      if (
-        window.confirm(
-          "Are you sure you want to delete this document? This action cannot be undone."
-        )
-      ) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this document? This action cannot be undone."
+      )
+    ) {
+      if (document.category === "OKTB") {
         await fetch(`${API_URL}/documents/oktb/${document.id}`, {
           method: "DELETE",
         });
-        setDocuments((prev) => prev.filter((d) => d.id !== document.id));
+      } else if (document.category === "Crew Sign On") {
+        await fetch(`${API_URL}/documents/signon/${document.id}`, {
+          method: "DELETE",
+        });
       }
+      setDocuments((prev) => prev.filter((d) => d.id !== document.id));
+      setFilteredDocuments((prev) => prev.filter((d) => d.id !== document.id));
     }
   };
 
@@ -298,9 +250,7 @@ export default function DocumentManagement() {
       <DocumentTypeModal open={showModal} onClose={() => setShowModal(false)} />
       <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          {/* Left Section */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
-            {/* Back Button */}
             <Link href="/dashboard" className="flex-shrink-0">
               <Button
                 variant="ghost"
@@ -311,8 +261,6 @@ export default function DocumentManagement() {
                 <span className="hidden xs:inline">Back to Dashboard</span>
               </Button>
             </Link>
-
-            {/* Page Title & Icon */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="bg-primary p-2 rounded-xl flex-shrink-0">
                 <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
@@ -327,8 +275,6 @@ export default function DocumentManagement() {
               </div>
             </div>
           </div>
-
-          {/* Right Section */}
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
@@ -354,14 +300,10 @@ export default function DocumentManagement() {
           <div className="flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="documents">
-                Documents ({documents.length})
+                Documents ({filteredDocuments.length})
               </TabsTrigger>
-              {/* <TabsTrigger value="templates">
-                Templates ({templates.length})
-              </TabsTrigger> */}
               <TabsTrigger value="generate">Generate New</TabsTrigger>
             </TabsList>
-
             <div className="flex space-x-2">
               <Button onClick={() => setShowModal(true)}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -401,7 +343,10 @@ export default function DocumentManagement() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="oktb">OKTB</SelectItem>
+                        <SelectItem value="OKTB">OKTB</SelectItem>
+                        <SelectItem value="Crew Sign On">
+                          Crew Sign On
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <Select
@@ -433,8 +378,20 @@ export default function DocumentManagement() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-4">
-                        <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
-                          <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        <div
+                          className={
+                            document.category === "OKTB"
+                              ? "bg-blue-100 dark:bg-blue-900 p-3 rounded-lg"
+                              : "bg-green-100 dark:bg-green-900 p-3 rounded-lg"
+                          }
+                        >
+                          <FileText
+                            className={
+                              document.category === "OKTB"
+                                ? "h-6 w-6 text-blue-600 dark:text-blue-400"
+                                : "h-6 w-6 text-green-600 dark:text-green-400"
+                            }
+                          />
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg">
@@ -455,11 +412,6 @@ export default function DocumentManagement() {
                             {document.format && (
                               <Badge variant="outline">{document.format}</Badge>
                             )}
-                            {document.hasLetterhead && (
-                              <Badge variant="secondary" className="text-xs">
-                                Letterhead
-                              </Badge>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -468,7 +420,6 @@ export default function DocumentManagement() {
                           variant="outline"
                           size="sm"
                           onClick={() => handlePreview(document)}
-                          disabled={document.category !== "OKTB"}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Preview
@@ -477,7 +428,6 @@ export default function DocumentManagement() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDownload(document)}
-                          disabled={document.category !== "OKTB"}
                         >
                           <Download className="h-4 w-4 mr-2" />
                           Download
@@ -486,7 +436,6 @@ export default function DocumentManagement() {
                           variant="outline"
                           size="sm"
                           onClick={() => handlePrint(document)}
-                          disabled={document.category !== "OKTB"}
                         >
                           <Printer className="h-4 w-4 mr-2" />
                           Print
@@ -495,14 +444,12 @@ export default function DocumentManagement() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(document)}
-                          disabled={document.category !== "OKTB"}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
                         </Button>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div className="flex items-center space-x-2">
                         <Ship className="h-4 w-4 text-gray-400" />
@@ -514,7 +461,6 @@ export default function DocumentManagement() {
                         </div>
                       </div>
                     </div>
-
                     <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-2">
@@ -549,85 +495,16 @@ export default function DocumentManagement() {
                         ? "Try adjusting your search criteria"
                         : "No documents generated yet"}
                     </p>
-                    <Link href="/documents/oktb/generate">
+                    <Link href="/documents">
                       <Button>
                         <Plus className="h-4 w-4 mr-2" />
-                        Generate First OKTB Document
+                        Generate Document
                       </Button>
                     </Link>
                   </CardContent>
                 </Card>
               )}
             </div>
-          </TabsContent>
-
-          <TabsContent value="templates" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Document Templates</CardTitle>
-                <CardDescription>
-                  Manage and customize document templates
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {templates.map((template) => (
-                    <Card
-                      key={template.id}
-                      className="hover:shadow-md transition-shadow"
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
-                            <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />
-                          </div>
-                          <Badge
-                            className={getCategoryColor(template.category)}
-                          >
-                            {template.category}
-                          </Badge>
-                        </div>
-                        <h3 className="font-semibold text-lg mb-2">
-                          {template.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                          {template.description}
-                        </p>
-                        <div className="mb-4">
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Required Fields:
-                          </p>
-                          <div className="flex flex-wrap gap-1">
-                            {template.fields.map((field, index) => (
-                              <Badge
-                                key={index}
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {field}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Last used:{" "}
-                            {new Date(template.lastUsed).toLocaleDateString()}
-                          </p>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-2" />
-                              Preview
-                            </Button>
-                            <Button size="sm">Use Template</Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="generate" className="space-y-6">

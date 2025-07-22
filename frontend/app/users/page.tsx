@@ -745,18 +745,24 @@ export default function UserManagement() {
   }
 
   // Update user
+  // ...rest of your component above...
+
+  // Update user
   const updateUser = async () => {
     if (!editingUser) return;
 
     try {
+      // Split full name into first and last
       const [firstName, ...lastNameParts] = editingUser.name.split(" ");
       const lastName = lastNameParts.join(" ");
 
+      // Build permissions object (id: boolean) from editPrivileges array
       const permissionsObj = ALL_PRIVILEGES.reduce((acc, privilege) => {
         acc[privilege.id] = editPrivileges.includes(privilege.id);
         return acc;
       }, {} as Record<string, boolean>);
 
+      // Prepare API payload (matches your backend API requirements)
       const userData = {
         first_name: firstName,
         last_name: lastName,
@@ -766,10 +772,11 @@ export default function UserManagement() {
         access_level: editingUser.accessLevel || "R",
         department: editingUser.department || "Other",
         status: editingUser.isActive,
-        permissions: permissionsObj,
+        permissions: permissionsObj, // <-- Correct format for backend!
         dob: editingUser.dob || "",
       };
 
+      // Call your API
       const response = await userApi.updateUser(editingUser.id, userData);
       const apiResponse = response as ApiResponse<{}>;
 
@@ -777,6 +784,7 @@ export default function UserManagement() {
         throw new Error(apiResponse.message || "Failed to update user");
       }
 
+      // Update local state (with new permissions array)
       const updatedUsers = users.map((u) =>
         u.id === editingUser.id
           ? { ...editingUser, permissions: editPrivileges }
@@ -798,6 +806,7 @@ export default function UserManagement() {
       );
     }
   };
+
   const handleEditClick = (user: User) => {
     setEditingUser(user);
     setEditPrivileges(user.permissions);
