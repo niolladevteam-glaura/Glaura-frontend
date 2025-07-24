@@ -43,6 +43,7 @@ interface JwtPayload {
 }
 
 type ApiUser = {
+  pk_id: number;
   id: string;
   first_name: string;
   last_name: string;
@@ -78,10 +79,11 @@ export default function LoginPage() {
     try {
       const apiResponse = await authenticateWithAPI(email, password);
 
-      console.log(apiResponse);
+      console.log("apires:", apiResponse);
 
       // Create user data for auth context
       const userData = {
+        pkId: apiResponse.pk_id,
         id: apiResponse.id,
         userId: apiResponse.id,
         name: `${apiResponse.first_name} ${apiResponse.last_name}`,
@@ -95,6 +97,7 @@ export default function LoginPage() {
 
       // Use context login instead of local storage
       login(userData);
+      localStorage.setItem("currentUser", JSON.stringify(userData));
 
       // Redirect based on access level
       switch (apiResponse.access_level) {
@@ -136,6 +139,7 @@ export default function LoginPage() {
     }
 
     return {
+      pk_id: data.user.pk_id,
       id: data.user.id,
       first_name: data.user.first_name,
       last_name: data.user.last_name,
@@ -149,52 +153,53 @@ export default function LoginPage() {
     };
   };
 
-  const handleSuccessfulLogin = (user: ApiUser) => {
-    // Decode token to verify access level
-    let accessLevel = user.access_level;
-    try {
-      const decoded = jwtDecode<JwtPayload>(user.token);
-      // Use access_level from token if available
-      if (decoded.access_level) {
-        accessLevel = decoded.access_level;
-      }
-    } catch (error) {
-      console.error("Error decoding token:", error);
-    }
+  // const handleSuccessfulLogin = (user: ApiUser) => {
+  //   // Decode token to verify access level
+  //   let accessLevel = user.access_level;
+  //   try {
+  //     const decoded = jwtDecode<JwtPayload>(user.token);
+  //     // Use access_level from token if available
+  //     if (decoded.access_level) {
+  //       accessLevel = decoded.access_level;
+  //     }
+  //   } catch (error) {
+  //     console.error("Error decoding token:", error);
+  //   }
 
-    const userData = {
-      id: user.id,
-      name: `${user.first_name} ${user.last_name}`,
-      email: user.email,
-      role: user.role,
-      accessLevel: accessLevel, // Use verified access level
-      permissions: user.permissions || {},
-    };
+  //   const userData = {
+  //     pkId: user.pk_id,
+  //     id: user.id,
+  //     name: `${user.first_name} ${user.last_name}`,
+  //     email: user.email,
+  //     role: user.role,
+  //     accessLevel: accessLevel, // Use verified access level
+  //     permissions: user.permissions || {},
+  //   };
 
-    // Store authentication data with consistent keys
-    localStorage.setItem("currentUser", JSON.stringify(userData));
-    localStorage.setItem("token", user.token);
+  //   // Store authentication data with consistent keys
+  //   localStorage.setItem("currentUser", JSON.stringify(userData));
+  //   localStorage.setItem("token", user.token);
 
-    // Redirect based on access level
-    switch (accessLevel) {
-      case "A":
-        router.push("/dashboard");
-        break;
-      case "CLIENT":
-        router.push("/client/dashboard");
-        break;
-      default:
-        router.push("/dashboard");
-    }
-  };
+  //   // Redirect based on access level
+  //   switch (accessLevel) {
+  //     case "A":
+  //       router.push("/dashboard");
+  //       break;
+  //     case "CLIENT":
+  //       router.push("/client/dashboard");
+  //       break;
+  //     default:
+  //       router.push("/dashboard");
+  //   }
+  // };
 
-  if (!mounted) {
-    return (
-      <div className="min-h-screen maritime-gradient-bg flex items-center justify-center">
-        <div className="loading-wave"></div>
-      </div>
-    );
-  }
+  // if (!mounted) {
+  //   return (
+  //     <div className="min-h-screen maritime-gradient-bg flex items-center justify-center">
+  //       <div className="loading-wave"></div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen maritime-gradient-bg relative overflow-hidden">

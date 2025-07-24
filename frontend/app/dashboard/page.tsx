@@ -35,6 +35,7 @@ import {
   UserCog,
   Handshake,
   Building2,
+  MessageSquareQuote,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -321,6 +322,7 @@ export default function Dashboard() {
       : []),
     { href: "/vessels", icon: Ship, label: "Vessel Management" },
     { href: "/pic-management", icon: UserCog, label: "PIC Management" },
+    { href: "/feedback", icon: MessageSquareQuote, label: "Feedback" },
   ];
 
   const WelcomeCard = ({ user }: { user: UserType }) => (
