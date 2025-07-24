@@ -50,7 +50,9 @@ interface FeedbackItem {
   description: string;
   priority: "low" | "medium" | "high";
   status: "open" | "in_progress" | "resolved";
-  assignedTo: string;
+  assignedTo: string; // display name
+  assignedToId?: number; // <-- assign to id
+  relatedVendor: number; // <-- vendor id, always present
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -58,7 +60,7 @@ interface FeedbackItem {
 }
 
 interface UserType {
-  id: number | string;
+  id: number;
   user_id?: string;
   userId?: string;
   first_name: string;
@@ -67,7 +69,7 @@ interface UserType {
 }
 
 interface VendorType {
-  id: number | string;
+  id: number;
   vendor_id?: string;
   name: string;
 }
@@ -164,13 +166,54 @@ export default function FeedbackManagement() {
   );
   const dialogCancelButtonRef = useRef<HTMLButtonElement>(null);
 
+  // --- Update Feedback/Complaint State ---
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
+
+  // Update Form Fields
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editType, setEditType] = useState<"feedback" | "complaint">(
+    "feedback"
+  );
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPriority, setEditPriority] = useState<"low" | "medium" | "high">(
+    "low"
+  );
+  const [editStatus, setEditStatus] = useState<
+    "open" | "in_progress" | "resolved"
+  >("open");
+  const [editAssignedTo, setEditAssignedTo] = useState<string>("none");
+  const [editRelatedVendor, setEditRelatedVendor] = useState<string>("none");
+
+  // --- Open Update Form with Current Data ---
+  const openUpdateForm = (item: FeedbackItem) => {
+    setEditId(item.id);
+    setEditType(item.type);
+    setEditTitle(item.title);
+    setEditDescription(item.description);
+    setEditPriority(item.priority);
+    setEditStatus(item.status);
+    setEditAssignedTo(
+      item.assignedToId ? item.assignedToId.toString() : "none"
+    );
+    setEditRelatedVendor(
+      item.relatedVendor ? item.relatedVendor.toString() : "none"
+    );
+    setShowUpdateForm(true);
+    setUpdateError(null);
+    setUpdateSuccess(null);
+  };
+
   const router = useRouter();
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
   // Fetch users and vendors for dropdowns with token
   useEffect(() => {
-    if (showNewForm) {
+    if (showNewForm || showUpdateForm) {
       apiCall(`${API_BASE_URL}/user`, {}, router)
         .then((data) => {
           if (data?.data) setUsers(data.data);
@@ -183,7 +226,7 @@ export default function FeedbackManagement() {
         })
         .catch(() => setVendors([]));
     }
-  }, [showNewForm, router]);
+  }, [showNewForm, showUpdateForm, router, API_BASE_URL]);
 
   // ----------- FETCH FEEDBACKS/COMPLAINTS FROM API -----------
   useEffect(() => {
@@ -209,6 +252,8 @@ export default function FeedbackManagement() {
             priority: item.priority,
             status: item.status,
             assignedTo: item.assignee?.first_name || "-",
+            assignedToId: item.assigned_to, // <-- keep the assign to id
+            relatedVendor: item.related_vendor || 0, // <-- keep the vendor id
             createdBy: item.creator?.first_name || "-",
             createdAt: item.createdAt,
             updatedAt: item.updatedAt,
@@ -216,7 +261,7 @@ export default function FeedbackManagement() {
               ? item.responses.map((r: any) => ({
                   id: r.response_id,
                   message: r.message,
-                  staffMember: r.responder_id, // Or look up user name if needed
+                  staffMember: r.responder_id,
                   createdAt: r.createdAt,
                 }))
               : [],
@@ -337,6 +382,8 @@ export default function FeedbackManagement() {
               priority: item.priority,
               status: item.status,
               assignedTo: item.assignee?.first_name || "-",
+              assignedToId: item.assigned_to,
+              relatedVendor: item.related_vendor || 0,
               createdBy: item.creator?.first_name || "-",
               createdAt: item.createdAt,
               updatedAt: item.updatedAt,
@@ -417,6 +464,8 @@ export default function FeedbackManagement() {
               priority: item.priority,
               status: item.status,
               assignedTo: item.assignee?.first_name || "-",
+              assignedToId: item.assigned_to,
+              relatedVendor: item.related_vendor || 0,
               createdBy: item.creator?.first_name || "-",
               createdAt: item.createdAt,
               updatedAt: item.updatedAt,
@@ -441,6 +490,93 @@ export default function FeedbackManagement() {
       setResponseError(err.message || "Error adding response.");
     } finally {
       setResponseLoading(false);
+    }
+  };
+
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editId) return;
+    setUpdateLoading(true);
+    setUpdateError(null);
+    setUpdateSuccess(null);
+
+    try {
+      // Find the feedback item to get original created_by and ids
+      const original = feedbackItems.find((item) => item.id === editId);
+      if (!original) {
+        setUpdateError("Could not find feedback/complaint to update.");
+        setUpdateLoading(false);
+        return;
+      }
+      const payload: any = {
+        fc_id: editId,
+        type: editType,
+        title: editTitle,
+        description: editDescription,
+        priority: editPriority,
+        status: editStatus,
+        created_by: original.created_by, // Should use the original created_by
+      };
+      // Use assigned_to from the form (editAssignedTo)
+      if (editAssignedTo && editAssignedTo !== "none") {
+        payload.assigned_to = Number(editAssignedTo);
+      }
+      if (editRelatedVendor && editRelatedVendor !== "none") {
+        payload.related_vendor = Number(editRelatedVendor);
+      }
+      await apiCall(
+        `http://localhost:3080/api/fc/feedbacks/${editId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        },
+        router
+      );
+      setUpdateSuccess("Feedback/Complaint updated successfully!");
+      setShowUpdateForm(false);
+
+      // Refetch feedbacks
+      apiCall("http://localhost:3080/api/fc/feedbacks", {}, router)
+        .then((data) => {
+          if (Array.isArray(data)) {
+            const mapped: FeedbackItem[] = data.map((item) => ({
+              id: item.fc_id,
+              type: item.type,
+              created_by: item.created_by,
+              created_by_name: item.creator?.first_name || "-",
+              title: item.title,
+              description: item.description,
+              priority: item.priority,
+              status: item.status,
+              assignedTo: item.assignee?.first_name || "-",
+              assignedToId: item.assigned_to,
+              relatedVendor: item.related_vendor || 0,
+              createdBy: item.creator?.first_name || "-",
+              createdAt: item.createdAt,
+              updatedAt: item.updatedAt,
+              responses: Array.isArray(item.responses)
+                ? item.responses.map((r: any) => ({
+                    id: r.response_id,
+                    message: r.message,
+                    staffMember: r.responder_id,
+                    createdAt: r.createdAt,
+                  }))
+                : [],
+            }));
+            setFeedbackItems(mapped);
+            setFilteredItems(mapped);
+            // Update selectedItem to fresh data
+            if (editId) {
+              const updated = mapped.find((f) => f.id === editId);
+              if (updated) setSelectedItem(updated);
+            }
+          }
+        })
+        .catch(() => {});
+    } catch (err: any) {
+      setUpdateError(err.message || "Error updating feedback/complaint.");
+    } finally {
+      setUpdateLoading(false);
     }
   };
 
@@ -472,6 +608,8 @@ export default function FeedbackManagement() {
               priority: item.priority,
               status: item.status,
               assignedTo: item.assignee?.first_name || "-",
+              assignedToId: item.assigned_to,
+              relatedVendor: item.related_vendor || 0,
               createdBy: item.creator?.first_name || "-",
               createdAt: item.createdAt,
               updatedAt: item.updatedAt,
@@ -538,6 +676,8 @@ export default function FeedbackManagement() {
               priority: item.priority,
               status: item.status,
               assignedTo: item.assignee?.first_name || "-",
+              assignedToId: item.assigned_to,
+              relatedVendor: item.related_vendor || 0,
               createdBy: item.creator?.first_name || "-",
               createdAt: item.createdAt,
               updatedAt: item.updatedAt,
@@ -873,13 +1013,24 @@ export default function FeedbackManagement() {
                   <h2 className="text-xl md:text-2xl font-bold">
                     {selectedItem.title}
                   </h2>
-                  <Button
-                    variant="outline"
-                    onClick={() => setSelectedItem(null)}
-                    className="self-end"
-                  >
-                    Close
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => openUpdateForm(selectedItem)}
+                      className="self-end"
+                      size="sm"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedItem(null)}
+                      className="self-end"
+                      size="sm"
+                    >
+                      Close
+                    </Button>
+                  </div>
                 </div>
 
                 <Tabs defaultValue="details">
@@ -1014,6 +1165,159 @@ export default function FeedbackManagement() {
                 </Tabs>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Update Feedback/Complaint Dialog */}
+        {showUpdateForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2">
+            <form
+              className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 md:p-6 shadow-xl"
+              onSubmit={handleUpdateSubmit}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Update Feedback/Complaint</h2>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowUpdateForm(false)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-type">Type</Label>
+                  <Select
+                    value={editType}
+                    onValueChange={(v) =>
+                      setEditType(v as "feedback" | "complaint")
+                    }
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="feedback">Feedback</SelectItem>
+                      <SelectItem value="complaint">Complaint</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-title">Title</Label>
+                  <Input
+                    id="edit-title"
+                    placeholder="Enter title"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="mt-1"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    placeholder="Enter description"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="mt-1"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-priority">Priority</Label>
+                  <Select
+                    value={editPriority}
+                    onValueChange={(v) =>
+                      setEditPriority(v as "low" | "medium" | "high")
+                    }
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Select
+                    value={editStatus}
+                    onValueChange={(v) =>
+                      setEditStatus(v as "open" | "in_progress" | "resolved")
+                    }
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-assigned_to">Assign To (optional)</Label>
+                  <Select
+                    value={editAssignedTo}
+                    onValueChange={setEditAssignedTo}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select User" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id?.toString()}>
+                          {user.first_name} {user.last_name} ({user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-related_vendor">
+                    Related Vendor (optional)
+                  </Label>
+                  <Select
+                    value={editRelatedVendor}
+                    onValueChange={setEditRelatedVendor}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select Vendor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {vendors.map((vendor) => (
+                        <SelectItem
+                          key={vendor.id}
+                          value={vendor.id?.toString()}
+                        >
+                          {vendor.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {updateError && (
+                <p className="text-red-600 text-sm mt-4">{updateError}</p>
+              )}
+              {updateSuccess && (
+                <p className="text-green-600 text-sm mt-4">{updateSuccess}</p>
+              )}
+              <div className="flex justify-end mt-6">
+                <Button type="submit" disabled={updateLoading}>
+                  {updateLoading ? "Updating..." : "Update"}
+                </Button>
+              </div>
+            </form>
           </div>
         )}
 
