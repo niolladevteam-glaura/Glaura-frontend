@@ -32,6 +32,7 @@ import {
 import { useRouter } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
 import { useAuth } from "@/context/AuthContext";
+import { encrypt } from "@/utils/crypto";
 
 interface JwtPayload {
   id: string;
@@ -77,41 +78,32 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const apiResponse = await authenticateWithAPI(email, password);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/signin`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
-      console.log("apires:", apiResponse);
+      const data = await response.json();
 
-      // Create user data for auth context
-      const userData = {
-        pkId: apiResponse.pk_id,
-        id: apiResponse.id,
-        userId: apiResponse.id,
-        name: `${apiResponse.first_name} ${apiResponse.last_name}`,
-        email: apiResponse.email,
-        role: apiResponse.role,
-        department: apiResponse.department,
-        accessLevel: apiResponse.access_level,
-        token: apiResponse.token,
-        permissions: apiResponse.permissions,
-      };
-
-      // Use context login instead of local storage
-      login(userData);
-      localStorage.setItem("currentUser", JSON.stringify(userData));
-
-      // Redirect based on access level
-      switch (apiResponse.access_level) {
-        case "A":
-          router.push("/dashboard");
-          break;
-        case "CLIENT":
-          router.push("/client/dashboard");
-          break;
-        default:
-          router.push("/dashboard");
+      // OTP flow: success but needs OTP
+      if (response.ok && data.success && data.user_id) {
+        localStorage.setItem("otpUserId", data.user_id);
+        localStorage.setItem("otpEmail", encrypt(email));
+        localStorage.setItem("otpPassword", encrypt(password));
+        if (data.otp_token) localStorage.setItem("otpToken", data.otp_token);
+        router.push("/otp");
+        return;
       }
+
+      // If classic login is still supported, handle here...
+      // (You can keep your previous login logic here if needed)
+
+      throw new Error(data.message || "Invalid credentials or OTP required.");
     } catch (err: any) {
-      // Show error message to user
       setError(
         err instanceof Error
           ? err.message
