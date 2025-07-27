@@ -60,7 +60,7 @@ export default function OTPPage() {
       localStorage.setItem("otpUserId", data.user_id);
       if (data.otp_token) localStorage.setItem("otpToken", data.otp_token);
       setTimeLeft(300); // Reset timer
-      setOtp(""); // Optionally clear OTP input
+      setOtp(""); // lear OTP input
     } catch (err: any) {
       setError(err instanceof Error ? err.message : "Failed to resend OTP.");
     } finally {

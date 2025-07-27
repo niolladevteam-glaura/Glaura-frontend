@@ -50,9 +50,9 @@ interface FeedbackItem {
   description: string;
   priority: "low" | "medium" | "high";
   status: "open" | "in_progress" | "resolved";
-  assignedTo: string; // display name
-  assignedToId?: number; // <-- assign to id
-  relatedVendor: number; // <-- vendor id, always present
+  assignedTo: string;
+  assignedToId?: number;
+  relatedVendor: number;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -73,6 +73,8 @@ interface VendorType {
   vendor_id?: string;
   name: string;
 }
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const apiCall = async (
   endpoint: string,
@@ -238,7 +240,7 @@ export default function FeedbackManagement() {
     const user = JSON.parse(userData);
     setCurrentUser(user);
 
-    apiCall("http://localhost:3080/api/fc/feedbacks", {}, router)
+    apiCall(`${API_BASE_URL}/fc/feedbacks`, {}, router)
       .then((data) => {
         if (Array.isArray(data)) {
           // Transform API data to FeedbackItem[]
@@ -252,8 +254,8 @@ export default function FeedbackManagement() {
             priority: item.priority,
             status: item.status,
             assignedTo: item.assignee?.first_name || "-",
-            assignedToId: item.assigned_to, // <-- keep the assign to id
-            relatedVendor: item.related_vendor || 0, // <-- keep the vendor id
+            assignedToId: item.assigned_to,
+            relatedVendor: item.related_vendor || 0,
             createdBy: item.creator?.first_name || "-",
             createdAt: item.createdAt,
             updatedAt: item.updatedAt,
@@ -357,7 +359,7 @@ export default function FeedbackManagement() {
         payload.related_vendor = newRelatedVendor;
 
       await apiCall(
-        "http://localhost:3080/api/fc/feedbacks",
+        `${API_BASE_URL}/fc/feedbacks`,
         {
           method: "POST",
           body: JSON.stringify(payload),
@@ -369,7 +371,7 @@ export default function FeedbackManagement() {
       setShowNewForm(false);
 
       // Refetch feedbacks after submit
-      apiCall("http://localhost:3080/api/fc/feedbacks", {}, router)
+      apiCall(`${API_BASE_URL}/fc/feedbacks`, {}, router)
         .then((data) => {
           if (Array.isArray(data)) {
             const mapped: FeedbackItem[] = data.map((item) => ({
@@ -435,7 +437,7 @@ export default function FeedbackManagement() {
         return;
       }
       await apiCall(
-        `http://localhost:3080/api/fc/feedbacks/${selectedItem.id}/responses`,
+        `${API_BASE_URL}/fc/feedbacks/${selectedItem.id}/responses`,
         {
           method: "POST",
           body: JSON.stringify({
@@ -451,7 +453,7 @@ export default function FeedbackManagement() {
       setResponseMessage("");
 
       // Refresh responses for this feedback
-      apiCall("http://localhost:3080/api/fc/feedbacks", {}, router)
+      apiCall(`${API_BASE_URL}/fc/feedbacks`, {}, router)
         .then((data) => {
           if (Array.isArray(data)) {
             const mapped: FeedbackItem[] = data.map((item) => ({
@@ -525,7 +527,7 @@ export default function FeedbackManagement() {
         payload.related_vendor = Number(editRelatedVendor);
       }
       await apiCall(
-        `http://localhost:3080/api/fc/feedbacks/${editId}`,
+        `${API_BASE_URL}/fc/feedbacks/${editId}`,
         {
           method: "PUT",
           body: JSON.stringify(payload),
@@ -536,7 +538,7 @@ export default function FeedbackManagement() {
       setShowUpdateForm(false);
 
       // Refetch feedbacks
-      apiCall("http://localhost:3080/api/fc/feedbacks", {}, router)
+      apiCall(`${API_BASE_URL}/fc/feedbacks`, {}, router)
         .then((data) => {
           if (Array.isArray(data)) {
             const mapped: FeedbackItem[] = data.map((item) => ({
@@ -588,14 +590,14 @@ export default function FeedbackManagement() {
 
     try {
       await apiCall(
-        `http://localhost:3080/api/fc/responses/${responseId}`,
+        `${API_BASE_URL}/fc/responses/${responseId}`,
         {
           method: "DELETE",
         },
         router
       );
       // Refresh responses for this feedback
-      apiCall("http://localhost:3080/api/fc/feedbacks", {}, router)
+      apiCall(`${API_BASE_URL}/fc/feedbacks`, {}, router)
         .then((data) => {
           if (Array.isArray(data)) {
             const mapped: FeedbackItem[] = data.map((item) => ({
@@ -656,14 +658,14 @@ export default function FeedbackManagement() {
     setDeleteFeedbackError(null);
     try {
       await apiCall(
-        `http://localhost:3080/api/fc/feedbacks/${feedbackToDelete.id}`,
+        `${API_BASE_URL}/fc/feedbacks/${feedbackToDelete.id}`,
         {
           method: "DELETE",
         },
         router
       );
       // Refresh feedback list
-      apiCall("http://localhost:3080/api/fc/feedbacks", {}, router)
+      apiCall(`${API_BASE_URL}/fc/feedbacks`, {}, router)
         .then((data) => {
           if (Array.isArray(data)) {
             const mapped: FeedbackItem[] = data.map((item) => ({
