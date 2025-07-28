@@ -15,13 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -99,6 +92,55 @@ interface UserProfile {
     theme: string;
     color_theme: string;
   };
+}
+
+// Push Notification VAPID public key (replace with yours)
+const PUBLIC_VAPID_KEY =
+  "BBdcQ1e4xI1jrTBKFGvSXOeYYXjNpLpoL8ZN7FffGt4NcOyUEyfWoYrj-pNGuz8pxxLJmGp4NkMnBkWlnX7eQJ4";
+
+// VAPID key conversion helper
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+}
+
+// Register Service Worker
+async function registerServiceWorker() {
+  if ("serviceWorker" in navigator) {
+    return await navigator.serviceWorker.register("/worker.js");
+  } else {
+    alert("Service Workers not supported!");
+    return null;
+  }
+}
+
+// Subscribe to push
+async function subscribeToPush() {
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    toast.error("Notification permission not granted!");
+    return false;
+  }
+
+  const register = await registerServiceWorker();
+  if (!register) return false;
+
+  const subscription = await register.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
+  });
+
+  await fetch("http://localhost:3080/api/push/subscribe", {
+    method: "POST",
+    body: JSON.stringify(subscription),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  return true;
 }
 
 const ColorThemeSelector = ({
@@ -185,6 +227,11 @@ export default function ProfilePage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
+  // Push notification status
+  const [pushStatus, setPushStatus] = useState<
+    "enabled" | "disabled" | "loading"
+  >("disabled");
+
   // Get user and token from localStorage
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
@@ -203,7 +250,7 @@ export default function ProfilePage() {
       fetchUserSettings(user.id, token),
     ])
       .then(([userRes, settingsRes]) => {
-        const userRaw = userRes.user; // <-- this contains access_level, etc.
+        const userRaw = userRes.user;
         const { preferences, security, theme } = settingsRes.data;
 
         const userProfile: UserProfile = {
@@ -219,7 +266,7 @@ export default function ProfilePage() {
             department: userRaw.department,
             joining_date: userRaw.createdAt,
             profile_picture: userRaw.profile_picture,
-            access_level: userRaw.access_level, // <-- now mapped!
+            access_level: userRaw.access_level,
           },
           preferences: {
             notifications: {
@@ -245,6 +292,20 @@ export default function ProfilePage() {
       })
       .finally(() => setLoading(false));
   }, [router]);
+
+  // Check push notification status on mount
+  useEffect(() => {
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+      navigator.serviceWorker.ready.then(async (registration) => {
+        const subscription = await registration.pushManager.getSubscription();
+        if (Notification.permission === "granted" && subscription) {
+          setPushStatus("enabled");
+        } else {
+          setPushStatus("disabled");
+        }
+      });
+    }
+  }, []);
 
   // Save handler mapped to PUT
   const handleSave = async () => {
@@ -278,8 +339,10 @@ export default function ProfilePage() {
     try {
       await updateUserSettings(currentUser.id, updateBody, token);
       setIsEditing(false);
+      toast.success("Profile updated!");
     } catch (e) {
       console.error("Failed to update settings:", e);
+      toast.error("Failed to update profile.");
     }
   };
 
@@ -365,6 +428,18 @@ export default function ProfilePage() {
       toast.error("Failed to change password");
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  // Push notification enable handler
+  const handleEnablePushNotifications = async () => {
+    setPushStatus("loading");
+    const result = await subscribeToPush();
+    if (result) {
+      setPushStatus("enabled");
+      toast.success("Subscribed successfully!");
+    } else {
+      setPushStatus("disabled");
     }
   };
 
@@ -473,7 +548,6 @@ export default function ProfilePage() {
                 <TabsTrigger value="personal">Personal Info</TabsTrigger>
                 <TabsTrigger value="preferences">Preferences</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
-                {/* <TabsTrigger value="appearance">Appearance</TabsTrigger> */}
               </TabsList>
 
               <TabsContent value="personal">
@@ -641,16 +715,24 @@ export default function ProfilePage() {
                           Receive notifications about port calls and updates
                         </p>
                       </div>
-                      <Switch
-                        checked={
-                          formData.preferences?.notifications
-                            .push_notifications || false
+                      <Button
+                        onClick={handleEnablePushNotifications}
+                        disabled={
+                          pushStatus === "enabled" ||
+                          pushStatus === "loading" ||
+                          !isEditing
                         }
-                        onCheckedChange={(checked) =>
-                          handlePreferenceChange("push", checked)
+                        variant={
+                          pushStatus === "enabled" ? "default" : "outline"
                         }
-                        disabled={!isEditing}
-                      />
+                        className="min-w-[120px]"
+                      >
+                        {pushStatus === "loading"
+                          ? "Enabling..."
+                          : pushStatus === "enabled"
+                          ? "Enabled"
+                          : "Enable"}
+                      </Button>
                     </div>
 
                     <Separator />
@@ -676,25 +758,7 @@ export default function ProfilePage() {
 
                     <Separator />
 
-                    {/* <div className="space-y-2">
-                      <Label htmlFor="language">Language</Label>
-                      <Select
-                        value={formData.preferences?.language || "en"}
-                        onValueChange={(value) =>
-                          handlePreferenceChange("language", value)
-                        }
-                        disabled={!isEditing}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="si">Sinhala</SelectItem>
-                          <SelectItem value="ta">Tamil</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div> */}
+                    {/* Language selection could go here */}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -732,73 +796,6 @@ export default function ProfilePage() {
                         loading={passwordLoading}
                         error={passwordError || undefined}
                       />
-                      {/* <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">
-                            Two-Factor Authentication
-                          </h4>
-                          <p className="text-sm text-muted-foreground">
-                            Add an extra layer of security to your account
-                          </p>
-                        </div>
-                        <Button variant="outline">Enable</Button>
-                      </div> */}
-
-                      {/* <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">Active Sessions</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Manage your active login sessions
-                          </p>
-                        </div>
-                        <Button variant="outline">View</Button>
-                      </div> */}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="appearance">
-                <Card className="professional-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Palette className="mr-2 h-5 w-5" />
-                      Appearance Settings
-                    </CardTitle>
-                    <CardDescription>
-                      Customize the look and feel of your application
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-base font-medium">
-                          Color Theme
-                        </Label>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Choose your preferred color scheme for the application
-                        </p>
-                        <ColorThemeSelector
-                          currentTheme={
-                            formData.preferences?.theme || "maritime"
-                          }
-                          onThemeChange={(theme) =>
-                            handlePreferenceChange("theme", theme)
-                          }
-                        />
-                      </div>
-
-                      <Separator />
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>Dark Mode</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Toggle between light and dark themes
-                          </p>
-                        </div>
-                        <ThemeToggle />
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
