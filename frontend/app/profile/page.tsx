@@ -124,10 +124,12 @@ async function subscribeToPush() {
     return false;
   }
 
-  const register = await registerServiceWorker();
-  if (!register) return false;
+  // Register service worker and wait until it's active
+  await navigator.serviceWorker.register("/worker.js");
+  const registration = await navigator.serviceWorker.ready;
 
-  const subscription = await register.pushManager.subscribe({
+  // Now it's safe to subscribe
+  const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
   });
