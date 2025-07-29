@@ -80,6 +80,14 @@ export default function DocumentManagement() {
       iconColor: "text-green-600 dark:text-green-400",
       route: "/documents/crew-signon",
     },
+    {
+      label: "Port Disbursement Account (PDA)",
+      description:
+        "Generate Port Disbursement Account for port costs and charges.",
+      color: "bg-yellow-100 dark:bg-yellow-900",
+      iconColor: "text-yellow-600 dark:text-yellow-400",
+      route: "/documents/pda",
+    },
     // ...other docTypes
   ];
 

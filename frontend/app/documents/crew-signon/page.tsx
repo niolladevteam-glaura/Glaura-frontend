@@ -27,10 +27,9 @@ import { Plus, Trash2, Anchor, LogOut } from "lucide-react";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type Vessel = {
-  vessel_id: string;
+  id: string;
   vessel_name: string;
   imo_number: string;
-  // ...other fields from vessel API
 };
 
 type Passenger = {
@@ -71,7 +70,7 @@ export default function CrewSignOnGeneratePage() {
     const fetchVessels = async () => {
       const token = localStorage.getItem("token");
       try {
-        const res = await fetch(`${API_BASE_URL}/api/vessel`, {
+        const res = await fetch(`${API_BASE_URL}/vessel`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -270,7 +269,7 @@ export default function CrewSignOnGeneratePage() {
                     </SelectTrigger>
                     <SelectContent>
                       {vessels.map((v) => (
-                        <SelectItem key={v.vessel_id} value={v.vessel_name}>
+                        <SelectItem key={v.id} value={v.vessel_name}>
                           {v.vessel_name}
                         </SelectItem>
                       ))}

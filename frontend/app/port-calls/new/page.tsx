@@ -331,21 +331,21 @@ export default function NewPortCall() {
     clientCompany: "",
     agencyName: "",
     eta: "",
-    assignedPIC: "",
-    port: "",
     formalityStatus: "",
-    piClub: "",
-    remarks: "",
     priority: "",
+    remarks: "",
+    port: "",
+    piClub: "",
     pic: {
       pic_id: "",
       customerPIC: "",
+      email: "",
     },
   });
   const [loadingVessel, setLoadingVessel] = useState(false);
   const [vesselError, setVesselError] = useState<string | null>(null);
 
-  // State for dynamic data
+  // Dynamic data
   const [selectedServices, setSelectedServices] = useState<SelectedService[]>(
     []
   );
@@ -355,15 +355,46 @@ export default function NewPortCall() {
   const [clients, setClients] = useState<{ value: string; label: string }[]>(
     []
   );
-  const [vesselTypes, setVesselTypes] =
-    useState<string[]>(DEFAULT_VESSEL_TYPES);
-  const [formalityStatuses, setFormalityStatuses] = useState<string[]>(
-    DEFAULT_FORMALITY_STATUS
-  );
-  const [customerPIC, setCustomerPIC] = useState<
+  const [vesselTypes, setVesselTypes] = useState<string[]>([
+    "Container Ship",
+    "Bulk Carrier",
+    "Tanker",
+    "General Cargo",
+    "RoRo",
+    "Cruise Ship",
+    "Ferry",
+    "Offshore Vessel",
+  ]);
+  const [formalityStatuses, setFormalityStatuses] = useState<string[]>([
+    "Pre-Arrival Message",
+    "Port Clearance Pending",
+    "Immigration Clearance",
+    "Customs Clearance",
+    "Health Clearance",
+    "All Formalities Complete",
+  ]);
+  const [customerPICs, setCustomerPICs] = useState<CustomerPic[]>([]);
+  const [customerPICOptions, setCustomerPICOptions] = useState<
     { value: string; label: string }[]
   >([]);
-  const [vendors, setVendors] = useState<Vendor[]>(DEFAULT_VENDORS);
+  const [vendors, setVendors] = useState<Vendor[]>([
+    {
+      id: "1",
+      name: "Lanka Marine Services",
+      category: "Launch Boat Services",
+    },
+    { id: "2", name: "Ceylon Transport Solutions", category: "Transport" },
+    { id: "3", name: "Port Clearance Experts", category: "Clearance Agent" },
+    { id: "4", name: "Marine Supply Co.", category: "Supply" },
+    {
+      id: "5",
+      name: "Underwater Services Ltd",
+      category: "Underwater Services",
+    },
+    { id: "6", name: "Bunker Solutions", category: "Bunkering" },
+    { id: "7", name: "Ship Repair Specialists", category: "Repairs" },
+    { id: "8", name: "Medical Services Lanka", category: "Medical" },
+  ]);
   const [isAddingPort, setIsAddingPort] = useState(false);
   const [isAddingFormalityStatus, setIsAddingFormalityStatus] = useState(false);
 
@@ -377,6 +408,12 @@ export default function NewPortCall() {
   const [newFormalityStatus, setNewFormalityStatus] = useState("");
   const [isAddPortOpen, setIsAddPortOpen] = useState(false);
   const [isAddFormalityOpen, setIsAddFormalityOpen] = useState(false);
+
+  const priorities = [
+    { value: "high", label: "High" },
+    { value: "medium", label: "Medium" },
+    { value: "low", label: "Low" },
+  ];
 
   const router = useRouter();
 
@@ -399,7 +436,6 @@ export default function NewPortCall() {
         hasPermission = !!user.permissions["create_port_calls"];
       }
     }
-
     if (!hasPermission) {
       toast({
         title: "Access Denied",
@@ -409,8 +445,6 @@ export default function NewPortCall() {
       router.push("/dashboard");
       return;
     }
-
-    // ...rest of your code
   }, [router]);
 
   // Load ports when component mounts
@@ -435,17 +469,22 @@ export default function NewPortCall() {
   useEffect(() => {
     const loadFormalityStatuses = async () => {
       const statusList = await fetchFormalityStatuses();
-      setFormalityStatuses(statusList.map((s) => s.label));
+      setFormalityStatuses(statusList);
     };
     loadFormalityStatuses();
   }, []);
 
   useEffect(() => {
-    const loadCustomerPICs = async () => {
-      const picList = await fetchCustomerPic();
-      setCustomerPIC(picList); // store full objects!
-    };
-    loadCustomerPICs();
+    // Fetch the data
+    fetchCustomerPics().then((pics: CustomerPic[]) => {
+      setCustomerPICs(pics);
+      setCustomerPICOptions(
+        pics.map((pic) => ({
+          value: pic.pic_id,
+          label: pic.name,
+        }))
+      );
+    });
   }, []);
 
   // API Functions - Replace these with your actual API calls
@@ -500,70 +539,39 @@ export default function NewPortCall() {
   };
 
   const addPortToDatabase = async (portName: string): Promise<Port> => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      const response = await fetch(`${API_ENDPOINTS.PORTS}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ port_name: portName }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error Details:", errorData);
-        throw new Error(errorData.message || "Failed to add port");
-      }
-
-      const responseData = await response.json();
-
-      if (!responseData.success) {
-        throw new Error(responseData.message || "Failed to add port");
-      }
-
-      // Return the complete port data including the ID
-      return {
-        port_id: responseData.data.port_id,
-        port_name: responseData.data.port_name,
-        // Include any other fields returned by your API
-      };
-    } catch (error) {
-      console.error("Detailed Error:", {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        portName,
-        endpoint: API_ENDPOINTS.PORTS,
-      });
-      throw error;
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
+    const response = await fetch(`${API_ENDPOINTS.PORTS}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ port_name: portName }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to add port");
     }
+    const responseData = await response.json();
+    if (!responseData.success) {
+      throw new Error(responseData.message || "Failed to add port");
+    }
+    return responseData.data;
   };
 
   // Fetch all statuses
-  const fetchFormalityStatuses = async (): Promise<
-    { value: string; label: string }[]
-  > => {
+  const fetchFormalityStatuses = async (): Promise<string[]> => {
     try {
-      const response = await apiCall<StatusOfFormalityResponse>(
-        `${API_ENDPOINTS.FORMALITY_STATUS}`
-      );
+      const response = await apiCall<any>(API_ENDPOINTS.FORMALITY_STATUS);
       if (response.success && response.data) {
         const statuses = Array.isArray(response.data)
           ? response.data
           : [response.data];
-        return statuses.map((status) => ({
-          value: status.id,
-          label: status.status_of_formalities,
-        }));
+        return statuses.map((status: any) => status.status_of_formalities);
       }
       return [];
     } catch (error) {
-      console.error("Failed to fetch statuses:", error);
       toast({
         title: "Error",
         description: "Failed to load formality statuses",
@@ -601,59 +609,35 @@ export default function NewPortCall() {
   };
 
   // Add new status
-  const addFormalityStatusToDatabase = async (
-    statusName: string
-  ): Promise<StatusOfFormality> => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      const response = await fetch(`${API_ENDPOINTS.FORMALITY_STATUS}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status_of_formalities: statusName }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error Details:", errorData);
-        throw new Error(errorData.message || "Failed to add status");
-      }
-
-      const responseData = await response.json();
-
-      if (!responseData.success) {
-        throw new Error(responseData.message || "Failed to add status");
-      }
-
-      return responseData.data;
-    } catch (error) {
-      console.error("Detailed Error:", {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        statusName,
-        endpoint: API_ENDPOINTS.FORMALITY_STATUS,
-      });
-      throw error;
+  const addFormalityStatusToDatabase = async (statusName: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
+    const response = await fetch(`${API_ENDPOINTS.FORMALITY_STATUS}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status_of_formalities: statusName }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to add status");
     }
+    const responseData = await response.json();
+    if (!responseData.success) {
+      throw new Error(responseData.message || "Failed to add status");
+    }
+    return responseData.data;
   };
-  // API functions for the port call page
-  const fetchVesselByIMO = async (
-    imo: string
-  ): Promise<VesselAPIResponse | null> => {
-    if (!imo) return null;
 
+  // API functions for the port call page
+  const fetchVesselByIMO = async (imo: string) => {
+    if (!imo) return null;
     try {
       setLoadingVessel(true);
       setVesselError(null);
-      const response = await apiCall<VesselAPIResponse>(
-        `${API_ENDPOINTS.VESSEL}/imo/${imo}`
-      );
+      const response = await apiCall<any>(`${API_ENDPOINTS.VESSEL}/imo/${imo}`);
       return response;
     } catch (error: any) {
       setVesselError(error.message || "Failed to fetch vessel data");
@@ -670,7 +654,6 @@ export default function NewPortCall() {
       );
       return response.data || [];
     } catch (error) {
-      console.error("Failed to fetch services:", error);
       toast({
         title: "Error",
         description: "Failed to load services",
@@ -683,16 +666,15 @@ export default function NewPortCall() {
   // Fetch all ports
   const fetchPorts = async (): Promise<{ value: string; label: string }[]> => {
     try {
-      const response = await apiCall<PortsResponse>(API_ENDPOINTS.PORTS);
+      const response = await apiCall<any>(API_ENDPOINTS.PORTS);
       if (response.success && response.data) {
-        return response.data.map((port) => ({
+        return response.data.map((port: Port) => ({
           value: port.port_id,
           label: port.port_name,
         }));
       }
       return [];
     } catch (error) {
-      console.error("Failed to fetch ports:", error);
       toast({
         title: "Error",
         description: "Failed to load ports",
@@ -706,16 +688,15 @@ export default function NewPortCall() {
     { value: string; label: string }[]
   > => {
     try {
-      const response = await apiCall<CustomersResponse>(API_ENDPOINTS.CLIENTS);
+      const response = await apiCall<any>(API_ENDPOINTS.CLIENTS);
       if (response.success && response.data) {
-        return response.data.map((customer) => ({
+        return response.data.map((customer: any) => ({
           value: customer.customer_id,
           label: customer.company_name,
         }));
       }
       return [];
     } catch (error) {
-      console.error("Failed to fetch clients:", error);
       toast({
         title: "Error",
         description: "Failed to load clients",
@@ -725,13 +706,29 @@ export default function NewPortCall() {
     }
   };
 
+  const fetchCustomerPics = async (): Promise<CustomerPic[]> => {
+    try {
+      const response = await apiCall<any>(API_ENDPOINTS.CUSTOMER_PIC);
+      if (response.success && Array.isArray(response.data)) {
+        return response.data;
+      }
+      return [];
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load customer PICs",
+        variant: "destructive",
+      });
+      return [];
+    }
+  };
+
   const fetchVendors = async (): Promise<Vendor[]> => {
     try {
       const response = await apiCall<{ data: Vendor[] }>(API_ENDPOINTS.VENDORS);
-      return response.data || DEFAULT_VENDORS;
+      return response.data || vendors;
     } catch (error) {
-      console.error("Failed to fetch vendors:", error);
-      return DEFAULT_VENDORS;
+      return vendors;
     }
   };
 
@@ -777,34 +774,27 @@ export default function NewPortCall() {
 
   const handleIMONumberChange = async (imo: string) => {
     handleInputChange("imo", imo);
-
     if (imo.length >= 4) {
       const response = await fetchVesselByIMO(imo);
-      if (response) {
-        const vesselData = response;
-        console.log("Processing vessel data:", vesselData);
-
+      if (response && response.data) {
         setFormData((prev) => ({
           ...prev,
-          vesselId: vesselData.data.vessel_id || "", // Handle missing vessel_id
-          vesselName: vesselData.data.vessel_name || prev.vesselName,
-          vesselType: vesselData.data.vessel_type || prev.vesselType,
-          flag: vesselData.data.flag || prev.flag,
-          callSign: vesselData.data.call_sign || prev.callSign,
-          builtYear: vesselData.data.build_year
-            ? String(vesselData.data.build_year)
+          vesselId: response.data.vessel_id || "",
+          vesselName: response.data.vessel_name || prev.vesselName,
+          vesselType: response.data.vessel_type || prev.vesselType,
+          flag: response.data.flag || prev.flag,
+          callSign: response.data.call_sign || prev.callSign,
+          builtYear: response.data.build_year
+            ? String(response.data.build_year)
             : prev.builtYear,
-          grt: vesselData.data.grt ? String(vesselData.data.grt) : prev.grt,
-          dwt: vesselData.data.dwt ? String(vesselData.data.dwt) : prev.dwt,
-          loa: vesselData.data.loa ? String(vesselData.data.loa) : prev.loa,
-          nrt: vesselData.data.nrt ? String(vesselData.data.nrt) : prev.nrt,
-          piClub: vesselData.data.p_and_i_club || prev.piClub,
-          sscecExpiry: vesselData.data.SSCEC_expires
-            ? new Date(vesselData.data.SSCEC_expires)
-                .toISOString()
-                .split("T")[0]
+          grt: response.data.grt ? String(response.data.grt) : prev.grt,
+          dwt: response.data.dwt ? String(response.data.dwt) : prev.dwt,
+          loa: response.data.loa ? String(response.data.loa) : prev.loa,
+          nrt: response.data.nrt ? String(response.data.nrt) : prev.nrt,
+          sscecExpiry: response.data.SSCEC_expires
+            ? new Date(response.data.SSCEC_expires).toISOString().split("T")[0]
             : prev.sscecExpiry,
-          remarks: vesselData.data.remark || prev.remarks,
+          remarks: response.data.remark || prev.remarks,
         }));
       }
     }
@@ -821,22 +811,31 @@ export default function NewPortCall() {
 
   // Load initial data from API
   const loadInitialData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const [services, ports, clients, vendors] = await Promise.all([
-        fetchServices(),
-        fetchPorts(),
-        fetchClients(),
-        fetchVendors(),
-      ]);
-
+      const [services, ports, clients, vendors, statuses, pics] =
+        await Promise.all([
+          fetchServices(),
+          fetchPorts(),
+          fetchClients(),
+          fetchVendors(),
+          fetchFormalityStatuses(),
+          fetchCustomerPics(),
+        ]);
       setAvailableServices(services);
       setPorts(ports);
       setClients(clients);
       setVendors(vendors);
+      setFormalityStatuses(statuses);
+      setCustomerPICs(pics);
+      setCustomerPICOptions(
+        pics.map((pic) => ({
+          value: pic.pic_id,
+          label: pic.name,
+        }))
+      );
     } catch (error) {
-      console.error("Failed to load initial data:", error);
-      // Only set empty arrays (already the default state)
+      // already handled
     } finally {
       setLoading(false);
     }
@@ -848,24 +847,7 @@ export default function NewPortCall() {
       router.push("/");
       return;
     }
-
-    const user = JSON.parse(userData);
-    setCurrentUser(user);
-
-    // Generate job number
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    const jobNumber = `GLPC-${year}-${month}${day}-${Math.floor(
-      Math.random() * 1000
-    )
-      .toString()
-      .padStart(3, "0")}`;
-
-    setFormData((prev) => ({ ...prev, jobNumber }));
-
-    // Load initial data
+    setCurrentUser(JSON.parse(userData));
     loadInitialData();
   }, [router]);
 
@@ -873,19 +855,20 @@ export default function NewPortCall() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePicChange = (key: string, value: string) => {
+  const handlePicChange = (pic_id: string) => {
+    const selected = customerPICs.find((pic) => pic.pic_id === pic_id);
     setFormData((prev) => ({
       ...prev,
       pic: {
-        ...prev.pic,
-        [key]: value,
+        pic_id,
+        customerPIC: selected?.name || "",
+        email: selected?.email || "",
       },
     }));
   };
 
   const handleServiceToggle = (service: string) => {
     const isSelected = selectedServices.some((s) => s.name === service);
-
     if (isSelected) {
       setSelectedServices((prev) => prev.filter((s) => s.name !== service));
     } else {
@@ -921,24 +904,20 @@ export default function NewPortCall() {
       });
       return;
     }
-
+    setLoading(true);
     try {
-      setLoading(true);
       const response = await apiCall<Service>(API_ENDPOINTS.SERVICES, {
         method: "POST",
         body: JSON.stringify({ service_name: newServiceName.trim() }),
       });
-
       setAvailableServices((prev) => [...prev, response]);
       setNewServiceName("");
       setIsAddServiceOpen(false);
-
       toast({
         title: "Success",
         description: "Service added successfully!",
       });
     } catch (error) {
-      console.error("Failed to add service:", error);
       toast({
         title: "Error",
         description: "Failed to add service",
@@ -955,12 +934,9 @@ export default function NewPortCall() {
 
   const filteredServices = useMemo(() => {
     if (!serviceSearch) return availableServices;
-
-    return availableServices.filter((service) => {
-      return service.service_name
-        .toLowerCase()
-        .includes(serviceSearch.toLowerCase());
-    });
+    return availableServices.filter((service) =>
+      service.service_name.toLowerCase().includes(serviceSearch.toLowerCase())
+    );
   }, [availableServices, serviceSearch]);
 
   // Add custom port function - API ready
@@ -1037,37 +1013,50 @@ export default function NewPortCall() {
   const handleSubmit = async () => {
     try {
       setLoading(true);
-
-      // Validate required fields
       if (!formData.vesselName || !formData.clientCompany || !formData.port) {
         throw new Error("Vessel name, client company, and port are required");
       }
+      // Find port and client names
+      const portLabel =
+        ports.find((p) => p.value === formData.port)?.label || "";
+      const clientLabel =
+        clients.find((c) => c.value === formData.clientCompany)?.label || "";
 
-      // Prepare the payload in the exact format the backend expects
+      // Prepare mail object
+      const mail = {
+        email: formData.pic.email || "",
+        body: "",
+        cc_emails: [],
+      };
+
+      // Prepare services array
+      const services = selectedServices.map((service, index) => ({
+        service_id: `SVC-${Date.now()}-${index}`,
+        service_name: service.name,
+        vendor_id: service.vendorId || null,
+        vendor_name: service.vendor || "No vendor specified",
+        status: true,
+      }));
+
       const payload = {
-        vessel_id: formData.vesselId || `VES-${Date.now()}`, // Ensure vessel_id is at root level
+        vessel_id: formData.vesselId || `VES-${Date.now()}`,
         vessel_name: formData.vesselName,
         imo: formData.imo,
-        port_id: formData.port, // Send port_id directly
-        port: ports.find((p) => p.value === formData.port)?.label,
-        client_company_id: formData.clientCompany,
-        client_company: clients.find((c) => c.value === formData.clientCompany)
-          ?.label,
+        port: portLabel,
+        client_company: clientLabel,
         agency_name: formData.agencyName,
         status_of_formalities: formData.formalityStatus || "Pending",
+        eta: formData.eta ? new Date(formData.eta).toISOString() : null,
+        // ETD: omit if not needed
         pic: {
           id: formData.pic.pic_id,
           name: formData.pic.customerPIC,
         },
-        eta: formData.eta ? new Date(formData.eta).toISOString() : null,
-        pic_id: currentUser?.id || "system",
-        pic_name: currentUser?.name || "System User",
-        pic_email: currentUser?.email || "",
-        remarks: formData.remarks || "",
-        status: "In Progress", // Ensure status is at root level
         priority: formData.priority,
-        created_by: currentUser?.id || "system",
-        // Vessel details as separate fields (not nested)
+        remarks: formData.remarks || "",
+        status: "Open",
+        mail,
+        services,
         vessel_type: formData.vesselType,
         flag: formData.flag,
         call_sign: formData.callSign,
@@ -1076,21 +1065,7 @@ export default function NewPortCall() {
         loa: formData.loa ? parseFloat(formData.loa) : null,
         dwt: formData.dwt ? parseFloat(formData.dwt) : null,
         built_year: formData.builtYear ? parseInt(formData.builtYear) : null,
-        p_and_i_club: formData.piClub,
-        // Services array
-        services: selectedServices.map((service, index) => ({
-          service_id: `SVC-${Date.now()}-${index}`,
-          service_name: service.name,
-          vendor_id: service.vendorId || null,
-          vendor_name: service.vendor || "No vendor specified",
-          status: true,
-        })),
       };
-
-      console.log(
-        "Final payload being sent:",
-        JSON.stringify(payload, null, 2)
-      );
 
       const response = await fetch(API_ENDPOINTS.PORT_CALLS, {
         method: "POST",
@@ -1103,12 +1078,8 @@ export default function NewPortCall() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Backend error details:", errorData);
         throw new Error(errorData.error || "Failed to create port call");
       }
-
-      const result = await response.json();
-      console.log("Success response:", result);
 
       toast({
         title: "Success",
@@ -1118,11 +1089,6 @@ export default function NewPortCall() {
 
       router.push("/dashboard");
     } catch (error) {
-      console.error("Error creating port call:", {
-        error: error instanceof Error ? error.message : String(error),
-        formData,
-      });
-
       toast({
         title: "Error",
         description:
@@ -1773,20 +1739,13 @@ export default function NewPortCall() {
                     </Label>
                     <Select
                       value={formData.pic.pic_id}
-                      onValueChange={(pic_id) => {
-                        // Find the selected PIC object by ID
-                        const selected = customerPIC.find(
-                          (pic) => pic.value === pic_id
-                        );
-                        handlePicChange("pic_id", pic_id);
-                        handlePicChange("customerPIC", selected?.label || "");
-                      }}
+                      onValueChange={(pic_id) => handlePicChange(pic_id)}
                     >
                       <SelectTrigger className="form-input" id="assignedPIC">
                         <SelectValue placeholder="Select PIC's" />
                       </SelectTrigger>
                       <SelectContent>
-                        {customerPIC.map((pic) => (
+                        {customerPICOptions.map((pic) => (
                           <SelectItem key={pic.value} value={pic.value}>
                             {pic.label}
                           </SelectItem>
