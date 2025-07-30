@@ -105,6 +105,7 @@ export default function OTPPage() {
         phoneNumber: data.user.phone_number,
         joinDate: data.user.joinDate,
         profilePicture: data.user.profile_picture,
+        avatar: data.user.profile_picture,
         token: data.token,
         permissions: data.permissions,
       };

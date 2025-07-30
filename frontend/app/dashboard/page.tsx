@@ -323,6 +323,7 @@ export default function Dashboard() {
     { href: "/vessels", icon: Ship, label: "Vessel Management" },
     { href: "/pic-management", icon: UserCog, label: "PIC Management" },
     { href: "/feedback", icon: MessageSquareQuote, label: "Feedback" },
+    { href: "/glChat", icon: MessageCircle, label: "GL Chat" },
   ];
 
   const WelcomeCard = ({ user }: { user: UserType }) => (

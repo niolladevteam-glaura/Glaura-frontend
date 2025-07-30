@@ -16,6 +16,8 @@ import {
   CheckCheck,
   ImageIcon,
   Mic,
+  ArrowLeft,
+  Anchor,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -216,48 +218,53 @@ export default function WhatsAppIntegration() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <div className="flex items-center space-x-2">
-                <div className="bg-green-600 p-2 rounded-lg">
-                  <MessageCircle className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    GL Chat
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    GLAURA Messaging Platform
-                  </p>
-                </div>
-              </div>
+      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left Section */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Back Button */}
+            <Link href="/dashboard" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
             </Link>
+
+            {/* Page Title & Icon */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-primary p-2 rounded-xl flex-shrink-0">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
+                  GL Chat
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  GLAURA Messaging Platform
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          {/* Right Section */}
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
-            <Badge
-              variant="outline"
-              className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
-            >
-              {currentUser.name} - Level {currentUser.accessLevel}
-            </Badge>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
           </div>
         </div>
-        <iframe
-          src="https://http://gl-chat-demo.niolla.lk"
-          className="w-full h-[calc(100vh-80px)]"
-          frameBorder="0"
-        />
       </header>
+      {/* Iframe with no scrollbars */}
+      <iframe
+        src="http://localhost:8090/"
+        className="w-full h-[calc(100vh-80px)] "
+        frameBorder="0"
+        scrolling="no"
+      />
     </div>
   );
 }

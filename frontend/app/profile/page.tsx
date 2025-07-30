@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -134,7 +134,7 @@ async function subscribeToPush() {
     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
   });
 
-  await fetch("http://localhost:3080/api/push/subscribe", {
+  await fetch(`${API_BASE_URL}/push/subscribe`, {
     method: "POST",
     body: JSON.stringify(subscription),
     headers: {
@@ -228,6 +228,91 @@ export default function ProfilePage() {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [uploadingPic, setUploadingPic] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Profile picture upload handler
+  const handleProfilePicChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPic(true);
+    const formDataObj = new FormData();
+    formDataObj.append("file", file);
+
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Do not set Content-Type here!
+        },
+        body: formDataObj,
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      const publicUrl = data.data?.public_url;
+
+      if (publicUrl) {
+        setFormData((prev) => ({
+          ...prev,
+          personal_info: {
+            ...(prev.personal_info ??
+              currentUser?.personal_info ?? {
+                first_name: "",
+                last_name: "",
+                email: "",
+                phone: "",
+                dob: "",
+                address: "",
+                role: "",
+                department: "",
+                joining_date: "",
+                profile_picture: "",
+                access_level: "",
+              }),
+            profile_picture: publicUrl,
+          },
+        }));
+
+        // --- Update avatar in localStorage and currentUser state for dashboard/header ---
+        const storedUserRaw = localStorage.getItem("currentUser");
+        if (storedUserRaw) {
+          const storedUser = JSON.parse(storedUserRaw);
+          // Update both profile_picture and avatar fields for compatibility
+          storedUser.avatar = publicUrl;
+          if (storedUser.personal_info)
+            storedUser.personal_info.profile_picture = publicUrl;
+          localStorage.setItem("currentUser", JSON.stringify(storedUser));
+          setCurrentUser((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              personal_info: {
+                ...prev.personal_info,
+                profile_picture: publicUrl,
+              },
+            };
+          });
+        }
+        // -------------------------------------------------------------------------------
+
+        toast.success("Profile picture uploaded!");
+      } else {
+        toast.error("Upload failed.");
+      }
+    } catch (e) {
+      toast.error("Failed to upload picture.");
+    } finally {
+      setUploadingPic(false);
+      // Reset the input so same file can be re-uploaded if needed
+      if (e.target) e.target.value = "";
+    }
+  };
 
   // Push notification status
   const [pushStatus, setPushStatus] = useState<
@@ -340,6 +425,26 @@ export default function ProfilePage() {
 
     try {
       await updateUserSettings(currentUser.id, updateBody, token);
+
+      // ---- Update localStorage and state with new details ----
+      const storedUserRaw = localStorage.getItem("currentUser");
+      if (storedUserRaw) {
+        const storedUser = JSON.parse(storedUserRaw);
+
+        storedUser.personal_info = {
+          ...storedUser.personal_info,
+          ...formData.personal_info,
+        };
+        if (formData.preferences) {
+          storedUser.preferences = {
+            ...storedUser.preferences,
+            ...formData.preferences,
+          };
+        }
+        localStorage.setItem("currentUser", JSON.stringify(storedUser));
+        setCurrentUser(storedUser);
+      }
+
       setIsEditing(false);
       toast.success("Profile updated!");
     } catch (e) {
@@ -497,45 +602,65 @@ export default function ProfilePage() {
                   <Avatar className="w-24 h-24 mx-auto">
                     <AvatarImage
                       src={
+                        formData.personal_info?.profile_picture ||
                         currentUser.personal_info.profile_picture ||
                         "/placeholder.svg"
                       }
                     />
                     <AvatarFallback className="text-2xl">
-                      {currentUser.personal_info.first_name.charAt(0)}
+                      {currentUser?.personal_info?.first_name?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
                   {isEditing && (
-                    <Button
-                      size="sm"
-                      className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
-                    >
-                      <Camera className="h-4 w-4" />
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPic}
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileInputRef}
+                        style={{ display: "none" }}
+                        onChange={handleProfilePicChange}
+                        disabled={uploadingPic}
+                      />
+                    </>
+                  )}
+                  {uploadingPic && (
+                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-full">
+                      <div className="loading-skeleton w-10 h-10 rounded-full" />
+                    </div>
                   )}
                 </div>
                 <h3 className="font-semibold text-lg mb-1">
-                  {currentUser.personal_info.first_name}
+                  {currentUser?.personal_info?.first_name || ""}
                 </h3>
                 <p className="text-muted-foreground text-sm mb-2">
-                  {currentUser.personal_info.role}
+                  {currentUser?.personal_info?.role || ""}
                 </p>
                 <Badge variant="outline" className="mb-4">
-                  Access Level: {currentUser.personal_info.access_level}
+                  Access Level: {currentUser?.personal_info?.access_level || ""}
                 </Badge>
                 <Separator className="my-4" />
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-center space-x-2">
                     <Building className="h-4 w-4 text-muted-foreground" />
-                    <span>{currentUser.personal_info.department}</span>
+                    <span>{currentUser?.personal_info?.department || ""}</span>
                   </div>
                   <div className="flex items-center justify-center space-x-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>
                       Joined{" "}
-                      {new Date(
-                        currentUser.personal_info.joining_date
-                      ).toLocaleDateString()}
+                      {currentUser?.personal_info?.joining_date
+                        ? new Date(
+                            currentUser.personal_info.joining_date
+                          ).toLocaleDateString()
+                        : ""}
                     </span>
                   </div>
                 </div>
@@ -571,7 +696,7 @@ export default function ProfilePage() {
                           id="firstName"
                           value={
                             formData.personal_info?.first_name ||
-                            currentUser.personal_info.first_name ||
+                            currentUser?.personal_info?.first_name ||
                             ""
                           }
                           onChange={(e) =>
