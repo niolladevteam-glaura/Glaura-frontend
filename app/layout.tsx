@@ -1,39 +1,33 @@
-import type React from "react";
-import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
 
-// Import Next's Head component for meta tags
-import Head from "next/head";
-
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "GLAURA",
-  description: "Maritime Port Call Management System",
-  generator: "v0.dev",
+  icons: [
+    { rel: "icon", url: "/favicon.ico" },
+    { rel: "icon", url: "/icons/icon-192x192.png", sizes: "192x192" },
+    {
+      rel: "apple-touch-icon",
+      url: "/icons/icon-192x192.png",
+      sizes: "192x192",
+    },
+  ],
+  manifest: "/manifest.json",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const viewport = {
+  themeColor: "#2363d1",
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <Head>
-        {/* PWA primary color theme */}
-        <meta name="theme-color" content="#2363d1" />
-        {/* PWA manifest and icons */}
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/icons/icon-192x192.jpg" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.jpg" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        {/* Add more meta as needed for PWA */}
-      </Head>
       <body className={inter.className}>
         <AuthProvider>
           <Toaster position="top-center" richColors />

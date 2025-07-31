@@ -11,10 +11,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Add any other Next.js config here if needed
 };
 
 export default nextPWA({
   dest: 'public',
-  disable: process.env.NODE_ENV === 'development', // Enable PWA only in production
+  disable: process.env.NODE_ENV === 'development', // PWA only enabled in production
 })(nextConfig);
