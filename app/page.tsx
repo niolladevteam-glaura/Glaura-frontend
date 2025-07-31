@@ -55,6 +55,8 @@ type ApiUser = {
   permissions?: Record<string, boolean>;
 };
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
