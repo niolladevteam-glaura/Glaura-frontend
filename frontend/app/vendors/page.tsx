@@ -325,7 +325,7 @@ export default function VendorManagement() {
     try {
       setLoading(true);
       const response = await apiCall(API_ENDPOINTS.VENDORS);
-      console.log("Vendors API response:", response);
+      //console.log("Vendors API response:", response);
 
       if (!response.success) {
         throw new Error(response.message || "Failed to load vendors");

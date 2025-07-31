@@ -86,7 +86,7 @@ export default function OKTBPage() {
   useEffect(() => {
     const fetchVessels = async () => {
       const token = localStorage.getItem("token");
-      console.log("Token:", token);
+      //console.log("Token:", token);
       try {
         const res = await fetch(`${API_BASE_URL}/vessel`, {
           method: "GET",
@@ -95,9 +95,9 @@ export default function OKTBPage() {
             Authorization: `Bearer ${token}`,
           },
         });
-        console.log("Status:", res.status);
+        //console.log("Status:", res.status);
         const data = await res.json();
-        console.log("Data:", data);
+        //console.log("Data:", data);
         if (data.success && Array.isArray(data.data)) {
           setVessels(data.data);
         } else {
@@ -105,7 +105,7 @@ export default function OKTBPage() {
         }
         if (res.status === 401) setError("Unauthorized. Please login again.");
       } catch (e) {
-        console.log("Fetch error:", e);
+        //console.log("Fetch error:", e);
         setVessels([]);
         setError("Failed to fetch vessels.");
       }

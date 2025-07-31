@@ -587,7 +587,7 @@ export default function CustomerCompanies() {
         pic: picData, // Corrected key name to "pic"
       };
 
-      console.log("Sending payload:", JSON.stringify(payload, null, 2));
+      //console.log("Sending payload:", JSON.stringify(payload, null, 2));
 
       if (editingCustomer) {
         await apiCall(API_ENDPOINTS.CUSTOMER(editingCustomer.id), {
@@ -667,7 +667,7 @@ export default function CustomerCompanies() {
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);
 
-      console.log("Customer deleted successfully");
+      //console.log("Customer deleted successfully");
     } catch (error) {
       console.error("Failed to delete customer:", error);
       alert("Failed to delete customer. Please try again.");

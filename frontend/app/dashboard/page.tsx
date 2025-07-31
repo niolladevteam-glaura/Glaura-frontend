@@ -463,7 +463,7 @@ export default function Dashboard() {
                       dark:bg-white/20 dark:text-white dark:border-white/30
                     "
                   >
-                    0.2.0-alpha
+                    Version 1.0
                   </Badge>
                 </h1>
                 <p className="text-sm text-muted-foreground">
@@ -471,7 +471,7 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            <div className="relative">
+            {/* <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search vessels, clients, or documents..."
@@ -479,7 +479,7 @@ export default function Dashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 w-80"
               />
-            </div>
+            </div> */}
           </div>
           <div className="flex items-center space-x-4">
             <ThemeToggle />

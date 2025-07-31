@@ -1,0 +1,22 @@
+{
+  "name": "GLAURA Maritime Portal",
+  "short_name": "GLAURA",
+  "description": "The Aura of Excellence in Port Services",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.jpg",
+      "sizes": "192x192",
+      "type": "image/jpg"
+    },
+    {
+      "src": "/icons/icon-512x512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpg"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0b2259",
+  "theme_color": "#2363d1",
+  "display": "standalone",
+  "orientation": "portrait"
+}

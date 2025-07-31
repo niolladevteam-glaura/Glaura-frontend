@@ -255,9 +255,9 @@ export default function LoginPage() {
                 Next-Generation Maritime Management
               </h2>
               <p className="text-xl text-blue-100 leading-relaxed">
-                Experience the future of port operations with our comprehensive
-                AI-powered platform featuring real-time analytics, automated
-                workflows, and seamless integration.
+                Streamline your port operations with our robust management
+                platform, offering automated workflows, simplified processes,
+                and seamless system integration.
               </p>
             </div>
 
@@ -266,26 +266,26 @@ export default function LoginPage() {
               {[
                 {
                   icon: Ship,
-                  title: "Smart Vessel Tracking",
-                  desc: "AI-powered voyage optimization",
+                  title: "Port Call Creation",
+                  desc: "Easily register and manage vessel arrivals and departures",
                   delay: 0,
                 },
                 {
-                  icon: Shield,
-                  title: "Advanced Security",
-                  desc: "Multi-layer authentication",
+                  icon: Zap,
+                  title: "Service Management",
+                  desc: "Coordinate and monitor port call services efficiently",
                   delay: 0.2,
                 },
                 {
-                  icon: Zap,
-                  title: "Real-time Analytics",
-                  desc: "Instant performance insights",
+                  icon: Globe,
+                  title: "Document Handling",
+                  desc: "Generate and manage shipping documents with ease",
                   delay: 0.4,
                 },
                 {
-                  icon: Globe,
-                  title: "Global Integration",
-                  desc: "Worldwide port connectivity",
+                  icon: Shield,
+                  title: "Data Privacy & Security",
+                  desc: "Enhanced system protection",
                   delay: 0.6,
                 },
               ].map((feature, index) => (
