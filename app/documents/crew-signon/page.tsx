@@ -200,37 +200,36 @@ export default function CrewSignOnGeneratePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <div className="flex items-center space-x-2">
-                <div className="bg-green-600 p-2 rounded-lg">
-                  <Anchor className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    Crew Sign On Document
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Generate Crew Sign On Letters
-                  </p>
-                </div>
+      <header className="glass-effect border-b px-2 py-2 sm:px-4 sm:py-3 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            <Link href="/dashboard" className="flex-shrink-0"></Link>
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-green-600 p-2 rounded-lg">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-            </Link>
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  Crew Sign On Document
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Generate Crew Sign On Document
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
               variant="outline"
               className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
             >
-              {currentUser.name} - Level {currentUser.accessLevel}
+              <span className="truncate">{currentUser.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser.accessLevel}
+              </span>
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
           </div>
         </div>
       </header>

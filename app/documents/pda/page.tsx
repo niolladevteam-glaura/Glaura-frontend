@@ -301,59 +301,64 @@ export default function PdaGeneratePage() {
   };
 
   if (!currentUser) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="animate-pulse text-lg">Loading...</span>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <div className="flex items-center space-x-2">
-                <div className="bg-yellow-500 p-2 rounded-lg">
-                  <Anchor className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    Port Disbursement Account (PDA)
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Generate Port Disbursement Account
-                  </p>
-                </div>
+      <header className="glass-effect border-b px-2 py-2 sm:px-4 sm:py-3 sticky top-0 z-50 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            <Link href="/dashboard" className="flex-shrink-0"></Link>
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-yellow-500 p-2 rounded-lg">
+                <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-            </Link>
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-gray-100">
+                  PDA Document
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Generate PDA Documents
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
               variant="outline"
               className="bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800"
             >
-              {currentUser.name} - Level {currentUser.accessLevel}
+              <span className="truncate">{currentUser.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser.accessLevel}
+              </span>
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="w-full max-w-4xl mx-auto px-2 sm:px-6 py-4">
         <Card>
           <CardHeader>
-            <CardTitle>Generate PDA Document</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-base sm:text-xl">
+              Generate PDA Document
+            </CardTitle>
+            <CardDescription className="text-sm">
               Fill the following details to generate a Port Disbursement
               Account.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-1 text-sm font-medium">Date</label>
                   <Input
@@ -460,7 +465,7 @@ export default function PdaGeneratePage() {
                     required
                   />
                 </div>
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block mb-1 text-sm font-medium">
                     Purpose of Call (POC)
                   </label>
@@ -474,8 +479,8 @@ export default function PdaGeneratePage() {
 
               {/* Invoice Data Section */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">Invoice Tables</span>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
+                  <span className="font-medium text-base">Invoice Tables</span>
                   <Button
                     type="button"
                     size="sm"
@@ -485,124 +490,134 @@ export default function PdaGeneratePage() {
                     <Plus className="w-4 h-4 mr-1" /> Add Table
                   </Button>
                 </div>
-                {invoiceData.map((table, tableIdx) => (
-                  <div
-                    key={tableIdx}
-                    className="border rounded-lg p-4 mb-4 bg-yellow-50 dark:bg-yellow-900/20"
-                  >
-                    <div className="flex items-center mb-2 gap-2">
-                      <Input
-                        placeholder="Table Header (e.g. Port Charges)"
-                        value={table.tableHeader}
-                        onChange={(e) =>
-                          handleTableHeaderChange(tableIdx, e.target.value)
-                        }
-                        required
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeInvoiceTable(tableIdx)}
-                        disabled={invoiceData.length === 1}
-                        title="Remove Table"
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
-                    {/* Table Rows */}
-                    <div>
-                      <div className="flex flex-col gap-2">
-                        {table.tableRows.map((row, rowIdx) => (
-                          <div
-                            key={rowIdx}
-                            className="grid grid-cols-12 gap-2 items-center"
-                          >
-                            <div className="col-span-1">
-                              <Input value={row.no} readOnly />
+                <div className="space-y-4">
+                  {invoiceData.map((table, tableIdx) => (
+                    <div
+                      key={tableIdx}
+                      className="border rounded-lg p-3 sm:p-4 mb-4 bg-yellow-50 dark:bg-yellow-900/20"
+                    >
+                      <div className="flex items-center mb-2 gap-2">
+                        <Input
+                          placeholder="Table Header (e.g. Port Charges)"
+                          value={table.tableHeader}
+                          onChange={(e) =>
+                            handleTableHeaderChange(tableIdx, e.target.value)
+                          }
+                          required
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeInvoiceTable(tableIdx)}
+                          disabled={invoiceData.length === 1}
+                          title="Remove Table"
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                      {/* Table Rows */}
+                      <div>
+                        <div className="flex flex-col gap-2 w-full overflow-x-auto">
+                          {table.tableRows.map((row, rowIdx) => (
+                            <div
+                              key={rowIdx}
+                              className="grid grid-cols-12 gap-2 items-center"
+                            >
+                              <div className="col-span-12 xs:col-span-1">
+                                <Input
+                                  value={row.no}
+                                  readOnly
+                                  className="w-full"
+                                />
+                              </div>
+                              <div className="col-span-12 xs:col-span-4">
+                                <Input
+                                  placeholder="Details"
+                                  value={row.details}
+                                  onChange={(e) =>
+                                    handleRowChange(
+                                      tableIdx,
+                                      rowIdx,
+                                      "details",
+                                      e.target.value
+                                    )
+                                  }
+                                  required
+                                  className="w-full"
+                                />
+                              </div>
+                              <div className="col-span-12 xs:col-span-3">
+                                <Input
+                                  type="number"
+                                  placeholder="Amount"
+                                  value={row.amount}
+                                  onChange={(e) =>
+                                    handleRowChange(
+                                      tableIdx,
+                                      rowIdx,
+                                      "amount",
+                                      e.target.value
+                                    )
+                                  }
+                                  required
+                                  min={0}
+                                  step="any"
+                                  className="w-full"
+                                />
+                              </div>
+                              <div className="col-span-12 xs:col-span-3">
+                                <Input
+                                  placeholder="Remarks"
+                                  value={row.remarks}
+                                  onChange={(e) =>
+                                    handleRowChange(
+                                      tableIdx,
+                                      rowIdx,
+                                      "remarks",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full"
+                                />
+                              </div>
+                              <div className="col-span-12 xs:col-span-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeRow(tableIdx, rowIdx)}
+                                  disabled={table.tableRows.length === 1}
+                                  title="Remove Row"
+                                  className="w-full"
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </div>
                             </div>
-                            <div className="col-span-4">
-                              <Input
-                                placeholder="Details"
-                                value={row.details}
-                                onChange={(e) =>
-                                  handleRowChange(
-                                    tableIdx,
-                                    rowIdx,
-                                    "details",
-                                    e.target.value
-                                  )
-                                }
-                                required
-                              />
-                            </div>
-                            <div className="col-span-3">
-                              <Input
-                                type="number"
-                                placeholder="Amount"
-                                value={row.amount}
-                                onChange={(e) =>
-                                  handleRowChange(
-                                    tableIdx,
-                                    rowIdx,
-                                    "amount",
-                                    e.target.value
-                                  )
-                                }
-                                required
-                                min={0}
-                                step="any"
-                              />
-                            </div>
-                            <div className="col-span-3">
-                              <Input
-                                placeholder="Remarks"
-                                value={row.remarks}
-                                onChange={(e) =>
-                                  handleRowChange(
-                                    tableIdx,
-                                    rowIdx,
-                                    "remarks",
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </div>
-                            <div className="col-span-1">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeRow(tableIdx, rowIdx)}
-                                disabled={table.tableRows.length === 1}
-                                title="Remove Row"
-                              >
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
-                            </div>
+                          ))}
+                          <div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => addRow(tableIdx)}
+                              className="mt-2"
+                            >
+                              <Plus className="w-4 h-4 mr-1" /> Add Row
+                            </Button>
                           </div>
-                        ))}
-                        <div>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => addRow(tableIdx)}
-                            className="mt-2"
-                          >
-                            <Plus className="w-4 h-4 mr-1" /> Add Row
-                          </Button>
-                        </div>
-                        <div className="flex justify-end mt-2">
-                          <span className="text-base font-semibold text-yellow-700 dark:text-yellow-300">
-                            Table Total: {table.tableTotal.toFixed(2)}
-                          </span>
+                          <div className="flex justify-end mt-2">
+                            <span className="text-base font-semibold text-yellow-700 dark:text-yellow-300">
+                              Table Total: {table.tableTotal.toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
                 <div className="flex justify-end">
                   <span className="text-lg font-bold text-yellow-900 dark:text-yellow-300">
                     Invoice Total: {InvoiceTotal.toFixed(2)}
@@ -613,14 +628,18 @@ export default function PdaGeneratePage() {
               {success && <div className="text-green-600">{success}</div>}
               {error && <div className="text-red-600">{error}</div>}
             </CardContent>
-            <CardFooter>
-              <Button type="submit" disabled={loading}>
+            <CardFooter className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
                 {loading ? "Submitting..." : "Generate PDA"}
               </Button>
               <Button
                 variant="ghost"
                 type="button"
-                className="ml-2"
+                className="w-full sm:w-auto"
                 onClick={() => router.push("/documents")}
               >
                 Back

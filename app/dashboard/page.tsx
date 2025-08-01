@@ -403,7 +403,10 @@ export default function Dashboard() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[300px]">
+              <SheetContent
+                side="left"
+                className="w-[300px] max-h-[90vh] overflow-y-auto"
+              >
                 <nav className="space-y-2 pt-6">
                   {navigationItems.map((item) => (
                     <Link
