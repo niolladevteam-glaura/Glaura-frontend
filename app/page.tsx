@@ -232,9 +232,9 @@ export default function LoginPage() {
       </div>
 
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
-        <div className="w-full max-w-7xl grid lg:grid-cols-2 gap-8 items-center">
+        <div className="w-full max-w-7xl gap-8 items-center">
           {/* Left Side - Enhanced Branding */}
-          <div className="hidden lg:block text-white space-y-8 animate-slide-in-left">
+          {/*<div className="hidden lg:block text-white space-y-8 animate-slide-in-left">
             <div className="flex items-center space-x-4">
               <div className="relative">
                 <div className="bg-white/20 backdrop-blur-sm p-4 rounded-2xl border border-white/30 shadow-2xl">
@@ -264,7 +264,7 @@ export default function LoginPage() {
             </div>
 
             {/* Enhanced Feature Grid */}
-            <div className="grid grid-cols-2 gap-6 mt-12">
+          {/*<div className="grid grid-cols-2 gap-6 mt-12">
               {[
                 {
                   icon: Ship,
@@ -330,7 +330,7 @@ export default function LoginPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <form onSubmit={handleLogin} className="space-y-6">
-                  <div className="space-y-3">
+                  {/* <div className="space-y-3">
                     <Label
                       htmlFor="userType"
                       className="text-base font-semibold text-gray-800"
@@ -350,7 +350,7 @@ export default function LoginPage() {
                         <SelectItem value="client">Client Portal</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                  </div> */}
 
                   <div className="space-y-3">
                     <Label
