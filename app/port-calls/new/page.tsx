@@ -792,12 +792,28 @@ export default function NewPortCall() {
           loa: response.data.loa ? String(response.data.loa) : prev.loa,
           nrt: response.data.nrt ? String(response.data.nrt) : prev.nrt,
           sscecExpiry: response.data.SSCEC_expires
-            ? new Date(response.data.SSCEC_expires).toISOString().split("T")[0]
+            ? formatDateToDDMMYYYY(new Date(response.data.SSCEC_expires))
             : prev.sscecExpiry,
           remarks: response.data.remark || prev.remarks,
         }));
       }
     }
+  };
+
+  // Utility function for formatting DD-MM-YYYY
+  const formatDateToDDMMYYYY = (date: Date) => {
+    const dd = String(date.getDate()).padStart(2, "0");
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const yyyy = date.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  };
+
+  // Utility to parse DD-MM-YYYY back to Date
+  const parseDDMMYYYY = (value: string): Date | null => {
+    const [dd, mm, yyyy] = value.split("-");
+    if (!dd || !mm || !yyyy) return null;
+    const parsed = new Date(`${yyyy}-${mm}-${dd}`);
+    return isNaN(parsed.getTime()) ? null : parsed;
   };
 
   // Helper function for date formatting
@@ -1340,11 +1356,12 @@ export default function NewPortCall() {
                     </Label>
                     <Input
                       id="sscecExpiry"
-                      type="date"
+                      type="text"
                       value={formData.sscecExpiry}
                       onChange={(e) =>
                         handleInputChange("sscecExpiry", e.target.value)
                       }
+                      placeholder="DD-MM-YYYY"
                       className="form-input"
                     />
                   </div>

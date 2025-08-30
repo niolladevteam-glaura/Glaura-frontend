@@ -1,11 +1,17 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Ship,
   Clock,
@@ -17,66 +23,68 @@ import {
   FileText,
   LogOut,
   Anchor,
-} from "lucide-react"
+} from "lucide-react";
 
 interface PortCall {
-  id: string
-  jobNumber: string
-  vesselName: string
-  imo: string
-  eta: string
-  port: string
-  status: string
-  services: ServiceItem[]
-  timeline: TimelineEvent[]
-  documents: Document[]
+  id: string;
+  jobNumber: string;
+  vesselName: string;
+  imo: string;
+  eta: string;
+  port: string;
+  status: string;
+  services: ServiceItem[];
+  timeline: TimelineEvent[];
+  documents: Document[];
 }
 
 interface ServiceItem {
-  id: string
-  name: string
-  status: "Pending" | "In Progress" | "Completed"
-  assignedTo: string
-  startTime?: string
-  completedTime?: string
+  id: string;
+  name: string;
+  status: "Pending" | "In Progress" | "Completed";
+  assignedTo: string;
+  startTime?: string;
+  completedTime?: string;
 }
 
 interface TimelineEvent {
-  id: string
-  timestamp: string
-  event: string
-  description: string
-  user: string
+  id: string;
+  timestamp: string;
+  event: string;
+  description: string;
+  user: string;
 }
 
 interface Document {
-  id: string
-  name: string
-  type: string
-  generatedAt: string
-  downloadUrl: string
+  id: string;
+  name: string;
+  type: string;
+  generatedAt: string;
+  downloadUrl: string;
 }
 
 export default function ClientPortal() {
-  const [currentUser, setCurrentUser] = useState<any>(null)
-  const [portCalls, setPortCalls] = useState<PortCall[]>([])
-  const [selectedPortCall, setSelectedPortCall] = useState<PortCall | null>(null)
-  const router = useRouter()
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [portCalls, setPortCalls] = useState<PortCall[]>([]);
+  const [selectedPortCall, setSelectedPortCall] = useState<PortCall | null>(
+    null
+  );
+  const router = useRouter();
 
   useEffect(() => {
-    const userData = localStorage.getItem("currentUser")
+    const userData = localStorage.getItem("currentUser");
     if (!userData) {
-      router.push("/")
-      return
+      router.push("/");
+      return;
     }
 
-    const user = JSON.parse(userData)
+    const user = JSON.parse(userData);
     if (user.accessLevel !== "CLIENT") {
-      router.push("/dashboard")
-      return
+      router.push("/dashboard");
+      return;
     }
 
-    setCurrentUser(user)
+    setCurrentUser(user);
 
     // Mock client port calls data
     const mockPortCalls: PortCall[] = [
@@ -197,45 +205,45 @@ export default function ClientPortal() {
         ],
         documents: [],
       },
-    ]
+    ];
 
-    setPortCalls(mockPortCalls)
-    setSelectedPortCall(mockPortCalls[0])
-  }, [router])
+    setPortCalls(mockPortCalls);
+    setSelectedPortCall(mockPortCalls[0]);
+  }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser")
-    router.push("/")
-  }
+    localStorage.removeItem("currentUser");
+    router.push("/");
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Completed":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800 border-green-200";
       case "In Progress":
-        return "bg-blue-100 text-blue-800 border-blue-200"
+        return "bg-blue-100 text-blue-800 border-blue-200";
       case "Pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Completed":
-        return <CheckCircle className="h-4 w-4" />
+        return <CheckCircle className="h-4 w-4" />;
       case "In Progress":
-        return <Clock className="h-4 w-4" />
+        return <Clock className="h-4 w-4" />;
       case "Pending":
-        return <AlertCircle className="h-4 w-4" />
+        return <AlertCircle className="h-4 w-4" />;
       default:
-        return <Clock className="h-4 w-4" />
+        return <Clock className="h-4 w-4" />;
     }
-  }
+  };
 
   if (!currentUser) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   return (
@@ -249,18 +257,27 @@ export default function ClientPortal() {
                 <Anchor className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Greek Lanka Client Portal</h1>
-                <p className="text-sm text-gray-500">Real-time Port Call Tracking</p>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Greek Lanka Client Portal
+                </h1>
+                <p className="text-sm text-gray-500">
+                  Real-time Port Call Tracking
+                </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+            <Badge
+              variant="outline"
+              className="bg-green-50 text-green-700 border-green-200"
+            >
               Client Access
             </Badge>
             <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">Mediterranean Shipping</p>
+              <p className="text-sm font-medium text-gray-900">
+                Mediterranean Shipping
+              </p>
               <p className="text-xs text-gray-500">Client Portal</p>
             </div>
             <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -278,7 +295,9 @@ export default function ClientPortal() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Your Port Calls</CardTitle>
-                <CardDescription>Active and recent vessel operations</CardDescription>
+                <CardDescription>
+                  Active and recent vessel operations
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {portCalls.map((portCall) => (
@@ -292,17 +311,25 @@ export default function ClientPortal() {
                     onClick={() => setSelectedPortCall(portCall)}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-sm">{portCall.vesselName}</h3>
-                      <Badge className={getStatusColor(portCall.status)}>{portCall.status}</Badge>
+                      <h3 className="font-medium text-sm">
+                        {portCall.vesselName}
+                      </h3>
+                      <Badge className={getStatusColor(portCall.status)}>
+                        {portCall.status}
+                      </Badge>
                     </div>
-                    <p className="text-xs text-gray-500 mb-1">{portCall.jobNumber}</p>
+                    <p className="text-xs text-gray-500 mb-1">
+                      {portCall.jobNumber}
+                    </p>
                     <div className="flex items-center space-x-1 text-xs text-gray-500">
                       <MapPin className="h-3 w-3" />
                       <span>{portCall.port}</span>
                     </div>
                     <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
                       <Calendar className="h-3 w-3" />
-                      <span>ETA: {new Date(portCall.eta).toLocaleDateString()}</span>
+                      <span>
+                        ETA: {new Date(portCall.eta).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -324,10 +351,15 @@ export default function ClientPortal() {
                           <span>{selectedPortCall.vesselName}</span>
                         </CardTitle>
                         <CardDescription>
-                          {selectedPortCall.jobNumber} • IMO: {selectedPortCall.imo}
+                          {selectedPortCall.jobNumber} • IMO:{" "}
+                          {selectedPortCall.imo}
                         </CardDescription>
                       </div>
-                      <Badge className={getStatusColor(selectedPortCall.status)}>{selectedPortCall.status}</Badge>
+                      <Badge
+                        className={getStatusColor(selectedPortCall.status)}
+                      >
+                        {selectedPortCall.status}
+                      </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -338,11 +370,15 @@ export default function ClientPortal() {
                       </div>
                       <div>
                         <p className="text-gray-500">ETA</p>
-                        <p className="font-medium">{new Date(selectedPortCall.eta).toLocaleString()}</p>
+                        <p className="font-medium">
+                          {new Date(selectedPortCall.eta).toLocaleString()}
+                        </p>
                       </div>
                       <div>
                         <p className="text-gray-500">Total Services</p>
-                        <p className="font-medium">{selectedPortCall.services.length}</p>
+                        <p className="font-medium">
+                          {selectedPortCall.services.length}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -359,15 +395,22 @@ export default function ClientPortal() {
                     <Card>
                       <CardHeader>
                         <CardTitle>Service Progress</CardTitle>
-                        <CardDescription>Real-time status of all requested services</CardDescription>
+                        <CardDescription>
+                          Real-time status of all requested services
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
                           {selectedPortCall.services.map((service) => (
-                            <div key={service.id} className="border rounded-lg p-4">
+                            <div
+                              key={service.id}
+                              className="border rounded-lg p-4"
+                            >
                               <div className="flex items-center justify-between mb-3">
                                 <h3 className="font-medium">{service.name}</h3>
-                                <Badge className={getStatusColor(service.status)}>
+                                <Badge
+                                  className={getStatusColor(service.status)}
+                                >
                                   {getStatusIcon(service.status)}
                                   <span className="ml-1">{service.status}</span>
                                 </Badge>
@@ -376,19 +419,29 @@ export default function ClientPortal() {
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                 <div>
                                   <p className="text-gray-500">Assigned To</p>
-                                  <p className="font-medium">{service.assignedTo}</p>
+                                  <p className="font-medium">
+                                    {service.assignedTo}
+                                  </p>
                                 </div>
                                 <div>
                                   <p className="text-gray-500">Start Time</p>
                                   <p className="font-medium">
-                                    {service.startTime ? new Date(service.startTime).toLocaleString() : "Not started"}
+                                    {service.startTime
+                                      ? new Date(
+                                          service.startTime
+                                        ).toLocaleString()
+                                      : "Not started"}
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-gray-500">Completed Time</p>
+                                  <p className="text-gray-500">
+                                    Completed Time
+                                  </p>
                                   <p className="font-medium">
                                     {service.completedTime
-                                      ? new Date(service.completedTime).toLocaleString()
+                                      ? new Date(
+                                          service.completedTime
+                                        ).toLocaleString()
                                       : "In progress"}
                                   </p>
                                 </div>
@@ -404,7 +457,9 @@ export default function ClientPortal() {
                     <Card>
                       <CardHeader>
                         <CardTitle>Activity Timeline</CardTitle>
-                        <CardDescription>Chronological log of all port call activities</CardDescription>
+                        <CardDescription>
+                          Chronological log of all port call activities
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
@@ -412,19 +467,26 @@ export default function ClientPortal() {
                             <div key={event.id} className="flex space-x-4">
                               <div className="flex flex-col items-center">
                                 <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                                {index < selectedPortCall.timeline.length - 1 && (
+                                {index <
+                                  selectedPortCall.timeline.length - 1 && (
                                   <div className="w-px h-12 bg-gray-300 mt-2"></div>
                                 )}
                               </div>
                               <div className="flex-1 pb-4">
                                 <div className="flex items-center justify-between mb-1">
-                                  <h3 className="font-medium text-sm">{event.event}</h3>
+                                  <h3 className="font-medium text-sm">
+                                    {event.event}
+                                  </h3>
                                   <span className="text-xs text-gray-500">
                                     {new Date(event.timestamp).toLocaleString()}
                                   </span>
                                 </div>
-                                <p className="text-sm text-gray-600 mb-1">{event.description}</p>
-                                <p className="text-xs text-gray-500">By: {event.user}</p>
+                                <p className="text-sm text-gray-600 mb-1">
+                                  {event.description}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  By: {event.user}
+                                </p>
                               </div>
                             </div>
                           ))}
@@ -437,19 +499,29 @@ export default function ClientPortal() {
                     <Card>
                       <CardHeader>
                         <CardTitle>Generated Documents</CardTitle>
-                        <CardDescription>Download official documents for this port call</CardDescription>
+                        <CardDescription>
+                          Download official documents for this port call
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         {selectedPortCall.documents.length > 0 ? (
                           <div className="space-y-3">
                             {selectedPortCall.documents.map((doc) => (
-                              <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div
+                                key={doc.id}
+                                className="flex items-center justify-between p-3 border rounded-lg"
+                              >
                                 <div className="flex items-center space-x-3">
                                   <FileText className="h-5 w-5 text-gray-400" />
                                   <div>
-                                    <p className="font-medium text-sm">{doc.name}</p>
+                                    <p className="font-medium text-sm">
+                                      {doc.name}
+                                    </p>
                                     <p className="text-xs text-gray-500">
-                                      {doc.type} • Generated: {new Date(doc.generatedAt).toLocaleString()}
+                                      {doc.type} • Generated:{" "}
+                                      {new Date(
+                                        doc.generatedAt
+                                      ).toLocaleString()}
                                     </p>
                                   </div>
                                 </div>
@@ -463,9 +535,12 @@ export default function ClientPortal() {
                         ) : (
                           <div className="text-center py-8">
                             <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-500">No documents generated yet</p>
+                            <p className="text-gray-500">
+                              No documents generated yet
+                            </p>
                             <p className="text-sm text-gray-400">
-                              Documents will appear here as services are completed
+                              Documents will appear here as services are
+                              completed
                             </p>
                           </div>
                         )}
@@ -479,5 +554,5 @@ export default function ClientPortal() {
         </div>
       </div>
     </div>
-  )
+  );
 }
