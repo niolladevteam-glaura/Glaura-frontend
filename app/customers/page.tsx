@@ -68,9 +68,9 @@ interface PIC {
   name: string;
   department: string;
   contactNumbers: string[];
-  contactTypes?: string[]; // For number types
+  contactTypes?: string[];
   emails: string[];
-  emailTypes?: string[]; // For email types
+  emailTypes?: string[];
   birthday: string;
   remarks: string;
   receiveUpdates: boolean;
@@ -660,26 +660,22 @@ export default function CustomerCompanies() {
     try {
       setLoading(true);
 
-      // Clean phone numbers by removing non-digit characters except '+'
-      const cleanPhoneNumber = (phone: string) =>
-        phone.replace(/[^\d+]/g, "").trim();
-
       // Compose PIC payload from the first PIC
       const firstPic = customerForm.pics?.[0];
       let picData = null;
       if (firstPic) {
         picData = {
-          name: `${firstPic.title || "Mr"} ${firstPic.firstName || ""} ${
-            firstPic.lastName || ""
-          }`.trim(),
+          prefix: firstPic.title || "Mr",
+          firstName: firstPic.firstName || "",
+          lastName: firstPic.lastName || "",
           department: firstPic.department,
-          phone_number: cleanPhoneNumber(firstPic.contactNumbers?.[0] || ""),
+          phone_number: firstPic.contactNumbers?.[0] || "",
           phoneNumberType: firstPic.contactTypes?.[0] || "Direct Line",
           email: firstPic.emails?.[0] || "",
           emailType: firstPic.emailTypes?.[0] || "Personal",
           birthday: firstPic.birthday,
-          remark: firstPic.remarks,
           receiveUpdates: firstPic.receiveUpdates,
+          remark: firstPic.remarks,
         };
       }
 
@@ -687,9 +683,8 @@ export default function CustomerCompanies() {
       const payload = {
         company_name: customerForm.companyName,
         address: customerForm.address,
-        phone_number: cleanPhoneNumber(
-          `${customerForm.landlineCountryCode} ${customerForm.landlineNumber}`
-        ),
+        phone_number:
+          `${customerForm.landlineCountryCode} ${customerForm.landlineNumber}`.trim(),
         company_type: selectedCompanyTypes,
         email: customerForm.groupEmails?.[0] || "",
         remark: customerForm.remarks,
