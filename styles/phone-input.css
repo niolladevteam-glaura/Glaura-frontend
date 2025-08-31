@@ -1,0 +1,182 @@
+/* --- Theme tokens (match shadcn defaults) --- */
+:root {
+  --pi-bg: hsl(var(--background));
+  --pi-fg: hsl(var(--foreground));
+  --pi-muted: hsl(var(--muted-foreground));
+  --pi-popover: hsl(var(--popover));
+  --pi-ring: hsl(var(--ring));
+  --pi-border: hsl(var(--input));
+}
+.dark {
+  --pi-bg: hsl(var(--background));
+  --pi-fg: hsl(var(--foreground));
+  --pi-muted: hsl(var(--muted-foreground));
+  --pi-popover: hsl(var(--popover));
+  --pi-ring: hsl(var(--ring));
+  --pi-border: hsl(var(--input));
+}
+
+/* Base wrapper so dropdown can position relative to it */
+.pi-wrap {
+  position: relative;
+}
+
+/* Library root */
+.react-tel-input {
+  width: 100%;
+  font-size: 0.875rem; /* text-sm */
+  position: relative; /* anchor for absolute dropdown */
+  overflow: visible !important; /* 🔧 allow list to escape */
+}
+
+/* Trigger button (looks like an input) */
+.react-tel-input .flag-dropdown {
+  background: var(--pi-bg) !important;
+  border: 1px solid var(--pi-border) !important;
+  border-radius: 0.5rem !important;
+  width: 100% !important;
+  position: relative; /* dropdown anchor */
+  overflow: visible !important; /* 🔧 do NOT clip the list */
+}
+
+/* Selected flag area from the library */
+.react-tel-input .selected-flag {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0 0.5rem !important;
+  height: 2.5rem;
+}
+
+/* Ensure the flag doesn’t shrink */
+.react-tel-input .selected-flag .iti-flag {
+  flex-shrink: 1rem;
+}
+
+/* Add space after the flag inside the selected value */
+.react-tel-input .selected-flag .iti-flag {
+  margin-right: 0.5rem; /* ⬅️ adjust space as needed */
+}
+
+/* Add space after the flag in the dropdown list too */
+.react-tel-input .country-list .country .iti-flag {
+  margin-right: 0.5rem; /* ⬅️ same spacing in dropdown */
+}
+
+/* Hide the internal phone-number input entirely */
+.react-tel-input .form-control {
+  display: none !important;
+}
+
+/* Our overlay text (inside the trigger, to the right of the flag) */
+.pi-overlay {
+  pointer-events: none; /* let clicks go to PhoneInput */
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 3.5rem; /* ⬅️ more space so text starts after flag */
+  padding-right: 0.75rem;
+}
+
+.pi-overlay-text {
+  color: var(--pi-fg);
+  font-size: 0.875rem; /* text-sm */
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dropdown list (FLOATS BELOW – fix for clipping inside input) */
+.react-tel-input .country-list {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  min-width: 100% !important; /* match trigger width */
+  max-width: 22rem !important; /* cap for long names */
+  background: var(--pi-popover) !important;
+  color: var(--pi-fg) !important;
+  border: 1px solid var(--pi-border) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18), 0 3px 6px rgba(0, 0, 0, 0.12) !important;
+  max-height: 18rem;
+  overflow-y: auto;
+  padding-top: 0;
+  z-index: 1000 !important; /* 🔧 above dialogs/inputs */
+}
+
+/* Country rows */
+.react-tel-input .country-list .country {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+  white-space: nowrap !important;
+}
+.react-tel-input .country-list .country:hover,
+.react-tel-input .country-list .country.highlight {
+  background: color-mix(in oklab, var(--pi-fg) 10%, transparent) !important;
+}
+.react-tel-input .country-list .country .dial-code {
+  color: var(--pi-muted) !important;
+}
+
+/* Search header */
+.react-tel-input .country-list .search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--pi-popover);
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--pi-border);
+}
+.react-tel-input .search-box {
+  width: 100%;
+  height: 2.125rem;
+  margin: 0 !important;
+  background: var(--pi-bg) !important;
+  color: var(--pi-fg) !important;
+  border: 1px solid var(--pi-border) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.35rem 0.75rem 0.35rem 2rem !important;
+  outline: none !important;
+  line-height: 1.5rem;
+}
+.react-tel-input .search-box::placeholder {
+  color: var(--pi-muted) !important;
+}
+.react-tel-input .search-box:focus {
+  border-color: var(--pi-ring) !important;
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--pi-ring) 25%, transparent),
+    0 0 0 4px color-mix(in oklab, var(--pi-ring) 12%, transparent);
+}
+.react-tel-input .search::before {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.95rem;
+  height: 0.95rem;
+  opacity: 0.55;
+  background: no-repeat center / contain
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-3.5-3.5'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* Scrollbar polish */
+.react-tel-input .country-list::-webkit-scrollbar {
+  width: 8px;
+}
+.react-tel-input .country-list::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--pi-fg) 20%, transparent);
+  border-radius: 999px;
+}
+
+/* No results */
+.react-tel-input .no-entries-message {
+  color: var(--pi-muted);
+  padding: 0.75rem 0.75rem 1rem;
+  font-size: 0.875rem;
+}

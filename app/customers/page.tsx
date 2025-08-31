@@ -43,8 +43,6 @@ import {
   Edit,
   Trash2,
   Eye,
-  MoreHorizontal,
-  LogOut,
   Anchor,
   Cake,
   X,
@@ -53,6 +51,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
+import ShadCountryPhoneInput from "@/components/ui/ShadCountryPhoneInput";
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -60,12 +59,18 @@ const API_ENDPOINTS = {
   CUSTOMERS: `${API_BASE_URL}/customer`,
   CUSTOMER: (id: string) => `${API_BASE_URL}/customer/${id}`,
 };
+
 interface PIC {
   id: string;
+  title?: string;
+  firstName?: string;
+  lastName?: string;
   name: string;
   department: string;
   contactNumbers: string[];
+  contactTypes?: string[]; // For number types
   emails: string[];
+  emailTypes?: string[]; // For email types
   birthday: string;
   remarks: string;
   receiveUpdates: boolean;
@@ -78,7 +83,7 @@ interface Customer {
   landlineCountryCode: string;
   landlineNumber: string;
   groupEmails: string[];
-  companyType: "Owners" | "Managers" | "Charterers" | "Bunker Traders";
+  companyType: string[]; // now array, not string
   remarks: string;
   pics: PIC[];
   createdAt: string;
@@ -103,13 +108,27 @@ export default function CustomerCompanies() {
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Company type options (dynamic, checkboxes)
+  const [companyTypeOptions, setCompanyTypeOptions] = useState<string[]>([
+    "Owners",
+    "Managers",
+    "Charterers",
+    "Bunker Traders",
+  ]);
+  const [newCompanyTypeInput, setNewCompanyTypeInput] = useState("");
+  const [selectedCompanyTypes, setSelectedCompanyTypes] = useState<string[]>(
+    []
+  );
+
+  // Customer form
   const [customerForm, setCustomerForm] = useState<Partial<Customer>>({
     companyName: "",
     address: "",
     landlineCountryCode: "+94",
     landlineNumber: "",
     groupEmails: [""],
-    companyType: "Owners",
+    companyType: [],
     remarks: "",
     pics: [],
   });
@@ -117,32 +136,90 @@ export default function CustomerCompanies() {
   // PIC Form States
   const [currentPicIndex, setCurrentPicIndex] = useState<number>(-1); // -1 = new PIC, >=0 = editing existing
   const [picForm, setPicForm] = useState<Partial<PIC>>({
-    name: "",
+    title: "Mr",
+    firstName: "",
+    lastName: "",
     department: "",
     contactNumbers: [""],
+    contactTypes: ["Direct Line"], // per number
     emails: [""],
+    emailTypes: ["Personal"], // per email
     birthday: "",
     remarks: "",
     receiveUpdates: true,
   });
+
+  // --- Handler for adding new company type dynamically ---
+  const handleAddCompanyType = () => {
+    if (
+      newCompanyTypeInput.trim() &&
+      !companyTypeOptions.includes(newCompanyTypeInput)
+    ) {
+      setCompanyTypeOptions((prev) => [...prev, newCompanyTypeInput.trim()]);
+      setNewCompanyTypeInput("");
+    }
+  };
+
+  // --- Handler for company type checkboxes ---
+  const handleCompanyTypeCheckbox = (value: string) => {
+    setSelectedCompanyTypes((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
 
   // PIC form handlers
   const handlePicFormChange = (field: string, value: any) => {
     setPicForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // PIC contact number type handler
+  const handleContactTypeChange = (idx: number, type: string) => {
+    setPicForm((prev) => {
+      const arr = prev.contactTypes ? [...prev.contactTypes] : [];
+      arr[idx] = type;
+      return { ...prev, contactTypes: arr };
+    });
+  };
+
+  // PIC email type handler
+  const handleEmailTypeChange = (idx: number, type: string) => {
+    setPicForm((prev) => {
+      const arr = prev.emailTypes ? [...prev.emailTypes] : [];
+      arr[idx] = type;
+      return { ...prev, emailTypes: arr };
+    });
+  };
+
+  // Add PIC to customerForm.pics
   const addPicToCustomer = () => {
-    if (!picForm.name?.trim()) {
-      alert("Please enter PIC name");
+    if (!picForm.firstName?.trim()) {
+      alert("Please enter PIC first name");
       return;
     }
-
+    if (!picForm.lastName?.trim()) {
+      alert("Please enter PIC last name");
+      return;
+    }
+    // Compose full name for legacy/data display
+    const name =
+      `${picForm.title} ${picForm.firstName} ${picForm.lastName}`.trim();
     const newPic: PIC = {
       id: Date.now().toString(),
-      name: picForm.name || "",
+      title: picForm.title || "Mr",
+      firstName: picForm.firstName || "",
+      lastName: picForm.lastName || "",
+      name,
       department: picForm.department || "",
       contactNumbers: picForm.contactNumbers?.filter((num) => num.trim()) || [],
+      contactTypes: (picForm.contactTypes || []).slice(
+        0,
+        picForm.contactNumbers?.length || 1
+      ),
       emails: picForm.emails?.filter((email) => email.trim()) || [],
+      emailTypes: (picForm.emailTypes || []).slice(
+        0,
+        picForm.emails?.length || 1
+      ),
       birthday: picForm.birthday || "",
       remarks: picForm.remarks || "",
       receiveUpdates: picForm.receiveUpdates !== false,
@@ -155,10 +232,14 @@ export default function CustomerCompanies() {
 
     // Reset PIC form
     setPicForm({
-      name: "",
+      title: "Mr",
+      firstName: "",
+      lastName: "",
       department: "",
       contactNumbers: [""],
+      contactTypes: ["Direct Line"],
       emails: [""],
+      emailTypes: ["Personal"],
       birthday: "",
       remarks: "",
       receiveUpdates: true,
@@ -168,20 +249,36 @@ export default function CustomerCompanies() {
 
   const updatePicInCustomer = () => {
     if (currentPicIndex === -1) return;
-    if (!picForm.name?.trim()) {
-      alert("Please enter PIC name");
+    if (!picForm.firstName?.trim()) {
+      alert("Please enter PIC first name");
       return;
     }
-
+    if (!picForm.lastName?.trim()) {
+      alert("Please enter PIC last name");
+      return;
+    }
+    const name =
+      `${picForm.title} ${picForm.firstName} ${picForm.lastName}`.trim();
     setCustomerForm((prev) => {
       const updatedPics = [...(prev.pics || [])];
       updatedPics[currentPicIndex] = {
         ...updatedPics[currentPicIndex],
-        name: picForm.name || "",
+        title: picForm.title || "Mr",
+        firstName: picForm.firstName || "",
+        lastName: picForm.lastName || "",
+        name,
         department: picForm.department || "",
         contactNumbers:
           picForm.contactNumbers?.filter((num) => num.trim()) || [],
+        contactTypes: (picForm.contactTypes || []).slice(
+          0,
+          picForm.contactNumbers?.length || 1
+        ),
         emails: picForm.emails?.filter((email) => email.trim()) || [],
+        emailTypes: (picForm.emailTypes || []).slice(
+          0,
+          picForm.emails?.length || 1
+        ),
         birthday: picForm.birthday || "",
         remarks: picForm.remarks || "",
         receiveUpdates: picForm.receiveUpdates !== false,
@@ -189,12 +286,15 @@ export default function CustomerCompanies() {
       return { ...prev, pics: updatedPics };
     });
 
-    // Reset PIC form
     setPicForm({
-      name: "",
+      title: "Mr",
+      firstName: "",
+      lastName: "",
       department: "",
       contactNumbers: [""],
+      contactTypes: ["Direct Line"],
       emails: [""],
+      emailTypes: ["Personal"],
       birthday: "",
       remarks: "",
       receiveUpdates: true,
@@ -206,10 +306,18 @@ export default function CustomerCompanies() {
     const pic = customerForm.pics?.[index];
     if (pic) {
       setPicForm({
-        name: pic.name,
+        title: pic.title || "Mr",
+        firstName: pic.firstName || "",
+        lastName: pic.lastName || "",
         department: pic.department,
         contactNumbers: [...pic.contactNumbers, ""].filter(Boolean),
+        contactTypes: pic.contactTypes
+          ? [...pic.contactTypes, "Direct Line"].filter(Boolean)
+          : Array(pic.contactNumbers?.length ?? 1).fill("Direct Line"),
         emails: [...pic.emails, ""].filter(Boolean),
+        emailTypes: pic.emailTypes
+          ? [...pic.emailTypes, "Personal"].filter(Boolean)
+          : Array(pic.emails?.length ?? 1).fill("Personal"),
         birthday: pic.birthday,
         remarks: pic.remarks,
         receiveUpdates: pic.receiveUpdates,
@@ -226,10 +334,14 @@ export default function CustomerCompanies() {
     if (currentPicIndex === index) {
       setCurrentPicIndex(-1);
       setPicForm({
-        name: "",
+        title: "Mr",
+        firstName: "",
+        lastName: "",
         department: "",
         contactNumbers: [""],
+        contactTypes: ["Direct Line"],
         emails: [""],
+        emailTypes: ["Personal"],
         birthday: "",
         remarks: "",
         receiveUpdates: true,
@@ -258,43 +370,18 @@ export default function CustomerCompanies() {
         ...options,
       });
 
-      const headers = {
-        "Content-Type": "application/json",
-        ...(options.headers || {}),
-      };
-
-      if (options.body && typeof options.body !== "string") {
-        options.body = JSON.stringify(options.body);
-      }
-
-      // First check for 401 unauthorized
-      if (response.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("currentUser");
-        router.push("/");
-        throw new Error("Session expired. Please login again.");
-      }
-
-      // Then check for other error statuses
       if (!response.ok) {
         let errorData;
         try {
           errorData = await response.json();
         } catch (e) {
-          // If we can't parse JSON, use the status text
           throw new Error(response.statusText || "Request failed");
         }
         throw new Error(
           errorData.message || `Request failed with status ${response.status}`
         );
       }
-
-      // Try to parse JSON for successful responses
-      try {
-        return await response.json();
-      } catch (e) {
-        throw new Error("Invalid JSON response from server");
-      }
+      return await response.json();
     } catch (error: any) {
       console.error("API Error:", error);
       toast({
@@ -327,14 +414,19 @@ export default function CustomerCompanies() {
             const pic = apiCustomer.customerPic;
             pics.push({
               id: pic.pic_id || Date.now().toString(),
+              title: pic.title || "Mr",
+              firstName: pic.firstName || "",
+              lastName: pic.lastName || "",
               name: pic.name || "Unknown",
               department: pic.department || "",
               contactNumbers: pic.phone_number
                 ? pic.phone_number.split(",").map((n: string) => n.trim())
                 : [],
+              contactTypes: pic.phone_types || [],
               emails: pic.email
                 ? pic.email.split(",").map((e: string) => e.trim())
                 : [],
+              emailTypes: pic.email_types || [],
               birthday: pic.birthday || "",
               remarks: pic.remark || "",
               receiveUpdates: Boolean(pic.receiveUpdates),
@@ -350,7 +442,11 @@ export default function CustomerCompanies() {
             groupEmails: apiCustomer.email
               ? apiCustomer.email.split(",").map((e: string) => e.trim())
               : [],
-            companyType: apiCustomer.company_type,
+            companyType: Array.isArray(apiCustomer.company_type)
+              ? apiCustomer.company_type
+              : typeof apiCustomer.company_type === "string"
+              ? [apiCustomer.company_type]
+              : [],
             remarks: apiCustomer.remark || "",
             pics: pics,
             createdAt: apiCustomer.createdAt,
@@ -370,6 +466,7 @@ export default function CustomerCompanies() {
       setLoading(false);
     }
   };
+
   // Improved birthday alerts calculation with proper typing
   interface BirthdayAlert {
     name: string;
@@ -436,10 +533,8 @@ export default function CustomerCompanies() {
       router.push("/");
       return;
     }
-
     const user = JSON.parse(userData);
     setCurrentUser(user);
-
     loadCustomers();
   }, [router]);
 
@@ -459,8 +554,14 @@ export default function CustomerCompanies() {
     }
 
     if (typeFilter !== "all") {
-      filtered = filtered.filter(
-        (customer) => customer.companyType.toLowerCase() === typeFilter
+      filtered = filtered.filter((customer) =>
+        Array.isArray(customer.companyType)
+          ? customer.companyType
+              .map((t) => t.toLowerCase())
+              .includes(typeFilter)
+          : typeof customer.companyType === "string"
+          ? (customer.companyType as string).toLowerCase() === typeFilter
+          : false
       );
     }
 
@@ -505,6 +606,7 @@ export default function CustomerCompanies() {
     setPicForm((prev) => ({
       ...prev,
       contactNumbers: [...(prev.contactNumbers || []), ""],
+      contactTypes: [...(prev.contactTypes || []), "Direct Line"],
     }));
   };
 
@@ -520,6 +622,7 @@ export default function CustomerCompanies() {
     setPicForm((prev) => ({
       ...prev,
       contactNumbers: prev.contactNumbers?.filter((_, i) => i !== index) || [],
+      contactTypes: prev.contactTypes?.filter((_, i) => i !== index) || [],
     }));
   };
 
@@ -527,6 +630,7 @@ export default function CustomerCompanies() {
     setPicForm((prev) => ({
       ...prev,
       emails: [...(prev.emails || []), ""],
+      emailTypes: [...(prev.emailTypes || []), "Personal"],
     }));
   };
 
@@ -542,6 +646,7 @@ export default function CustomerCompanies() {
     setPicForm((prev) => ({
       ...prev,
       emails: prev.emails?.filter((_, i) => i !== index) || [],
+      emailTypes: prev.emailTypes?.filter((_, i) => i !== index) || [],
     }));
   };
 
@@ -559,20 +664,24 @@ export default function CustomerCompanies() {
       const cleanPhoneNumber = (phone: string) =>
         phone.replace(/[^\d+]/g, "").trim();
 
-      // Prepare PIC data correctly
-      const picData = customerForm.pics?.[0]
-        ? {
-            name: customerForm.pics[0].name,
-            department: customerForm.pics[0].department,
-            phone_number: cleanPhoneNumber(
-              customerForm.pics[0].contactNumbers?.[0] || ""
-            ),
-            email: customerForm.pics[0].emails?.[0] || "",
-            birthday: customerForm.pics[0].birthday,
-            remark: customerForm.pics[0].remarks,
-            receiveUpdates: customerForm.pics[0].receiveUpdates,
-          }
-        : null;
+      // Compose PIC payload from the first PIC
+      const firstPic = customerForm.pics?.[0];
+      let picData = null;
+      if (firstPic) {
+        picData = {
+          name: `${firstPic.title || "Mr"} ${firstPic.firstName || ""} ${
+            firstPic.lastName || ""
+          }`.trim(),
+          department: firstPic.department,
+          phone_number: cleanPhoneNumber(firstPic.contactNumbers?.[0] || ""),
+          phoneNumberType: firstPic.contactTypes?.[0] || "Direct Line",
+          email: firstPic.emails?.[0] || "",
+          emailType: firstPic.emailTypes?.[0] || "Personal",
+          birthday: firstPic.birthday,
+          remark: firstPic.remarks,
+          receiveUpdates: firstPic.receiveUpdates,
+        };
+      }
 
       // Prepare payload matching backend structure
       const payload = {
@@ -581,13 +690,11 @@ export default function CustomerCompanies() {
         phone_number: cleanPhoneNumber(
           `${customerForm.landlineCountryCode} ${customerForm.landlineNumber}`
         ),
-        company_type: customerForm.companyType,
+        company_type: selectedCompanyTypes,
         email: customerForm.groupEmails?.[0] || "",
         remark: customerForm.remarks,
-        pic: picData, // Corrected key name to "pic"
+        pic: picData,
       };
-
-      //console.log("Sending payload:", JSON.stringify(payload, null, 2));
 
       if (editingCustomer) {
         await apiCall(API_ENDPOINTS.CUSTOMER(editingCustomer.id), {
@@ -611,12 +718,13 @@ export default function CustomerCompanies() {
         landlineCountryCode: "+94",
         landlineNumber: "",
         groupEmails: [""],
-        companyType: "Owners",
+        companyType: [],
         remarks: "",
         pics: [],
       });
       setEditingCustomer(null);
       setIsAddCustomerOpen(false);
+      setSelectedCompanyTypes([]);
     } catch (error) {
       console.error("Failed to save customer:", error);
       alert("Failed to save customer. Please try again.");
@@ -638,6 +746,7 @@ export default function CustomerCompanies() {
       remarks: customer.remarks,
       pics: customer.pics,
     });
+    setSelectedCompanyTypes(customer.companyType || []);
     setIsAddCustomerOpen(true);
   };
 
@@ -654,20 +763,15 @@ export default function CustomerCompanies() {
     try {
       setIsDeleting(true);
 
-      // Make the API call to delete the customer
       await apiCall(API_ENDPOINTS.CUSTOMER(customerId), {
         method: "DELETE",
       });
 
-      // Update local state to remove the deleted customer
       setCustomers((prev) => prev.filter((c) => c.id !== customerId));
       setFilteredCustomers((prev) => prev.filter((c) => c.id !== customerId));
 
-      // Close the dialog
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);
-
-      //console.log("Customer deleted successfully");
     } catch (error) {
       console.error("Failed to delete customer:", error);
       alert("Failed to delete customer. Please try again.");
@@ -875,34 +979,83 @@ export default function CustomerCompanies() {
                               />
                             </div>
                             <div>
-                              <Label
-                                htmlFor="companyType"
-                                className="form-label"
-                              >
-                                Company Type
-                              </Label>
-                              <Select
-                                value={customerForm.companyType}
-                                onValueChange={(value) =>
-                                  handleCustomerFormChange("companyType", value)
-                                }
-                              >
-                                <SelectTrigger className="form-input">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Owners">Owners</SelectItem>
-                                  <SelectItem value="Managers">
-                                    Managers
-                                  </SelectItem>
-                                  <SelectItem value="Charterers">
-                                    Charterers
-                                  </SelectItem>
-                                  <SelectItem value="Bunker Traders">
-                                    Bunker Traders
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <Label className="form-label">Company Type</Label>
+
+                              {/* Chip group */}
+                              <div className="flex flex-wrap gap-2">
+                                {companyTypeOptions.map((type) => {
+                                  const active =
+                                    selectedCompanyTypes.includes(type);
+                                  return (
+                                    <button
+                                      key={type}
+                                      type="button"
+                                      onClick={() =>
+                                        handleCompanyTypeCheckbox(type)
+                                      }
+                                      role="checkbox"
+                                      aria-checked={active}
+                                      className={[
+                                        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm",
+                                        "transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                        active
+                                          ? "bg-primary text-primary-foreground border-primary"
+                                          : "bg-background text-foreground border-input hover:bg-muted/60",
+                                      ].join(" ")}
+                                    >
+                                      {/* subtle check dot */}
+                                      <span
+                                        className={[
+                                          "h-2 w-2 rounded-full",
+                                          active
+                                            ? "bg-primary-foreground"
+                                            : "bg-muted-foreground/50",
+                                        ].join(" ")}
+                                      />
+                                      <span className="whitespace-nowrap">
+                                        {type}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+
+                                {/* Add new type */}
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={newCompanyTypeInput}
+                                    onChange={(e) =>
+                                      setNewCompanyTypeInput(e.target.value)
+                                    }
+                                    onKeyDown={(e) => {
+                                      if (
+                                        e.key === "Enter" &&
+                                        newCompanyTypeInput.trim()
+                                      ) {
+                                        handleAddCompanyType();
+                                      }
+                                    }}
+                                    placeholder="Add type"
+                                    className="h-9 w-36 text-sm"
+                                  />
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={handleAddCompanyType}
+                                    className="h-9"
+                                  >
+                                    Add
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Helper: show a hint when nothing selected */}
+                              {selectedCompanyTypes.length === 0 && (
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                  Tip: pick one or more company types, or add a
+                                  custom one.
+                                </p>
+                              )}
                             </div>
                           </div>
 
@@ -933,17 +1086,24 @@ export default function CustomerCompanies() {
                               >
                                 Country Code
                               </Label>
-                              <Input
-                                id="landlineCountryCode"
-                                value={customerForm.landlineCountryCode || ""}
-                                onChange={(e) =>
+                              <ShadCountryPhoneInput
+                                country="lk"
+                                value={
+                                  customerForm.landlineCountryCode ?? "+94"
+                                }
+                                onChange={(_, data) => {
+                                  const dial =
+                                    "+" +
+                                    (typeof data === "object" &&
+                                    data &&
+                                    "dialCode" in data
+                                      ? (data as any).dialCode
+                                      : "");
                                   handleCustomerFormChange(
                                     "landlineCountryCode",
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="+94"
-                                className="form-input"
+                                    dial
+                                  );
+                                }}
                               />
                             </div>
                             <div>
@@ -1007,7 +1167,6 @@ export default function CustomerCompanies() {
                               ))}
                             </div>
                           </div>
-
                           <div>
                             <Label htmlFor="remarks" className="form-label">
                               Remarks
@@ -1028,30 +1187,39 @@ export default function CustomerCompanies() {
                           </div>
                         </div>
                       </div>
+
                       {/* PIC Management Section */}
-                      <div className="space-y-4 pt-6 border-t">
-                        <h3 className="text-lg sm:text-xl font-medium">
-                          Persons In Charge (PICs)
-                        </h3>
+                      <div className="space-y-6 pt-6 border-t">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg sm:text-xl font-medium">
+                            Persons In Charge (PICs)
+                          </h3>
+                          {customerForm.pics?.length ? (
+                            <span className="text-xs text-muted-foreground">
+                              {customerForm.pics.length} saved
+                            </span>
+                          ) : null}
+                        </div>
 
                         {/* Display existing PICs */}
                         {customerForm.pics?.length ? (
-                          <div className="space-y-3">
+                          <div className="grid gap-3">
                             {customerForm.pics.map((pic, index) => (
                               <div
                                 key={pic.id}
-                                className="p-3 border rounded-lg"
+                                className="rounded-lg border bg-card p-4"
                               >
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2 sm:gap-0">
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                   <div className="min-w-0">
                                     <p className="font-medium truncate">
-                                      {pic.name}
+                                      {pic.title} {pic.firstName} {pic.lastName}
                                     </p>
                                     <p className="text-sm text-muted-foreground truncate">
                                       {pic.department}
                                     </p>
                                   </div>
-                                  <div className="flex flex-row sm:flex-row flex-wrap gap-2 w-full sm:w-auto">
+
+                                  <div className="flex w-full flex-row flex-wrap gap-2 sm:w-auto">
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -1065,29 +1233,49 @@ export default function CustomerCompanies() {
                                       variant="outline"
                                       size="sm"
                                       onClick={() => removePic(index)}
-                                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 flex-1 sm:flex-none"
+                                      className="flex-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 sm:flex-none"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                       <span className="sr-only">Delete</span>
                                     </Button>
                                   </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+
+                                <div className="mt-3 grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
                                   <div className="truncate">
                                     <span className="text-muted-foreground">
                                       Contact:{" "}
                                     </span>
-                                    {pic.contactNumbers.join(", ")}
+                                    {pic.contactNumbers.map((num, i) => (
+                                      <span key={i}>
+                                        {num}
+                                        {pic.contactTypes && pic.contactTypes[i]
+                                          ? ` (${pic.contactTypes[i]})`
+                                          : ""}
+                                        {i < pic.contactNumbers.length - 1
+                                          ? ", "
+                                          : ""}
+                                      </span>
+                                    ))}
                                   </div>
                                   <div className="truncate">
                                     <span className="text-muted-foreground">
                                       Email:{" "}
                                     </span>
-                                    {pic.emails.join(", ")}
+                                    {pic.emails.map((email, i) => (
+                                      <span key={i}>
+                                        {email}
+                                        {pic.emailTypes && pic.emailTypes[i]
+                                          ? ` (${pic.emailTypes[i]})`
+                                          : ""}
+                                        {i < pic.emails.length - 1 ? ", " : ""}
+                                      </span>
+                                    ))}
                                   </div>
                                 </div>
+
                                 {pic.birthday && (
-                                  <div className="text-sm mt-1">
+                                  <div className="mt-2 text-sm">
                                     <span className="text-muted-foreground">
                                       Birthday:{" "}
                                     </span>
@@ -1106,51 +1294,80 @@ export default function CustomerCompanies() {
                         )}
 
                         {/* PIC Form */}
-                        <div className="space-y-4 pt-4 border-t">
+                        <div className="space-y-5 rounded-lg border bg-card p-4">
                           <h4 className="font-medium">
                             {currentPicIndex >= 0 ? "Edit PIC" : "Add New PIC"}
                           </h4>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="picName" className="form-label">
-                                Name *
-                              </Label>
-                              <Input
-                                id="picName"
-                                value={picForm.name || ""}
-                                onChange={(e) =>
-                                  handlePicFormChange("name", e.target.value)
+                          {/* Title + First + Last */}
+                          <div className="grid grid-cols-12 gap-3">
+                            <div className="col-span-12 sm:col-span-2">
+                              <Select
+                                value={picForm.title || "Mr"}
+                                onValueChange={(val) =>
+                                  handlePicFormChange("title", val)
                                 }
-                                placeholder="Enter PIC name"
-                                className="form-input"
-                              />
-                            </div>
-                            <div>
-                              <Label
-                                htmlFor="picDepartment"
-                                className="form-label"
                               >
-                                Department
-                              </Label>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Title" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Mr">Mr</SelectItem>
+                                  <SelectItem value="Ms">Ms</SelectItem>
+                                  <SelectItem value="Miss">Miss</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="col-span-12 sm:col-span-5">
                               <Input
-                                id="picDepartment"
-                                value={picForm.department || ""}
+                                value={picForm.firstName || ""}
                                 onChange={(e) =>
                                   handlePicFormChange(
-                                    "department",
+                                    "firstName",
                                     e.target.value
                                   )
                                 }
-                                placeholder="Enter department"
-                                className="form-input"
+                                placeholder="First Name"
+                              />
+                            </div>
+                            <div className="col-span-12 sm:col-span-5">
+                              <Input
+                                value={picForm.lastName || ""}
+                                onChange={(e) =>
+                                  handlePicFormChange(
+                                    "lastName",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Last Name"
                               />
                             </div>
                           </div>
 
-                          {/* Contact Numbers */}
+                          {/* Department */}
                           <div>
-                            <div className="flex items-center justify-between mb-2">
+                            <Label
+                              htmlFor="picDepartment"
+                              className="form-label"
+                            >
+                              Department
+                            </Label>
+                            <Input
+                              id="picDepartment"
+                              value={picForm.department || ""}
+                              onChange={(e) =>
+                                handlePicFormChange(
+                                  "department",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Enter department"
+                            />
+                          </div>
+
+                          {/* Contact Numbers */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
                               <Label className="form-label">
                                 Contact Numbers
                               </Label>
@@ -1160,44 +1377,127 @@ export default function CustomerCompanies() {
                                 size="sm"
                                 onClick={addPicContactNumber}
                               >
-                                <Plus className="h-4 w-4 mr-2" />
+                                <Plus className="mr-2 h-4 w-4" />
                                 Add Number
                               </Button>
                             </div>
+
                             <div className="space-y-2">
-                              {picForm.contactNumbers?.map((number, index) => (
-                                <div key={index} className="flex gap-2">
-                                  <Input
-                                    value={number}
-                                    onChange={(e) =>
-                                      updatePicContactNumber(
-                                        index,
-                                        e.target.value
-                                      )
-                                    }
-                                    placeholder="+94 77 123 4567"
-                                    className="form-input"
-                                  />
-                                  {picForm.contactNumbers!.length > 1 && (
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() =>
-                                        removePicContactNumber(index)
+                              {picForm.contactNumbers?.map((number, idx) => (
+                                <div
+                                  key={idx}
+                                  className="grid grid-cols-12 items-center gap-2"
+                                >
+                                  {/* Type */}
+                                  <div className="col-span-12 sm:col-span-3">
+                                    <Select
+                                      value={
+                                        picForm.contactTypes?.[idx] ||
+                                        "Direct Line"
+                                      }
+                                      onValueChange={(val) =>
+                                        handlePicFormChange("contactTypes", [
+                                          ...(picForm.contactTypes?.slice(
+                                            0,
+                                            idx
+                                          ) || []),
+                                          val,
+                                          ...(picForm.contactTypes?.slice(
+                                            idx + 1
+                                          ) || []),
+                                        ])
                                       }
                                     >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  )}
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Type" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Direct Line">
+                                          Direct Line
+                                        </SelectItem>
+                                        <SelectItem value="General Line">
+                                          General Line
+                                        </SelectItem>
+                                        <SelectItem value="Land Line">
+                                          Land Line
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  {/* Country code */}
+                                  <div className="col-span-12 sm:col-span-3">
+                                    <ShadCountryPhoneInput
+                                      country="lk"
+                                      value={
+                                        number.startsWith("+")
+                                          ? number.split(" ")[0]
+                                          : "+94"
+                                      }
+                                      onChange={(val, data) => {
+                                        const rest = number.replace(
+                                          /^(\+\d+)?\s?/,
+                                          ""
+                                        );
+                                        const dial =
+                                          "+" +
+                                          (typeof data === "object" &&
+                                          data &&
+                                          "dialCode" in data
+                                            ? (data as any).dialCode
+                                            : "");
+                                        const updatedNumber = dial + " " + rest;
+                                        updatePicContactNumber(
+                                          idx,
+                                          updatedNumber.trim()
+                                        );
+                                      }}
+                                    />
+                                  </div>
+
+                                  {/* Number */}
+                                  <div className="col-span-12 sm:col-span-5">
+                                    <Input
+                                      value={
+                                        number.startsWith("+")
+                                          ? number.replace(/^(\+\d+)\s?/, "")
+                                          : number
+                                      }
+                                      onChange={(e) =>
+                                        updatePicContactNumber(
+                                          idx,
+                                          (number.startsWith("+")
+                                            ? number.split(" ")[0] + " "
+                                            : "+94 ") + e.target.value
+                                        )
+                                      }
+                                      placeholder="77 123 4567"
+                                    />
+                                  </div>
+
+                                  {/* Remove */}
+                                  <div className="col-span-12 sm:col-span-1 flex sm:justify-end">
+                                    {picForm.contactNumbers!.length > 1 && (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() =>
+                                          removePicContactNumber(idx)
+                                        }
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           </div>
 
                           {/* Emails */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
                               <Label className="form-label">
                                 Email Addresses
                               </Label>
@@ -1207,38 +1507,82 @@ export default function CustomerCompanies() {
                                 size="sm"
                                 onClick={addPicEmail}
                               >
-                                <Plus className="h-4 w-4 mr-2" />
+                                <Plus className="mr-2 h-4 w-4" />
                                 Add Email
                               </Button>
                             </div>
+
                             <div className="space-y-2">
-                              {picForm.emails?.map((email, index) => (
-                                <div key={index} className="flex gap-2">
-                                  <Input
-                                    value={email}
-                                    onChange={(e) =>
-                                      updatePicEmail(index, e.target.value)
-                                    }
-                                    placeholder="email@company.com"
-                                    className="form-input"
-                                    type="email"
-                                  />
-                                  {picForm.emails!.length > 1 && (
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => removePicEmail(index)}
+                              {picForm.emails?.map((email, idx) => (
+                                <div
+                                  key={idx}
+                                  className="grid grid-cols-12 items-center gap-2"
+                                >
+                                  {/* Type */}
+                                  <div className="col-span-12 sm:col-span-3">
+                                    <Select
+                                      value={
+                                        picForm.emailTypes?.[idx] || "Personal"
+                                      }
+                                      onValueChange={(val) =>
+                                        handlePicFormChange("emailTypes", [
+                                          ...(picForm.emailTypes?.slice(
+                                            0,
+                                            idx
+                                          ) || []),
+                                          val,
+                                          ...(picForm.emailTypes?.slice(
+                                            idx + 1
+                                          ) || []),
+                                        ])
+                                      }
                                     >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  )}
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Type" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Personal">
+                                          Personal
+                                        </SelectItem>
+                                        <SelectItem value="Common">
+                                          Common
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  {/* Email */}
+                                  <div className="col-span-12 sm:col-span-8">
+                                    <Input
+                                      value={email}
+                                      onChange={(e) =>
+                                        updatePicEmail(idx, e.target.value)
+                                      }
+                                      placeholder="email@company.com"
+                                      type="email"
+                                    />
+                                  </div>
+
+                                  {/* Remove */}
+                                  <div className="col-span-12 sm:col-span-1 flex sm:justify-end">
+                                    {picForm.emails!.length > 1 && (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => removePicEmail(idx)}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Birthday + Updates */}
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
                               <Label
                                 htmlFor="picBirthday"
@@ -1256,9 +1600,9 @@ export default function CustomerCompanies() {
                                     e.target.value
                                   )
                                 }
-                                className="form-input"
                               />
                             </div>
+
                             <div className="flex items-end">
                               <div className="flex items-center space-x-2">
                                 <Checkbox
@@ -1281,6 +1625,7 @@ export default function CustomerCompanies() {
                             </div>
                           </div>
 
+                          {/* Remarks */}
                           <div>
                             <Label htmlFor="picRemarks" className="form-label">
                               Remarks
@@ -1292,23 +1637,27 @@ export default function CustomerCompanies() {
                                 handlePicFormChange("remarks", e.target.value)
                               }
                               placeholder="Additional notes about this PIC"
-                              className="form-input"
                               rows={2}
                             />
                           </div>
 
-                          <div className="flex justify-end pt-2">
+                          {/* Actions */}
+                          <div className="flex justify-end gap-2 pt-2">
                             {currentPicIndex >= 0 ? (
-                              <div className="flex space-x-2">
+                              <>
                                 <Button
                                   variant="outline"
                                   onClick={() => {
                                     setCurrentPicIndex(-1);
                                     setPicForm({
-                                      name: "",
+                                      title: "Mr",
+                                      firstName: "",
+                                      lastName: "",
                                       department: "",
                                       contactNumbers: [""],
+                                      contactTypes: ["Direct Line"],
                                       emails: [""],
+                                      emailTypes: ["Personal"],
                                       birthday: "",
                                       remarks: "",
                                       receiveUpdates: true,
@@ -1320,24 +1669,31 @@ export default function CustomerCompanies() {
                                 <Button
                                   onClick={updatePicInCustomer}
                                   className="professional-button-primary"
-                                  disabled={!picForm.name?.trim()}
+                                  disabled={
+                                    !picForm.firstName?.trim() ||
+                                    !picForm.lastName?.trim()
+                                  }
                                 >
                                   Update PIC
                                 </Button>
-                              </div>
+                              </>
                             ) : (
                               <Button
                                 onClick={addPicToCustomer}
                                 className="professional-button-primary"
-                                disabled={!picForm.name?.trim()}
+                                disabled={
+                                  !picForm.firstName?.trim() ||
+                                  !picForm.lastName?.trim()
+                                }
                               >
-                                <Plus className="h-4 w-4 mr-2" />
+                                <Plus className="mr-2 h-4 w-4" />
                                 Add PIC
                               </Button>
                             )}
                           </div>
                         </div>
                       </div>
+
                       <div className="flex justify-end space-x-2 mt-6">
                         <Button
                           variant="outline"
@@ -1350,7 +1706,7 @@ export default function CustomerCompanies() {
                               landlineCountryCode: "+94",
                               landlineNumber: "",
                               groupEmails: [""],
-                              companyType: "Owners",
+                              companyType: ["Owners"],
                               remarks: "",
                               pics: [],
                             });
@@ -1414,7 +1770,6 @@ export default function CustomerCompanies() {
               </CardContent>
             </Card>
 
-            {/* Customer List */}
             {/* Customer List */}
             <div className="space-y-4">
               {loading ? (
