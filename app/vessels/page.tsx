@@ -49,6 +49,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -64,7 +66,8 @@ interface Vessel {
   loa: number;
   builtYear: number;
   callSign: string;
-  sscecExpiry: string;
+  sscecExpiry: string; // Now always DD.MM.YYYY
+  sscecIssued?: string; // YYYY-MM-DD (for state only)
   sscecStatus:
     | "valid"
     | "expiring"
@@ -96,18 +99,23 @@ export default function VesselManagement() {
   const [vesselToEdit, setVesselToEdit] = useState<Vessel | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [vesselToDelete, setVesselToDelete] = useState<Vessel | null>(null);
-  const [newVessel, setNewVessel] = useState<
-    Omit<
-      Vessel,
-      | "id"
-      | "createdAt"
-      | "lastUpdated"
-      | "sscecStatus"
-      | "lastPortCall"
-      | "totalPortCalls"
-      | "manager"
-    >
-  >({
+
+  // New Vessel initial state
+  const [newVessel, setNewVessel] = useState<{
+    name: string;
+    imo: string;
+    flag: string;
+    vesselType: string;
+    grt: number;
+    nrt: number;
+    dwt: number;
+    loa: number;
+    builtYear: number;
+    callSign: string;
+    sscecIssued: string; // YYYY-MM-DD
+    owner: string;
+    piClub: string;
+  }>({
     name: "",
     imo: "",
     flag: "",
@@ -118,11 +126,76 @@ export default function VesselManagement() {
     loa: 0,
     builtYear: new Date().getFullYear(),
     callSign: "",
-    sscecExpiry: new Date().toISOString().split("T")[0],
+    sscecIssued: "",
     owner: "",
     piClub: "",
   });
+
   const router = useRouter();
+
+  // Helper functions:
+  function toDateObj(val: string) {
+    if (!val) return null;
+    const [yyyy, mm, dd] = val.split("-");
+    return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+  }
+  function fromDateObj(date: Date | null) {
+    if (!date) return "";
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function formatSSCECExpiry(expiry: string) {
+    // Handles both 'YYYY-MM-DD' and 'YYYY-MM-DDTHH:MM:SS.sssZ' and 'DD.MM.YYYY'
+    if (!expiry) return "";
+    // If already in DD.MM.YYYY format
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(expiry)) return expiry;
+
+    // If ISO string
+    const dateObj = new Date(expiry);
+    if (!isNaN(dateObj.getTime())) {
+      const dd = String(dateObj.getDate()).padStart(2, "0");
+      const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const yyyy = dateObj.getFullYear();
+      return `${dd}.${mm}.${yyyy}`;
+    }
+
+    // If malformed, fallback
+    const onlyDate = expiry.split("T")[0];
+    const [yyyy, mm, dd] = onlyDate.split("-");
+    if (dd && mm && yyyy) {
+      return `${dd}.${mm}.${yyyy}`;
+    }
+    return expiry;
+  }
+
+  // Helper: calculate expiry 6 months from issued date, in DD.MM.YYYY
+  function calcSSCECExpiry(issued: string): string {
+    if (!issued) return "";
+    const [yyyy, mm, dd] = issued.split("-");
+    const issuedDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    issuedDate.setMonth(issuedDate.getMonth() + 6);
+    // Handle month overflow
+    const expDD = String(issuedDate.getDate()).padStart(2, "0");
+    const expMM = String(issuedDate.getMonth() + 1).padStart(2, "0");
+    const expYYYY = issuedDate.getFullYear();
+    return `${expDD}.${expMM}.${expYYYY}`;
+  }
+
+  // Helper: for edit, get issued from expiry (for migration / edit dialog)
+  function getIssuedFromExpiry(expiry: string): string {
+    if (!expiry) return "";
+    const [dd, mm, yyyy] = expiry.split(".");
+    if (!dd || !mm || !yyyy) return "";
+    const expDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    expDate.setMonth(expDate.getMonth() - 6);
+    const issuedYYYY = expDate.getFullYear();
+    const issuedMM = String(expDate.getMonth() + 1).padStart(2, "0");
+    const issuedDD = String(expDate.getDate()).padStart(2, "0");
+    return `${issuedYYYY}-${issuedMM}-${issuedDD}`;
+  }
 
   // API Utility Function
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
@@ -143,15 +216,13 @@ export default function VesselManagement() {
         ...options,
       });
 
-      // Handle 401 Unauthorized
       if (response.status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("currentUser");
-        window.location.href = "/"; // Full page reload to reset state
+        window.location.href = "/";
         throw new Error("Session expired. Please login again.");
       }
 
-      // Handle other error statuses
       if (!response.ok) {
         let errorData;
         try {
@@ -169,15 +240,53 @@ export default function VesselManagement() {
       return await response.json();
     } catch (error: any) {
       console.error("API Error:", error);
-      throw error; // Re-throw to let calling function handle
+      throw error;
     }
   };
 
-  // Vessel-specific API functions
   const fetchVessels = async (): Promise<Vessel[]> => {
     const response = await apiCall(`${API_BASE_URL}/vessel`);
     if (response && response.success && Array.isArray(response.data)) {
-      return response.data;
+      return response.data.map((vessel: any) => {
+        // If backend only returns expiry, reconstruct issued field
+        let sscecExpiry: string =
+          vessel.SSCEC_expires || vessel.sscecExpiry || "";
+        let sscecIssued: string =
+          vessel.SSCEC_issued ||
+          vessel.sscecIssued ||
+          (sscecExpiry ? getIssuedFromExpiry(sscecExpiry) : "");
+        // Ensure expiry is always DD.MM.YYYY
+        if (sscecExpiry.includes("-")) {
+          // If it's in YYYY-MM-DD, convert
+          const [yyyy, mm, dd] = sscecExpiry.split("-");
+          sscecExpiry = `${dd}.${mm}.${yyyy}`;
+        }
+        return {
+          id: vessel.vessel_id || vessel.id,
+          name: vessel.vessel_name || vessel.name,
+          imo: vessel.imo_number || vessel.imo,
+          flag: vessel.flag,
+          vesselType: vessel.vessel_type || vessel.vesselType,
+          grt: vessel.grt || 0,
+          nrt: vessel.nrt || 0,
+          dwt: vessel.dwt || 0,
+          loa: vessel.loa || 0,
+          builtYear: vessel.build_year || vessel.builtYear,
+          callSign: vessel.call_sign || vessel.callSign,
+          sscecExpiry,
+          sscecIssued,
+          sscecStatus: vessel.sscec_status || calculateSSCECStatus(sscecExpiry),
+          owner: vessel.company || vessel.owner,
+          manager: vessel.manager || vessel.company || vessel.owner,
+          piClub: vessel.p_and_i_club || vessel.piClub,
+          lastPortCall:
+            vessel.lastPortCall || new Date().toISOString().split("T")[0],
+          totalPortCalls: vessel.totalPortCalls || 0,
+          createdAt: vessel.createdAt || new Date().toISOString(),
+          lastUpdated:
+            vessel.updatedAt || vessel.lastUpdated || new Date().toISOString(),
+        };
+      });
     }
     console.error("Unexpected API response format:", response);
     throw new Error("Invalid vessels data format received from server");
@@ -218,35 +327,8 @@ export default function VesselManagement() {
     const loadVessels = async () => {
       try {
         const data = await fetchVessels();
-        // Transform the backend data to match our frontend interface
-        const transformedVessels = data.map((vessel: any) => ({
-          id: vessel.vessel_id || vessel.id,
-          name: vessel.vessel_name || vessel.name,
-          imo: vessel.imo_number || vessel.imo,
-          flag: vessel.flag,
-          vesselType: vessel.vessel_type || vessel.vesselType,
-          grt: vessel.grt || 0,
-          nrt: vessel.nrt || 0,
-          dwt: vessel.dwt || 0,
-          loa: vessel.loa || 0,
-          builtYear: vessel.build_year || vessel.builtYear,
-          callSign: vessel.call_sign || vessel.callSign,
-          sscecExpiry: vessel.SSCEC_expires || vessel.sscecExpiry,
-          sscecStatus:
-            vessel.sscec_status ||
-            calculateSSCECStatus(vessel.SSCEC_expires || vessel.sscecExpiry),
-          owner: vessel.company || vessel.owner,
-          manager: vessel.manager || vessel.company || vessel.owner,
-          piClub: vessel.p_and_i_club || vessel.piClub,
-          lastPortCall:
-            vessel.lastPortCall || new Date().toISOString().split("T")[0],
-          totalPortCalls: vessel.totalPortCalls || 0,
-          createdAt: vessel.createdAt || new Date().toISOString(),
-          lastUpdated:
-            vessel.updatedAt || vessel.lastUpdated || new Date().toISOString(),
-        }));
-        setVessels(transformedVessels);
-        setFilteredVessels(transformedVessels);
+        setVessels(data);
+        setFilteredVessels(data);
       } catch (error) {
         console.error("Failed to load vessels:", error);
         toast({
@@ -264,8 +346,11 @@ export default function VesselManagement() {
   const calculateSSCECStatus = (
     expiryDate: string
   ): "Valid" | "Expiring" | "Expired" => {
+    // Parse DD.MM.YYYY
+    let [dd, mm, yyyy] = expiryDate.split(".");
+    if (!dd || !mm || !yyyy) return "Expired";
+    const expiry = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     const today = new Date();
-    const expiry = new Date(expiryDate);
     const daysUntilExpiry = Math.floor(
       (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -278,6 +363,14 @@ export default function VesselManagement() {
 
   const handleAddVessel = async () => {
     try {
+      if (!newVessel.sscecIssued) {
+        toast({
+          title: "Validation Error",
+          description: "Please enter the SSCEC Issued Date",
+          variant: "destructive",
+        });
+        return;
+      }
       const imoExists = vessels.some((v) => v.imo === newVessel.imo);
       if (imoExists) {
         toast({
@@ -287,10 +380,13 @@ export default function VesselManagement() {
         });
         return;
       }
+      const expiry = calcSSCECExpiry(newVessel.sscecIssued);
+
       const vesselData = {
         vessel_name: newVessel.name,
         imo_number: newVessel.imo,
-        SSCEC_expires: newVessel.sscecExpiry,
+        SSCEC_issued: newVessel.sscecIssued,
+        SSCEC_expires: expiry,
         company: newVessel.owner,
         vessel_type: newVessel.vesselType,
         flag: newVessel.flag,
@@ -303,10 +399,13 @@ export default function VesselManagement() {
         p_and_i_club: newVessel.piClub,
       };
       const response = await createVessel(vesselData);
+
       const vesselWithId: Vessel = {
         ...newVessel,
         id: response.vessel_id,
-        sscecStatus: calculateSSCECStatus(newVessel.sscecExpiry),
+        sscecExpiry: expiry,
+        sscecIssued: newVessel.sscecIssued,
+        sscecStatus: calculateSSCECStatus(expiry),
         createdAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
         lastPortCall: new Date().toISOString().split("T")[0],
@@ -325,7 +424,7 @@ export default function VesselManagement() {
         loa: 0,
         builtYear: new Date().getFullYear(),
         callSign: "",
-        sscecExpiry: new Date().toISOString().split("T")[0],
+        sscecIssued: "",
         owner: "",
         piClub: "",
       });
@@ -338,7 +437,6 @@ export default function VesselManagement() {
       setTypeFilter("all");
       setStatusFilter("all");
     } catch (error: any) {
-      console.error("Failed to add vessel:", error);
       if (
         error.message.includes("IMO") ||
         error.message.includes("duplicate")
@@ -376,7 +474,8 @@ export default function VesselManagement() {
     }
     if (statusFilter !== "all") {
       filtered = filtered.filter(
-        (vessel) => vessel.sscecStatus.toLowerCase() === statusFilter
+        (vessel) =>
+          vessel.sscecStatus.toLowerCase() === statusFilter.toLowerCase()
       );
     }
     if (selectedTab !== "all") {
@@ -438,7 +537,12 @@ export default function VesselManagement() {
     setViewDialogOpen(true);
   }
   function handleEditClick(vessel: Vessel): void {
-    setVesselToEdit(vessel);
+    setVesselToEdit({
+      ...vessel,
+      // For edit dialog, always provide sscecIssued for the input
+      sscecIssued:
+        vessel.sscecIssued || getIssuedFromExpiry(vessel.sscecExpiry),
+    });
     setEditDialogOpen(true);
   }
 
@@ -496,27 +600,8 @@ export default function VesselManagement() {
           onValueChange={setSelectedTab}
           className="space-y-6"
         >
-          {/* Tabs + Add Vessel Button - Responsive */}
+          {/* Add Vessel Button */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 w-full">
-            {/* <TabsList className="flex flex-wrap gap-2 sm:gap-0">
-              <TabsTrigger value="all">
-                All Vessels ({vessels.length})
-              </TabsTrigger>
-              <TabsTrigger value="Valid">
-                Valid SSCEC (
-                {vessels.filter((v) => v.sscecStatus === "Valid").length})
-              </TabsTrigger>
-              <TabsTrigger value="Expiring">
-                Expiring (
-                {vessels.filter((v) => v.sscecStatus === "Expiring").length})
-              </TabsTrigger>
-              <TabsTrigger value="Expired">
-                Expired (
-                {vessels.filter((v) => v.sscecStatus === "Expired").length})
-              </TabsTrigger>
-            </TabsList> */}
-
-            {/* Add new vessel dialog: Responsive */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="mt-3 sm:mt-0 sm:ml-4 w-full sm:w-auto">
@@ -730,20 +815,34 @@ export default function VesselManagement() {
                           }
                         />
                       </div>
+                      {/* SSCEC Issued */}
                       <div className="space-y-2">
-                        <Label htmlFor="sscecExpiry">SSCEC Expiry Date</Label>
-                        <Input
-                          id="sscecExpiry"
-                          type="date"
-                          value={newVessel.sscecExpiry}
-                          onChange={(e) =>
+                        <Label htmlFor="sscecIssued">SSCEC Issued Date *</Label>
+                        <DatePicker
+                          id="sscecIssued"
+                          selected={toDateObj(newVessel.sscecIssued)}
+                          dateFormat="dd.MM.yyyy"
+                          onChange={(date) =>
                             setNewVessel({
                               ...newVessel,
-                              sscecExpiry: e.target.value,
+                              sscecIssued: fromDateObj(date),
                             })
                           }
+                          placeholderText="dd.mm.yyyy"
+                          className="form-input w-full"
+                          showPopperArrow={false}
+                          wrapperClassName="w-full"
                         />
+                        {newVessel.sscecIssued && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            SSCEC will expire on{" "}
+                            <span className="font-semibold">
+                              {calcSSCECExpiry(newVessel.sscecIssued)}
+                            </span>
+                          </div>
+                        )}
                       </div>
+
                       <div className="space-y-2">
                         <Label htmlFor="piClub">P&I Club</Label>
                         <Input
@@ -781,7 +880,7 @@ export default function VesselManagement() {
             </Dialog>
           </div>
 
-          {/* Detailed View Dialog - Responsive grid */}
+          {/* View Dialog & Edit Dialog */}
           <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               {selectedVessel && (
@@ -868,9 +967,9 @@ export default function VesselManagement() {
                               {selectedVessel.sscecStatus}
                             </Badge>
                             <Input
-                              value={new Date(
+                              value={formatSSCECExpiry(
                                 selectedVessel.sscecExpiry
-                              ).toLocaleDateString()}
+                              )}
                               readOnly
                             />
                           </div>
@@ -1112,31 +1211,37 @@ export default function VesselManagement() {
                       <h3 className="text-lg font-medium">Certifications</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label>SSCEC Expiry Date</Label>
-                          <Input
-                            type="date"
-                            value={vesselToEdit.sscecExpiry.split("T")[0]}
-                            onChange={(e) => {
-                              const today = new Date();
-                              const expiryDate = new Date(e.target.value);
-                              const daysUntilExpiry = Math.floor(
-                                (expiryDate.getTime() - today.getTime()) /
-                                  (1000 * 60 * 60 * 24)
-                              );
-                              const sscecStatus =
-                                daysUntilExpiry < 0
-                                  ? "Expired"
-                                  : daysUntilExpiry <= 30
-                                  ? "Expiring"
-                                  : "Valid";
+                          <Label>SSCEC Issued Date *</Label>
+                          <DatePicker
+                            selected={toDateObj(
+                              vesselToEdit.sscecIssued ??
+                                getIssuedFromExpiry(vesselToEdit.sscecExpiry)
+                            )}
+                            dateFormat="dd.MM.yyyy"
+                            onChange={(date) => {
+                              const issued = fromDateObj(date);
+                              const expiry = calcSSCECExpiry(issued);
                               setVesselToEdit({
                                 ...vesselToEdit,
-                                sscecExpiry: e.target.value,
-                                sscecStatus,
+                                sscecIssued: issued,
+                                sscecExpiry: expiry,
+                                sscecStatus: calculateSSCECStatus(expiry),
                                 lastUpdated: new Date().toISOString(),
                               });
                             }}
+                            placeholderText="dd.mm.yyyy"
+                            className="form-input w-full"
+                            showPopperArrow={false}
+                            wrapperClassName="w-full"
                           />
+                          {vesselToEdit.sscecIssued && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              SSCEC will expire on{" "}
+                              <span className="font-semibold">
+                                {calcSSCECExpiry(vesselToEdit.sscecIssued)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div>
                           <Label>P&I Club</Label>
@@ -1168,6 +1273,7 @@ export default function VesselManagement() {
                             const vesselData = {
                               vessel_name: vesselToEdit.name,
                               imo_number: vesselToEdit.imo,
+                              SSCEC_issued: vesselToEdit.sscecIssued,
                               SSCEC_expires: vesselToEdit.sscecExpiry,
                               company: vesselToEdit.owner,
                               vessel_type: vesselToEdit.vesselType,
@@ -1183,7 +1289,16 @@ export default function VesselManagement() {
                             await updateVessel(vesselToEdit.id, vesselData);
                             setVessels(
                               vessels.map((v) =>
-                                v.id === vesselToEdit.id ? vesselToEdit : v
+                                v.id === vesselToEdit.id
+                                  ? {
+                                      ...vesselToEdit,
+                                      sscecExpiry: vesselToEdit.sscecExpiry,
+                                      sscecIssued: vesselToEdit.sscecIssued,
+                                      sscecStatus: calculateSSCECStatus(
+                                        vesselToEdit.sscecExpiry
+                                      ),
+                                    }
+                                  : v
                               )
                             );
                             setEditDialogOpen(false);
@@ -1206,7 +1321,7 @@ export default function VesselManagement() {
             </DialogContent>
           </Dialog>
 
-          {/* Delete Confirmation Dialog - Responsive buttons */}
+          {/* Delete Confirmation Dialog */}
           <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <DialogContent>
               <DialogHeader>
@@ -1265,7 +1380,7 @@ export default function VesselManagement() {
           </Dialog>
 
           <TabsContent value={selectedTab} className="space-y-6">
-            {/* Search and Filters - Responsive */}
+            {/* Search and Filters */}
             <Card>
               <CardHeader>
                 <CardTitle>Vessel Database</CardTitle>
@@ -1319,7 +1434,7 @@ export default function VesselManagement() {
                 </div>
               </CardContent>
             </Card>
-            {/* Vessels List - Responsive */}
+            {/* Vessels List */}
             <div className="space-y-4">
               {filteredVessels.map((vessel) => (
                 <Card
@@ -1352,7 +1467,6 @@ export default function VesselManagement() {
                           </div>
                         </div>
                       </div>
-                      {/* Action buttons: wrap and stack on mobile */}
                       <div className="flex flex-row flex-wrap gap-2 mt-2 sm:mt-0">
                         <Button
                           variant="outline"
@@ -1386,7 +1500,6 @@ export default function VesselManagement() {
                         </Button>
                       </div>
                     </div>
-                    {/* Responsive info grids */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div className="flex items-center space-x-2">
                         <Flag className="h-4 w-4 text-gray-400" />
@@ -1455,7 +1568,7 @@ export default function VesselManagement() {
                           <Calendar className="h-4 w-4 text-gray-400" />
                           <span className="text-sm text-gray-600 dark:text-gray-300">
                             SSCEC Expires:{" "}
-                            {new Date(vessel.sscecExpiry).toLocaleDateString()}
+                            {formatSSCECExpiry(vessel.sscecExpiry)}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
