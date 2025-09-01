@@ -243,18 +243,24 @@ export default function VendorManagement() {
       if (!Array.isArray(response.data)) {
         throw new Error("Invalid vendors data format");
       }
-      const formattedVendors = response.data.map((vendor: any) => ({
-        ...vendor,
-        kycStatus: vendor.vendorStatus?.status ? "Approved" : "Pending",
-        rating: 0,
-        totalJobs: 0,
-        completedJobs: 0,
-        vendorPics: vendor.vendorPics
-          ? vendor.vendorPics
-          : vendor.vendorPic
-          ? [vendor.vendorPic]
-          : [],
-      }));
+      const formattedVendors = response.data.map((vendor: any) => {
+        let vendorPics: VendorPIC[] = [];
+        if (Array.isArray(vendor.vendorPics) && vendor.vendorPics.length > 0) {
+          vendorPics = vendor.vendorPics;
+        } else if (vendor.vendorPic) {
+          vendorPics = [vendor.vendorPic];
+        } else if (vendor.pic) {
+          vendorPics = [vendor.pic];
+        }
+        return {
+          ...vendor,
+          kycStatus: vendor.vendorStatus?.status ? "Approved" : "Pending",
+          rating: 0,
+          totalJobs: 0,
+          completedJobs: 0,
+          vendorPics,
+        };
+      });
       setVendors(formattedVendors);
       setFilteredVendors(formattedVendors);
     } catch (error) {
@@ -534,9 +540,8 @@ export default function VendorManagement() {
         pic:
           vendorForm.pics && vendorForm.pics.length > 0
             ? {
-                name: `${vendorForm.pics[0].firstName || ""} ${
-                  vendorForm.pics[0].lastName || ""
-                }`.trim(),
+                firstName: vendorForm.pics[0].firstName || "",
+                lastName: vendorForm.pics[0].lastName || "",
                 phone_number: vendorForm.pics[0].contactNumbers?.[0] || "",
                 picType: vendorForm.pics[0].type || "Primary",
                 email: vendorForm.pics[0].emails?.[0] || "",
@@ -544,6 +549,7 @@ export default function VendorManagement() {
               }
             : undefined,
       };
+      console.log("Backend payload:", backendData);
       const VENDOR_API = `${API_BASE_URL}/vendor`;
       let response;
       if (editingVendor) {
@@ -608,6 +614,7 @@ export default function VendorManagement() {
 
   const editVendor = (vendor: Vendor) => {
     setEditingVendor(vendor);
+
     // Split vendor.phone_number into country code and number for the form
     let phoneCountryCode = "+94";
     let phoneNumber = "";
@@ -621,6 +628,9 @@ export default function VendorManagement() {
       }
     }
 
+    // Normalize PICs for the form!
+    const picArray = getVendorPICArray(vendor);
+
     setVendorForm({
       name: vendor.name,
       address: vendor.address,
@@ -632,25 +642,32 @@ export default function VendorManagement() {
       services: vendor.vendorServices.map((service) => service.service_name),
       status: { status: vendor.vendorStatus?.status || false },
       pics:
-        vendor.vendorPics && vendor.vendorPics.length > 0
-          ? vendor.vendorPics.map((pic, i) => ({
-              id: pic.id || `${i}_${Date.now()}`,
-              type: pic.type || "Secondary",
+        picArray.length > 0
+          ? picArray.map((pic, i) => ({
+              id: pic.id || pic.pic_id || `${i}_${Date.now()}`,
+              type: pic.type || pic.picType || "Secondary",
               title: pic.title || "Mr",
               firstName: pic.firstName || "",
               lastName: pic.lastName || "",
-              name: pic.name,
+              name: pic.name || "",
               department: pic.department || "",
               birthday: pic.birthday || "",
               contactNumbers:
                 pic.contactNumbers && pic.contactNumbers.length > 0
                   ? pic.contactNumbers
+                  : pic.phone_number
+                  ? [pic.phone_number]
                   : [""],
               contactTypes:
                 pic.contactTypes && pic.contactTypes.length > 0
                   ? pic.contactTypes
                   : ["Direct Line"],
-              emails: pic.emails && pic.emails.length > 0 ? pic.emails : [""],
+              emails:
+                pic.emails && pic.emails.length > 0
+                  ? pic.emails
+                  : pic.email
+                  ? [pic.email]
+                  : [""],
               emailTypes:
                 pic.emailTypes && pic.emailTypes.length > 0
                   ? pic.emailTypes
@@ -677,7 +694,6 @@ export default function VendorManagement() {
     });
     setIsAddVendorOpen(true);
   };
-
   const getKycStatusColor = (status: string) => {
     switch (status) {
       case "Approved":
