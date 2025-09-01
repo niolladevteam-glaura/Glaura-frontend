@@ -52,6 +52,7 @@ import {
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
 import ShadCountryPhoneInput from "@/components/ui/ShadCountryPhoneInput";
+import { DatePicker } from "@/components/ui/date-picker";
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -781,6 +782,15 @@ export default function CustomerCompanies() {
     }
   };
 
+  function formatDateDMY(dateStr?: string) {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
@@ -868,7 +878,7 @@ export default function CustomerCompanies() {
                           {alert.company}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {alert.birthday.toLocaleDateString()}
+                          {formatDateDMY(alert.birthday)}
                         </p>
                       </div>
                     ))}
@@ -1280,9 +1290,7 @@ export default function CustomerCompanies() {
                                     <span className="text-muted-foreground">
                                       Birthday:{" "}
                                     </span>
-                                    {new Date(
-                                      pic.birthday
-                                    ).toLocaleDateString()}
+                                    {formatDateDMY(pic.birthday)}
                                   </div>
                                 )}
                               </div>
@@ -1584,23 +1592,21 @@ export default function CustomerCompanies() {
 
                           {/* Birthday + Updates */}
                           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <div>
+                            <div className="flex flex-col gap-1">
                               <Label
                                 htmlFor="picBirthday"
                                 className="form-label"
                               >
                                 Birthday
                               </Label>
-                              <Input
+                              <DatePicker
                                 id="picBirthday"
-                                type="date"
                                 value={picForm.birthday || ""}
-                                onChange={(e) =>
-                                  handlePicFormChange(
-                                    "birthday",
-                                    e.target.value
-                                  )
+                                onChange={(val) =>
+                                  handlePicFormChange("birthday", val)
                                 }
+                                placeholder="dd.mm.yyyy"
+                                className="form-input"
                               />
                             </div>
 
@@ -1918,9 +1924,7 @@ export default function CustomerCompanies() {
                             Last Updated
                           </p>
                           <p className="font-medium text-xs sm:text-sm">
-                            {new Date(
-                              customer.lastUpdated
-                            ).toLocaleDateString()}
+                            {formatDateDMY(customer.lastUpdated)}
                           </p>
                         </div>
                       </div>
@@ -2135,8 +2139,7 @@ export default function CustomerCompanies() {
                                 </Badge>
                               )}
                               <Badge variant="outline" className="text-xs">
-                                Birthday:{" "}
-                                {new Date(pic.birthday).toLocaleDateString()}
+                                Birthday: {formatDateDMY(pic.birthday)}
                               </Badge>
                             </div>
                           </div>

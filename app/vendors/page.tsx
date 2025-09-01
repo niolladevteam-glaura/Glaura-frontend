@@ -40,30 +40,47 @@ import {
   Building,
   Edit,
   Eye,
-  MoreHorizontal,
-  LogOut,
-  Anchor,
-  Star,
-  AlertTriangle,
-  FileText,
-  X,
   Trash2,
-  CheckCircle,
+  Anchor,
+  AlertTriangle,
+  X,
   ArrowLeft,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { DatePicker } from "@/components/ui/date-picker";
+import ShadCountryPhoneInput from "@/components/ui/ShadCountryPhoneInput";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+import { Separator } from "@/components/ui/separator";
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_ENDPOINTS = {
   VENDORS: `${API_BASE_URL}/vendor`,
 };
+
+interface VendorPIC {
+  id: string;
+  type?: "Primary" | "Secondary";
+  title?: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  department: string;
+  birthday: string;
+  contactNumbers: string[];
+  contactTypes?: string[];
+  emails: string[];
+  emailTypes?: string[];
+  remark: string;
+}
 
 interface Vendor {
   id: string;
@@ -89,45 +106,38 @@ interface Vendor {
     createdAt: string;
     updatedAt: string;
   };
-  vendorPic: {
-    id: number;
-    pic_id: string;
-    vendor_id: string;
-    name: string;
-    phone_number: string;
-    email: string;
-    remark: string;
-    createdAt: string;
-    updatedAt: string;
-  };
+  vendorPics: VendorPIC[];
   status: {
     status: boolean;
   };
-  // UI-only fields
   kycStatus?: string;
   rating?: number;
   totalJobs?: number;
   completedJobs?: number;
 }
 
-const DEFAULT_SERVICE_CATEGORIES = [
-  "Launch Boat Services",
-  "Transport",
-  "Clearance Agent",
-  "Supply",
-  "Underwater Services",
-  "Bunkering",
-  "Repairs",
-  "Medical",
-  "Pilot Transfer",
-  "Crew Transfer",
-  "Customs Clearance",
-  "Ship Spares Clearance",
-  "Documentation",
-  "Crew Transportation",
-  "Cargo Transport",
-  "Airport Transfer",
-];
+function formatDateDMY(dateStr?: string) {
+  if (!dateStr) return "";
+  const d = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
+  if (isNaN(d.getTime())) return String(dateStr);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
+function getVendorPICArray(vendor: Vendor) {
+  if (Array.isArray(vendor.vendorPics) && vendor.vendorPics.length > 0) {
+    return vendor.vendorPics;
+  }
+  if ((vendor as any).vendorPic) {
+    return [(vendor as any).vendorPic];
+  }
+  if ((vendor as any).pic) {
+    return [(vendor as any).pic];
+  }
+  return [];
+}
 
 export default function VendorManagement() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -147,131 +157,42 @@ export default function VendorManagement() {
     name: string;
   } | null>(null);
 
-  // Add/Edit Vendor Modal States
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [vendorForm, setVendorForm] = useState({
     name: "",
     address: "",
-    phone_number: "",
+    phoneCountryCode: "+94",
+    phoneNumber: "",
     company_type: "",
     email: "",
     remark: "",
     services: [] as string[],
     status: { status: true },
-    pic: {
-      name: "",
-      phone_number: "",
-      email: "",
-      remark: "",
-    },
+    pics: [
+      {
+        id: `${Date.now()}`,
+        type: "Primary",
+        title: "Mr",
+        firstName: "",
+        lastName: "",
+        name: "",
+        department: "",
+        birthday: "",
+        contactNumbers: [""],
+        contactTypes: ["Direct Line"],
+        emails: [""],
+        emailTypes: ["Personal"],
+        remark: "",
+      },
+    ] as VendorPIC[],
   });
-
-  // const addNewPIC = () => {
-  //   setVendorForm((prev) => ({
-  //     ...prev,
-  //     pics: [
-  //       ...(prev.pics || []),
-  //       {
-  //         id: Date.now().toString(),
-  //         name: "",
-  //         department: "",
-  //         contactNumbers: [""],
-  //         emails: [""],
-  //         remarks: "",
-  //       },
-  //     ],
-  //   }));
-  // };
-
-  // const updatePIC = (index: number, field: string, value: any) => {
-  //   setVendorForm((prev) => {
-  //     const updatedPics = [...(prev.pics || [])];
-  //     updatedPics[index] = {
-  //       ...updatedPics[index],
-  //       [field]: value,
-  //     };
-  //     return { ...prev, pics: updatedPics };
-  //   });
-  // };
-
-  // const removePIC = (index: number) => {
-  //   setVendorForm((prev) => ({
-  //     ...prev,
-  //     pics: (prev.pics || []).filter((_, i) => i !== index),
-  //   }));
-  // };
-
-  // const addPICContactNumber = (picIndex: number) => {
-  //   setVendorForm((prev) => {
-  //     const updatedPics = [...(prev.pics || [])];
-  //     updatedPics[picIndex].contactNumbers = [
-  //       ...updatedPics[picIndex].contactNumbers,
-  //       "",
-  //     ];
-  //     return { ...prev, pics: updatedPics };
-  //   });
-  // };
-
-  // const updatePICContactNumber = (
-  //   picIndex: number,
-  //   contactIndex: number,
-  //   value: string
-  // ) => {
-  //   setVendorForm((prev) => {
-  //     const updatedPics = [...(prev.pics || [])];
-  //     updatedPics[picIndex].contactNumbers[contactIndex] = value;
-  //     return { ...prev, pics: updatedPics };
-  //   });
-  // };
-
-  // const removePICContactNumber = (picIndex: number, contactIndex: number) => {
-  //   setVendorForm((prev) => {
-  //     const updatedPics = [...(prev.pics || [])];
-  //     updatedPics[picIndex].contactNumbers = updatedPics[
-  //       picIndex
-  //     ].contactNumbers.filter((_, i) => i !== contactIndex);
-  //     return { ...prev, pics: updatedPics };
-  //   });
-  // };
-
-  // const addPICEmail = (picIndex: number) => {
-  //   setVendorForm((prev) => {
-  //     const updatedPics = [...(prev.pics || [])];
-  //     updatedPics[picIndex].emails = [...updatedPics[picIndex].emails, ""];
-  //     return { ...prev, pics: updatedPics };
-  //   });
-  // };
-
-  // const updatePICEmail = (
-  //   picIndex: number,
-  //   emailIndex: number,
-  //   value: string
-  // ) => {
-  //   setVendorForm((prev) => {
-  //     const updatedPics = [...(prev.pics || [])];
-  //     updatedPics[picIndex].emails[emailIndex] = value;
-  //     return { ...prev, pics: updatedPics };
-  //   });
-  // };
-
-  // const removePICEmail = (picIndex: number, emailIndex: number) => {
-  //   setVendorForm((prev) => {
-  //     const updatedPics = [...(prev.pics || [])];
-  //     updatedPics[picIndex].emails = updatedPics[picIndex].emails.filter(
-  //       (_, i) => i !== emailIndex
-  //     );
-  //     return { ...prev, pics: updatedPics };
-  //   });
-  // };
 
   const router = useRouter();
 
-  // API Functions
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     try {
       const token = localStorage.getItem("token");
-
       const response = await fetch(endpoint, {
         headers: {
           "Content-Type": "application/json",
@@ -280,37 +201,29 @@ export default function VendorManagement() {
         },
         ...options,
       });
-
-      // First check for 401 unauthorized
       if (response.status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("currentUser");
         router.push("/");
         throw new Error("Session expired. Please login again.");
       }
-
-      // Then check for other error statuses
       if (!response.ok) {
         let errorData;
         try {
           errorData = await response.json();
         } catch (e) {
-          // If we can't parse JSON, use the status text
           throw new Error(response.statusText || "Request failed");
         }
         throw new Error(
           errorData.message || `Request failed with status ${response.status}`
         );
       }
-
-      // Try to parse JSON for successful responses
       try {
         return await response.json();
       } catch (e) {
         throw new Error("Invalid JSON response from server");
       }
     } catch (error: any) {
-      console.error("API Error:", error);
       toast({
         title: "API Error",
         description: error.message || "Failed to complete request",
@@ -320,34 +233,31 @@ export default function VendorManagement() {
     }
   };
 
-  // Load vendors from API
   const loadVendors = async () => {
     try {
       setLoading(true);
       const response = await apiCall(API_ENDPOINTS.VENDORS);
-      //console.log("Vendors API response:", response);
-
       if (!response.success) {
         throw new Error(response.message || "Failed to load vendors");
       }
-
       if (!Array.isArray(response.data)) {
         throw new Error("Invalid vendors data format");
       }
-
-      // Simply use the response data - no need for special mapping
       const formattedVendors = response.data.map((vendor: any) => ({
         ...vendor,
         kycStatus: vendor.vendorStatus?.status ? "Approved" : "Pending",
         rating: 0,
         totalJobs: 0,
         completedJobs: 0,
+        vendorPics: vendor.vendorPics
+          ? vendor.vendorPics
+          : vendor.vendorPic
+          ? [vendor.vendorPic]
+          : [],
       }));
-
       setVendors(formattedVendors);
       setFilteredVendors(formattedVendors);
     } catch (error) {
-      console.error("Failed to load vendors:", error);
       toast({
         title: "API Error",
         description:
@@ -361,60 +271,21 @@ export default function VendorManagement() {
     }
   };
 
-  // const calculateExpiryAlerts = (vendorList: Vendor[]) => {
-  //   const today = new Date();
-  //   const alerts: any[] = [];
-
-  //   vendorList.forEach((vendor) => {
-  //     vendor.documents.forEach((doc) => {
-  //       if (doc.expiryDate) {
-  //         const expiryDate = new Date(doc.expiryDate);
-  //         const daysUntil = Math.ceil(
-  //           (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  //         );
-
-  //         if (daysUntil <= 15 && daysUntil >= 0) {
-  //           alerts.push({
-  //             vendorName: vendor.companyName,
-  //             documentName: doc.name,
-  //             documentType: doc.type,
-  //             expiryDate,
-  //             daysUntil,
-  //             status:
-  //               daysUntil <= 0
-  //                 ? "Expired"
-  //                 : daysUntil <= 7
-  //                 ? "Critical"
-  //                 : "Warning",
-  //           });
-  //         }
-  //       }
-  //     });
-  //   });
-
-  //   setExpiryAlerts(alerts.sort((a, b) => a.daysUntil - b.daysUntil));
-  // };
-
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
     if (!userData) {
       router.push("/");
       return;
     }
-
-    const user = JSON.parse(userData);
-    setCurrentUser(user);
-
+    setCurrentUser(JSON.parse(userData));
     loadVendors();
   }, [router]);
 
-  // Fetch service categories from API
   useEffect(() => {
     const fetchServiceCategories = async () => {
       try {
         setLoadingServices(true);
         const token = localStorage.getItem("token");
-
         if (!token) {
           toast({
             title: "Authentication Error",
@@ -423,26 +294,17 @@ export default function VendorManagement() {
           });
           return;
         }
-
         const response = await fetch(`${API_BASE_URL}/service`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || "Failed to fetch services");
         }
-
         const data = await response.json();
-
-        // CORRECTED: Use service_name property
         const services = data.data.map((service: any) => service.service_name);
-
         setServiceCategories(services);
       } catch (error: any) {
-        console.error("Failed to fetch service categories:", error);
         toast({
           title: "API Error",
           description: error.message || "Failed to load service categories",
@@ -452,90 +314,188 @@ export default function VendorManagement() {
         setLoadingServices(false);
       }
     };
-
     fetchServiceCategories();
   }, []);
 
   useEffect(() => {
     let filtered = vendors;
-
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-
       filtered = filtered.filter(
         (vendor) =>
           vendor.name.toLowerCase().includes(searchLower) ||
           vendor.company_type.toLowerCase().includes(searchLower) ||
-          // Search in service names
           vendor.vendorServices.some((service) =>
             service.service_name.toLowerCase().includes(searchLower)
           ) ||
-          // Search in PIC name
-          vendor.vendorPic.name?.toLowerCase().includes(searchLower)
+          vendor.vendorPics.some((pic) =>
+            `${pic.title || ""} ${pic.firstName || ""} ${pic.lastName || ""}`
+              .toLowerCase()
+              .includes(searchLower)
+          )
       );
     }
-
     if (typeFilter !== "all") {
       filtered = filtered.filter((vendor) =>
         vendor.company_type.toLowerCase().includes(typeFilter.toLowerCase())
       );
     }
-
     if (statusFilter !== "all") {
       const statusBoolean = statusFilter === "approved";
       filtered = filtered.filter(
         (vendor) => vendor.vendorStatus?.status === statusBoolean
       );
     }
-
     setFilteredVendors(filtered);
   }, [searchTerm, typeFilter, statusFilter, vendors]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    router.push("/");
-  };
-
-  // Vendor form handlers - simplified for single email and PIC
   const handleVendorFormChange = (field: string, value: any) => {
     setVendorForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // For nested PIC fields
-  // const handlePICChange = (field: keyof VendorPIC, value: string) => {
-  //   setVendorForm((prev) => ({
-  //     ...prev,
-  //     pic: {
-  //       ...prev.pic,
-  //       [field]: value,
-  //     },
-  //   }));
-  // };
-
-  // For service categories
-  const toggleServiceCategory = (category: string) => {
+  // ---- PIC Section Handlers ----
+  const addNewPIC = () => {
+    setVendorForm((prev) => ({
+      ...prev,
+      pics: [
+        ...(prev.pics || []),
+        {
+          id: Date.now().toString(),
+          type: "Secondary",
+          title: "Mr",
+          firstName: "",
+          lastName: "",
+          name: "",
+          department: "",
+          birthday: "",
+          contactNumbers: [""],
+          contactTypes: ["Direct Line"],
+          emails: [""],
+          emailTypes: ["Personal"],
+          remark: "",
+        },
+      ],
+    }));
+  };
+  const updatePIC = (index: number, field: keyof VendorPIC, value: any) => {
     setVendorForm((prev) => {
-      const services = prev.services || [];
-      const isSelected = services.includes(category);
-
-      return {
-        ...prev,
-        services: isSelected
-          ? services.filter((c) => c !== category)
-          : [...services, category],
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[index] = {
+        ...updatedPics[index],
+        [field]: value,
       };
+      return { ...prev, pics: updatedPics };
+    });
+  };
+  const removePIC = (index: number) => {
+    setVendorForm((prev) => ({
+      ...prev,
+      pics: (prev.pics || []).filter((_, i) => i !== index),
+    }));
+  };
+  const addPICContactNumber = (picIndex: number) => {
+    setVendorForm((prev) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].contactNumbers = [
+        ...updatedPics[picIndex].contactNumbers,
+        "",
+      ];
+      updatedPics[picIndex].contactTypes = [
+        ...(updatedPics[picIndex].contactTypes || []),
+        "Direct Line",
+      ];
+      return { ...prev, pics: updatedPics };
+    });
+  };
+  const updatePICContactNumber = (
+    picIndex: number,
+    contactIndex: number,
+    value: string
+  ) => {
+    setVendorForm((prev) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].contactNumbers[contactIndex] = value;
+      return { ...prev, pics: updatedPics };
+    });
+  };
+  const updatePICContactType = (
+    picIndex: number,
+    contactIndex: number,
+    value: string
+  ) => {
+    setVendorForm((prev) => {
+      const updatedPics = [...(prev.pics || [])];
+      if (!updatedPics[picIndex].contactTypes) {
+        updatedPics[picIndex].contactTypes = [];
+      }
+      updatedPics[picIndex].contactTypes[contactIndex] = value;
+      return { ...prev, pics: updatedPics };
+    });
+  };
+  const removePICContactNumber = (picIndex: number, contactIndex: number) => {
+    setVendorForm((prev) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].contactNumbers = updatedPics[
+        picIndex
+      ].contactNumbers.filter((_, i) => i !== contactIndex);
+      updatedPics[picIndex].contactTypes = updatedPics[picIndex].contactTypes
+        ? updatedPics[picIndex].contactTypes!.filter(
+            (_, i) => i !== contactIndex
+          )
+        : [];
+      return { ...prev, pics: updatedPics };
+    });
+  };
+  const addPICEmail = (picIndex: number) => {
+    setVendorForm((prev) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].emails = [...updatedPics[picIndex].emails, ""];
+      updatedPics[picIndex].emailTypes = [
+        ...(updatedPics[picIndex].emailTypes || []),
+        "Personal",
+      ];
+      return { ...prev, pics: updatedPics };
+    });
+  };
+  const updatePICEmail = (
+    picIndex: number,
+    emailIndex: number,
+    value: string
+  ) => {
+    setVendorForm((prev) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].emails[emailIndex] = value;
+      return { ...prev, pics: updatedPics };
+    });
+  };
+  const updatePICEmailType = (
+    picIndex: number,
+    emailIndex: number,
+    value: string
+  ) => {
+    setVendorForm((prev) => {
+      const updatedPics = [...(prev.pics || [])];
+      if (!updatedPics[picIndex].emailTypes) {
+        updatedPics[picIndex].emailTypes = [];
+      }
+      updatedPics[picIndex].emailTypes[emailIndex] = value;
+      return { ...prev, pics: updatedPics };
+    });
+  };
+  const removePICEmail = (picIndex: number, emailIndex: number) => {
+    setVendorForm((prev) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].emails = updatedPics[picIndex].emails.filter(
+        (_, i) => i !== emailIndex
+      );
+      updatedPics[picIndex].emailTypes = updatedPics[picIndex].emailTypes
+        ? updatedPics[picIndex].emailTypes!.filter((_, i) => i !== emailIndex)
+        : [];
+      return { ...prev, pics: updatedPics };
     });
   };
 
-  // REMOVED:
-  // - addGroupEmail
-  // - updateGroupEmail
-  // - removeGroupEmail
-  // - All PIC array management functions (addNewPIC, updatePIC, removePIC, etc.)
-
-  // Save vendor function - API ready
   const saveVendor = async () => {
-    // Add validation for PIC name
     if (!vendorForm.name?.trim()) {
       toast({
         title: "Validation Error",
@@ -544,42 +504,47 @@ export default function VendorManagement() {
       });
       return;
     }
-
-    if (!vendorForm.pic.name?.trim()) {
+    const atLeastOnePic =
+      Array.isArray(vendorForm.pics) &&
+      vendorForm.pics.some(
+        (pic) => (pic.firstName?.trim() || "") && (pic.lastName?.trim() || "")
+      );
+    if (!atLeastOnePic) {
       toast({
         title: "Validation Error",
-        description: "Please enter a PIC name",
+        description: "Please enter at least one PIC with name",
         variant: "destructive",
       });
       return;
     }
-
     try {
       setLoading(true);
-
-      // Prepare data for backend - aligned with API structure
       const backendData = {
         name: vendorForm.name.trim(),
         address: vendorForm.address.trim(),
-        phone_number: vendorForm.phone_number.trim(),
+        phone_number: `${vendorForm.phoneCountryCode || "+94"} ${
+          vendorForm.phoneNumber || ""
+        }`.trim(),
         company_type: vendorForm.company_type.trim(),
         email: vendorForm.email.trim(),
         remark: vendorForm.remark.trim(),
-        services: vendorForm.services, // Array of strings
-        status: {
-          status: vendorForm.status.status,
-        },
-        pic: {
-          // Corrected key name
-          name: vendorForm.pic.name.trim(),
-          phone_number: vendorForm.pic.phone_number.trim(),
-          email: vendorForm.pic.email.trim(),
-          remark: vendorForm.pic.remark.trim(),
-        },
+        services: vendorForm.services,
+        status: { status: vendorForm.status.status },
+        // Send only the first PIC as "pic" object, with API keys matching backend requirements
+        pic:
+          vendorForm.pics && vendorForm.pics.length > 0
+            ? {
+                name: `${vendorForm.pics[0].firstName || ""} ${
+                  vendorForm.pics[0].lastName || ""
+                }`.trim(),
+                phone_number: vendorForm.pics[0].contactNumbers?.[0] || "",
+                picType: vendorForm.pics[0].type || "Primary",
+                email: vendorForm.pics[0].emails?.[0] || "",
+                remark: vendorForm.pics[0].remark?.trim() || "",
+              }
+            : undefined,
       };
-
       const VENDOR_API = `${API_BASE_URL}/vendor`;
-
       let response;
       if (editingVendor) {
         response = await apiCall(`${VENDOR_API}/${editingVendor.vendor_id}`, {
@@ -592,30 +557,37 @@ export default function VendorManagement() {
           body: JSON.stringify(backendData),
         });
       }
-
-      // Refresh the vendor list
       await loadVendors();
-
-      // Reset form and close modal
       setIsAddVendorOpen(false);
       setEditingVendor(null);
       setVendorForm({
         name: "",
         address: "",
-        phone_number: "",
+        phoneCountryCode: "+94",
+        phoneNumber: "",
         company_type: "",
         email: "",
         remark: "",
         services: [],
         status: { status: true },
-        pic: {
-          name: "",
-          phone_number: "",
-          email: "",
-          remark: "",
-        },
+        pics: [
+          {
+            id: `${Date.now()}`,
+            type: "Primary",
+            title: "Mr",
+            firstName: "",
+            lastName: "",
+            name: "",
+            department: "",
+            birthday: "",
+            contactNumbers: [""],
+            contactTypes: ["Direct Line"],
+            emails: [""],
+            emailTypes: ["Personal"],
+            remark: "",
+          },
+        ],
       });
-
       toast({
         title: "Success",
         description: editingVendor
@@ -623,7 +595,6 @@ export default function VendorManagement() {
           : "Vendor created successfully!",
       });
     } catch (error: any) {
-      console.error("Failed to save vendor:", error);
       toast({
         title: "Error",
         description:
@@ -635,26 +606,74 @@ export default function VendorManagement() {
     }
   };
 
-  // Edit vendor function
   const editVendor = (vendor: Vendor) => {
     setEditingVendor(vendor);
+    // Split vendor.phone_number into country code and number for the form
+    let phoneCountryCode = "+94";
+    let phoneNumber = "";
+    if (vendor.phone_number) {
+      const match = vendor.phone_number.match(/^(\+\d+)\s*(.*)$/);
+      if (match) {
+        phoneCountryCode = match[1];
+        phoneNumber = match[2];
+      } else {
+        phoneNumber = vendor.phone_number;
+      }
+    }
+
     setVendorForm({
       name: vendor.name,
       address: vendor.address,
-      phone_number: vendor.phone_number,
+      phoneCountryCode,
+      phoneNumber,
       company_type: vendor.company_type,
       email: vendor.email,
       remark: vendor.remark,
       services: vendor.vendorServices.map((service) => service.service_name),
-      status: {
-        status: vendor.vendorStatus?.status || false, // Use vendorStatus instead of status
-      },
-      pic: {
-        name: vendor.vendorPic.name,
-        phone_number: vendor.vendorPic.phone_number,
-        email: vendor.vendorPic.email,
-        remark: vendor.vendorPic.remark,
-      },
+      status: { status: vendor.vendorStatus?.status || false },
+      pics:
+        vendor.vendorPics && vendor.vendorPics.length > 0
+          ? vendor.vendorPics.map((pic, i) => ({
+              id: pic.id || `${i}_${Date.now()}`,
+              type: pic.type || "Secondary",
+              title: pic.title || "Mr",
+              firstName: pic.firstName || "",
+              lastName: pic.lastName || "",
+              name: pic.name,
+              department: pic.department || "",
+              birthday: pic.birthday || "",
+              contactNumbers:
+                pic.contactNumbers && pic.contactNumbers.length > 0
+                  ? pic.contactNumbers
+                  : [""],
+              contactTypes:
+                pic.contactTypes && pic.contactTypes.length > 0
+                  ? pic.contactTypes
+                  : ["Direct Line"],
+              emails: pic.emails && pic.emails.length > 0 ? pic.emails : [""],
+              emailTypes:
+                pic.emailTypes && pic.emailTypes.length > 0
+                  ? pic.emailTypes
+                  : ["Personal"],
+              remark: pic.remark || "",
+            }))
+          : [
+              {
+                id: `${Date.now()}`,
+                type: "Primary",
+                title: "Mr",
+                firstName: "",
+                lastName: "",
+                name: "",
+                department: "",
+                birthday: "",
+                contactNumbers: [""],
+                contactTypes: ["Direct Line"],
+                emails: [""],
+                emailTypes: ["Personal"],
+                remark: "",
+              },
+            ],
     });
     setIsAddVendorOpen(true);
   };
@@ -672,46 +691,19 @@ export default function VendorManagement() {
     }
   };
 
-  const getDocumentStatusColor = (status: string) => {
-    switch (status) {
-      case "Valid":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "Expiring":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-      case "Expired":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-    }
-  };
-
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="loading-skeleton w-8 h-8 rounded-full"></div>
-      </div>
-    );
-  }
-
   const deleteVendor = async (id: string, companyName: string) => {
     try {
       setLoading(true);
-
-      await apiCall(`${API_ENDPOINTS.VENDORS}/${id}`, {
-        method: "DELETE",
-      });
-
+      await apiCall(`${API_ENDPOINTS.VENDORS}/${id}`, { method: "DELETE" });
       setVendors((prev) => prev.filter((vendor) => vendor.vendor_id !== id));
       setFilteredVendors((prev) =>
         prev.filter((vendor) => vendor.vendor_id !== id)
       );
-
       toast({
         title: "Success",
         description: `${companyName} has been deleted successfully`,
       });
-    } catch (error) {
-      console.error("Failed to delete vendor:", error);
+    } catch {
       toast({
         title: "Error",
         description: `Failed to delete ${companyName}. Please try again.`,
@@ -723,14 +715,20 @@ export default function VendorManagement() {
     }
   };
 
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="loading-skeleton w-8 h-8 rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          {/* Left Section */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
-            {/* Back Button */}
             <Link href="/dashboard" className="flex-shrink-0">
               <Button
                 variant="ghost"
@@ -741,8 +739,6 @@ export default function VendorManagement() {
                 <span className="hidden xs:inline">Back to Dashboard</span>
               </Button>
             </Link>
-
-            {/* Page Title & Icon */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="bg-primary p-2 rounded-xl flex-shrink-0">
                 <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
@@ -757,8 +753,6 @@ export default function VendorManagement() {
               </div>
             </div>
           </div>
-
-          {/* Right Section */}
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
@@ -774,7 +768,6 @@ export default function VendorManagement() {
           </div>
         </div>
       </header>
-
       <div className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
@@ -828,7 +821,6 @@ export default function VendorManagement() {
                 )}
               </CardContent>
             </Card>
-
             {/* Quick Stats */}
             <Card className="professional-card">
               <CardHeader>
@@ -884,7 +876,6 @@ export default function VendorManagement() {
               </CardContent>
             </Card>
           </div>
-
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
             {/* Search and Filters */}
@@ -980,18 +971,41 @@ export default function VendorManagement() {
                               >
                                 Phone Number
                               </Label>
-                              <Input
-                                id="phoneNumber"
-                                value={vendorForm.phone_number}
-                                onChange={(e) =>
-                                  setVendorForm((prev) => ({
-                                    ...prev,
-                                    phone_number: e.target.value,
-                                  }))
-                                }
-                                placeholder="+94112223344"
-                                className="form-input"
-                              />
+                              <div className="flex gap-2">
+                                <div className="w-36">
+                                  {" "}
+                                  {/* Makes the country code selector longer */}
+                                  <ShadCountryPhoneInput
+                                    country="lk"
+                                    value={vendorForm.phoneCountryCode || "+94"}
+                                    onChange={(_, data) => {
+                                      const dial =
+                                        "+" +
+                                        (typeof data === "object" &&
+                                        data &&
+                                        "dialCode" in data
+                                          ? (data as any).dialCode
+                                          : "");
+                                      setVendorForm((prev) => ({
+                                        ...prev,
+                                        phoneCountryCode: dial,
+                                      }));
+                                    }}
+                                  />
+                                </div>
+                                <Input
+                                  id="phoneNumber"
+                                  value={vendorForm.phoneNumber}
+                                  onChange={(e) =>
+                                    setVendorForm((prev) => ({
+                                      ...prev,
+                                      phoneNumber: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="112223344"
+                                  className="form-input flex-1"
+                                />
+                              </div>
                             </div>
                             <div>
                               <Label htmlFor="email" className="form-label">
@@ -1043,7 +1057,19 @@ export default function VendorManagement() {
                                           category
                                         )}
                                         onChange={() =>
-                                          toggleServiceCategory(category)
+                                          handleVendorFormChange(
+                                            "services",
+                                            vendorForm.services.includes(
+                                              category
+                                            )
+                                              ? vendorForm.services.filter(
+                                                  (c) => c !== category
+                                                )
+                                              : [
+                                                  ...vendorForm.services,
+                                                  category,
+                                                ]
+                                          )
                                         }
                                         className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
                                       />
@@ -1077,10 +1103,9 @@ export default function VendorManagement() {
                                     : "Pending"
                                 }
                                 onValueChange={(value) =>
-                                  setVendorForm((prev) => ({
-                                    ...prev,
-                                    status: { status: value === "Approved" },
-                                  }))
+                                  handleVendorFormChange("status", {
+                                    status: value === "Approved",
+                                  })
                                 }
                               >
                                 <SelectTrigger className="form-input">
@@ -1096,88 +1121,437 @@ export default function VendorManagement() {
                                 </SelectContent>
                               </Select>
                             </div>
-                            {/* Primary Contact */}
+                            {/* PIC Section */}
+                            {/* Primary Contacts (PICs) */}
                             <div className="space-y-4">
-                              <h3 className="text-lg font-medium flex items-center gap-2">
-                                <Users className="h-4 w-4" /> Primary Contact
-                                (PIC)
-                              </h3>
-                              <div>
-                                <Label htmlFor="picName">PIC Name *</Label>
-                                <Input
-                                  id="picName"
-                                  value={vendorForm.pic.name}
-                                  onChange={(e) =>
-                                    setVendorForm((prev) => ({
-                                      ...prev,
-                                      pic: {
-                                        ...prev.pic,
-                                        name: e.target.value,
-                                      },
-                                    }))
-                                  }
-                                  placeholder="John Doe"
-                                  className="form-input"
-                                />
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-medium flex items-center gap-2">
+                                  <Users className="h-4 w-4" />
+                                  Primary Contacts (PICs)
+                                  <span className="text-xs rounded-full bg-muted-foreground/10 text-muted-foreground px-2 py-0.5">
+                                    {vendorForm.pics.length}
+                                  </span>
+                                </h3>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={addNewPIC}
+                                  className="gap-1"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                  Add PIC
+                                </Button>
                               </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                  <Label htmlFor="picPhone">Phone Number</Label>
-                                  <Input
-                                    id="picPhone"
-                                    value={vendorForm.pic.phone_number}
-                                    onChange={(e) =>
-                                      setVendorForm((prev) => ({
-                                        ...prev,
-                                        pic: {
-                                          ...prev.pic,
-                                          phone_number: e.target.value,
-                                        },
-                                      }))
-                                    }
-                                    placeholder="+94771234567"
-                                    className="form-input"
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="picEmail">Email</Label>
-                                  <Input
-                                    id="picEmail"
-                                    value={vendorForm.pic.email}
-                                    onChange={(e) =>
-                                      setVendorForm((prev) => ({
-                                        ...prev,
-                                        pic: {
-                                          ...prev.pic,
-                                          email: e.target.value,
-                                        },
-                                      }))
-                                    }
-                                    placeholder="contact@company.com"
-                                    className="form-input"
-                                  />
-                                </div>
-                              </div>
-                              <div>
-                                <Label htmlFor="picRemark">Remarks</Label>
-                                <Textarea
-                                  id="picRemark"
-                                  value={vendorForm.pic.remark}
-                                  onChange={(e) =>
-                                    setVendorForm((prev) => ({
-                                      ...prev,
-                                      pic: {
-                                        ...prev.pic,
-                                        remark: e.target.value,
-                                      },
-                                    }))
-                                  }
-                                  placeholder="Contact person details"
-                                  className="form-input"
-                                  rows={3}
-                                />
-                              </div>
+
+                              {/* PIC list */}
+                              <Accordion
+                                type="single"
+                                collapsible
+                                className="space-y-3"
+                              >
+                                {vendorForm.pics.map((pic, picIdx) => {
+                                  const displayName =
+                                    [pic.title, pic.firstName, pic.lastName]
+                                      .filter(Boolean)
+                                      .join(" ") || "Untitled";
+
+                                  return (
+                                    <AccordionItem
+                                      key={pic.id || picIdx}
+                                      value={`pic-${pic.id || picIdx}`}
+                                      className="rounded-xl border bg-muted/60"
+                                    >
+                                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                        <div className="flex w-full items-center justify-between gap-3">
+                                          <div className="min-w-0 flex items-center gap-3">
+                                            <div className="flex items-center gap-2">
+                                              <Avatar className="h-8 w-8">
+                                                <AvatarFallback className="text-xs">
+                                                  {(pic.firstName?.[0] || "?") +
+                                                    (pic.lastName?.[0] || "")}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                              <div className="min-w-0">
+                                                <div className="truncate font-medium">
+                                                  {displayName}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground truncate">
+                                                  {pic.department ||
+                                                    "No department"}
+                                                </div>
+                                              </div>
+                                            </div>
+                                            <Badge
+                                              variant={
+                                                pic.type === "Primary"
+                                                  ? "default"
+                                                  : "secondary"
+                                              }
+                                            >
+                                              {pic.type || "Secondary"}
+                                            </Badge>
+                                          </div>
+
+                                          <div className="flex items-center gap-1">
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                removePIC(picIdx);
+                                              }}
+                                              aria-label="Remove PIC"
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </AccordionTrigger>
+
+                                      <AccordionContent className="px-4 pb-4 pt-1">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                          {/* PIC Type */}
+                                          <div>
+                                            <Label className="mb-1 block">
+                                              PIC Type
+                                            </Label>
+                                            <Select
+                                              value={pic.type || "Secondary"}
+                                              onValueChange={(val) =>
+                                                updatePIC(
+                                                  picIdx,
+                                                  "type",
+                                                  val as "Primary" | "Secondary"
+                                                )
+                                              }
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select PIC Type" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="Primary">
+                                                  Primary
+                                                </SelectItem>
+                                                <SelectItem value="Secondary">
+                                                  Secondary
+                                                </SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+
+                                          {/* Title */}
+                                          <div>
+                                            <Label className="mb-1 block">
+                                              Title
+                                            </Label>
+                                            <Select
+                                              value={pic.title || "Mr"}
+                                              onValueChange={(val) =>
+                                                updatePIC(picIdx, "title", val)
+                                              }
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Title" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="Mr">
+                                                  Mr
+                                                </SelectItem>
+                                                <SelectItem value="Ms">
+                                                  Ms
+                                                </SelectItem>
+                                                <SelectItem value="Miss">
+                                                  Miss
+                                                </SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+
+                                          {/* First / Last Name */}
+                                          <div>
+                                            <Label className="mb-1 block">
+                                              First Name
+                                            </Label>
+                                            <Input
+                                              value={pic.firstName || ""}
+                                              onChange={(e) =>
+                                                updatePIC(
+                                                  picIdx,
+                                                  "firstName",
+                                                  e.target.value
+                                                )
+                                              }
+                                              placeholder="First name"
+                                              autoCapitalize="words"
+                                            />
+                                          </div>
+                                          <div>
+                                            <Label className="mb-1 block">
+                                              Last Name
+                                            </Label>
+                                            <Input
+                                              value={pic.lastName || ""}
+                                              onChange={(e) =>
+                                                updatePIC(
+                                                  picIdx,
+                                                  "lastName",
+                                                  e.target.value
+                                                )
+                                              }
+                                              placeholder="Last name"
+                                              autoCapitalize="words"
+                                            />
+                                          </div>
+
+                                          {/* Department */}
+                                          <div className="sm:col-span-2">
+                                            <Label className="mb-1 block">
+                                              Department
+                                            </Label>
+                                            <Input
+                                              value={pic.department || ""}
+                                              onChange={(e) =>
+                                                updatePIC(
+                                                  picIdx,
+                                                  "department",
+                                                  e.target.value
+                                                )
+                                              }
+                                              placeholder="Department"
+                                            />
+                                          </div>
+
+                                          {/* Birthday */}
+                                          <div className="sm:col-span-2">
+                                            <Label className="mb-1 block">
+                                              Birthday
+                                            </Label>
+                                            <DatePicker
+                                              value={pic.birthday}
+                                              onChange={(val) =>
+                                                updatePIC(
+                                                  picIdx,
+                                                  "birthday",
+                                                  val
+                                                )
+                                              }
+                                              placeholder="dd.mm.yyyy"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <Separator className="my-4" />
+
+                                        {/* Contact Numbers */}
+                                        <div className="space-y-2">
+                                          <div className="flex items-center justify-between">
+                                            <Label>Contact Numbers</Label>
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() =>
+                                                addPICContactNumber(picIdx)
+                                              }
+                                              className="gap-1"
+                                            >
+                                              <Plus className="h-4 w-4" /> Add
+                                              Number
+                                            </Button>
+                                          </div>
+
+                                          {pic.contactNumbers.map(
+                                            (num, numIdx) => (
+                                              <div
+                                                className="grid grid-cols-1 sm:grid-cols-12 gap-2"
+                                                key={numIdx}
+                                              >
+                                                <div className="sm:col-span-4">
+                                                  <ShadCountryPhoneInput
+                                                    country="lk"
+                                                    value={
+                                                      num.startsWith("+")
+                                                        ? num.split(" ")[0]
+                                                        : "+94"
+                                                    }
+                                                    onChange={(val, data) => {
+                                                      const rest = num.replace(
+                                                        /^(\+\d+)?\s?/,
+                                                        ""
+                                                      );
+                                                      const dial =
+                                                        "+" +
+                                                        (typeof data ===
+                                                          "object" &&
+                                                        data &&
+                                                        "dialCode" in data
+                                                          ? (data as any)
+                                                              .dialCode
+                                                          : "");
+                                                      const updatedNumber =
+                                                        dial + " " + rest;
+                                                      updatePICContactNumber(
+                                                        picIdx,
+                                                        numIdx,
+                                                        updatedNumber.trim()
+                                                      );
+                                                    }}
+                                                  />
+                                                </div>
+                                                <div className="sm:col-span-7">
+                                                  <Input
+                                                    value={
+                                                      num.startsWith("+")
+                                                        ? num.replace(
+                                                            /^(\+\d+)\s?/,
+                                                            ""
+                                                          )
+                                                        : num
+                                                    }
+                                                    onChange={(e) =>
+                                                      updatePICContactNumber(
+                                                        picIdx,
+                                                        numIdx,
+                                                        (num.startsWith("+")
+                                                          ? num.split(" ")[0] +
+                                                            " "
+                                                          : "+94 ") +
+                                                          e.target.value
+                                                      )
+                                                    }
+                                                    placeholder="77 123 4567"
+                                                  />
+                                                </div>
+                                                <div className="sm:col-span-1 flex sm:justify-end">
+                                                  {pic.contactNumbers.length >
+                                                    1 && (
+                                                    <Button
+                                                      type="button"
+                                                      variant="ghost"
+                                                      size="icon"
+                                                      onClick={() =>
+                                                        removePICContactNumber(
+                                                          picIdx,
+                                                          numIdx
+                                                        )
+                                                      }
+                                                      aria-label="Remove number"
+                                                    >
+                                                      <X className="h-4 w-4" />
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            )
+                                          )}
+                                        </div>
+
+                                        <Separator className="my-4" />
+
+                                        {/* Emails */}
+                                        <div className="space-y-2">
+                                          <div className="flex items-center justify-between">
+                                            <Label>Emails</Label>
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() =>
+                                                addPICEmail(picIdx)
+                                              }
+                                              className="gap-1"
+                                            >
+                                              <Plus className="h-4 w-4" /> Add
+                                              Email
+                                            </Button>
+                                          </div>
+
+                                          {pic.emails.map((email, emailIdx) => (
+                                            <div
+                                              className="grid grid-cols-1 sm:grid-cols-12 gap-2"
+                                              key={emailIdx}
+                                            >
+                                              <div className="sm:col-span-11">
+                                                <Input
+                                                  value={email}
+                                                  onChange={(e) =>
+                                                    updatePICEmail(
+                                                      picIdx,
+                                                      emailIdx,
+                                                      e.target.value
+                                                    )
+                                                  }
+                                                  placeholder="email@company.com"
+                                                  inputMode="email"
+                                                />
+                                              </div>
+                                              <div className="sm:col-span-1 flex sm:justify-end">
+                                                {pic.emails.length > 1 && (
+                                                  <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() =>
+                                                      removePICEmail(
+                                                        picIdx,
+                                                        emailIdx
+                                                      )
+                                                    }
+                                                    aria-label="Remove email"
+                                                  >
+                                                    <X className="h-4 w-4" />
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+
+                                        <Separator className="my-4" />
+
+                                        {/* Remarks */}
+                                        <div>
+                                          <Label className="mb-1 block">
+                                            Remarks
+                                          </Label>
+                                          <Textarea
+                                            value={pic.remark}
+                                            onChange={(e) =>
+                                              updatePIC(
+                                                picIdx,
+                                                "remark",
+                                                e.target.value
+                                              )
+                                            }
+                                            placeholder="Additional notes about this PIC"
+                                            rows={3}
+                                          />
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  );
+                                })}
+
+                                {vendorForm.pics.length === 0 && (
+                                  <div className="rounded-xl border bg-muted/40 p-6 text-center">
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                      No Primary Contacts yet.
+                                    </p>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={addNewPIC}
+                                      className="gap-1"
+                                    >
+                                      <Plus className="h-4 w-4" /> Add New PIC
+                                    </Button>
+                                  </div>
+                                )}
+                              </Accordion>
                             </div>
+
                             {/* Company Remarks */}
                             <div>
                               <Label htmlFor="remark" className="form-label">
@@ -1199,7 +1573,6 @@ export default function VendorManagement() {
                             </div>
                           </div>
                         </div>
-                        {/* Dialog Buttons */}
                         <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
                           <Button
                             variant="outline"
@@ -1314,7 +1687,6 @@ export default function VendorManagement() {
                 </div>
               </CardContent>
             </Card>
-
             {/* Vendor List */}
             <div className="space-y-4">
               {loading ? (
@@ -1352,7 +1724,7 @@ export default function VendorManagement() {
                             </div>
                           </div>
                         </div>
-                        {/* Action buttons: wrap and stack on mobile */}
+                        {/* Action buttons */}
                         <div className="flex flex-row flex-wrap gap-2 mt-2 sm:mt-0">
                           <Button
                             variant="outline"
@@ -1389,7 +1761,6 @@ export default function VendorManagement() {
                           </Button>
                         </div>
                       </div>
-
                       {/* Responsive grid for vendor info */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
                         <div className="flex items-center gap-2 min-w-0">
@@ -1415,7 +1786,6 @@ export default function VendorManagement() {
                           </div>
                         </div>
                       </div>
-
                       <div className="mb-4">
                         <p className="text-xs sm:text-sm text-muted-foreground mb-2">
                           Services
@@ -1434,7 +1804,6 @@ export default function VendorManagement() {
                           ))}
                         </div>
                       </div>
-
                       {vendor.remark && (
                         <div className="mt-4 p-3 bg-muted rounded-lg">
                           <p className="text-sm text-muted-foreground">
@@ -1462,7 +1831,6 @@ export default function VendorManagement() {
           </div>
         </div>
       </div>
-
       {/* Vendor Details Modal */}
       <Dialog
         open={!!selectedVendor}
@@ -1474,11 +1842,9 @@ export default function VendorManagement() {
               <DialogHeader>
                 <DialogTitle>{selectedVendor.name} Details</DialogTitle>
               </DialogHeader>
-
               <div className="space-y-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Company Information</h3>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Company Name</Label>
@@ -1489,7 +1855,6 @@ export default function VendorManagement() {
                       <Input value={selectedVendor.company_type} readOnly />
                     </div>
                   </div>
-
                   <div>
                     <Label>Address</Label>
                     <Textarea
@@ -1498,7 +1863,6 @@ export default function VendorManagement() {
                       rows={3}
                     />
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Phone</Label>
@@ -1509,11 +1873,9 @@ export default function VendorManagement() {
                       <Input value={selectedVendor.email} readOnly />
                     </div>
                   </div>
-
                   <div>
                     <Label>Services</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {/* Use vendorServices instead of services */}
                       {selectedVendor.vendorServices.map((service, index) => (
                         <Badge
                           key={index}
@@ -1525,7 +1887,6 @@ export default function VendorManagement() {
                       ))}
                     </div>
                   </div>
-
                   <div>
                     <Label>KYC Status</Label>
                     <Input
@@ -1537,48 +1898,110 @@ export default function VendorManagement() {
                       readOnly
                     />
                   </div>
-
                   <div>
                     <Label>Remarks</Label>
                     <Textarea value={selectedVendor.remark} readOnly rows={3} />
                   </div>
                 </div>
-
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium flex items-center gap-2">
-                    <Users className="h-4 w-4" /> Primary Contact (PIC)
+                    <Users className="h-4 w-4" /> Primary Contacts (PICs)
                   </h3>
-                  <Card>
-                    <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>PIC Name</Label>
-                        <p className="text-sm mt-1">
-                          {selectedVendor.vendorPic.name || "N/A"}
-                        </p>
+                  {(() => {
+                    const picArr = selectedVendor
+                      ? getVendorPICArray(selectedVendor)
+                      : [];
+                    return picArr.length > 0 ? (
+                      picArr.map((pic, picIdx) => (
+                        <Card key={pic.id || pic.pic_id || picIdx}>
+                          <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label>PIC Name</Label>
+                              <p className="text-sm mt-1">
+                                {pic.name ||
+                                  `${pic.title || "Mr"} ${
+                                    pic.firstName || ""
+                                  } ${pic.lastName || ""}`.trim()}
+                              </p>
+                            </div>
+                            <div>
+                              <Label>Type</Label>
+                              <p className="text-sm mt-1">
+                                {pic.type || pic.picType || "Primary"}
+                              </p>
+                            </div>
+                            <div>
+                              <Label>Department</Label>
+                              <p className="text-sm mt-1">
+                                {pic.department || "N/A"}
+                              </p>
+                            </div>
+                            <div>
+                              <Label>Birthday</Label>
+                              <p className="text-sm mt-1">
+                                {formatDateDMY(pic.birthday) || "N/A"}
+                              </p>
+                            </div>
+                            <div>
+                              <Label>Contact Numbers</Label>
+                              <div>
+                                {pic.contactNumbers &&
+                                pic.contactNumbers.length > 0 ? (
+                                  pic.contactNumbers.map(
+                                    (num: string, idx: number) => (
+                                      <p className="text-sm mt-1" key={idx}>
+                                        {num}
+                                      </p>
+                                    )
+                                  )
+                                ) : pic.phone_number ? (
+                                  <p className="text-sm mt-1">
+                                    {pic.phone_number}
+                                  </p>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">
+                                    N/A
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <Label>Emails</Label>
+                              <div>
+                                {pic.emails && pic.emails.length > 0 ? (
+                                  pic.emails.map(
+                                    (email: string, idx: number) => (
+                                      <p className="text-sm mt-1" key={idx}>
+                                        {email}
+                                      </p>
+                                    )
+                                  )
+                                ) : pic.email ? (
+                                  <p className="text-sm mt-1">{pic.email}</p>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">
+                                    N/A
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <Label>Remarks</Label>
+                              <p className="text-sm mt-1">
+                                {pic.remark || "No remarks"}
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-muted-foreground text-sm">
+                        No PICs available.
                       </div>
-                      <div>
-                        <Label>Phone</Label>
-                        <p className="text-sm mt-1">
-                          {selectedVendor.vendorPic.phone_number || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <Label>Email</Label>
-                        <p className="text-sm mt-1">
-                          {selectedVendor.vendorPic.email || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <Label>Remarks</Label>
-                        <p className="text-sm mt-1">
-                          {selectedVendor.vendorPic.remark || "No remarks"}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    );
+                  })()}
                 </div>
               </div>
-
               <div className="flex justify-end mt-6">
                 <Button
                   variant="outline"

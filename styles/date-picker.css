@@ -1,0 +1,101 @@
+.react-datepicker__triangle {
+  filter: drop-shadow(0 0 2px #0002);
+}
+
+/* Center the datepicker triangle (popup arrow) */
+.react-datepicker__triangle {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.react-datepicker__portal,
+.react-datepicker-popper,
+.react-datepicker {
+  z-index: 50 !important;
+}
+
+.react-datepicker {
+  background: #181e29;
+  color: #f1f5fa;
+  border: 1px solid #232b3a;
+  border-radius: 12px;
+  box-shadow: 0 4px 32px #0005;
+  font-size: 0.98rem;
+}
+
+.react-datepicker__header {
+  background: #202637;
+  border-bottom: 1px solid #232b3a;
+  color: #f1f5fa;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.react-datepicker__current-month,
+.react-datepicker-time__header,
+.react-datepicker-year-header {
+  color: #f1f5fa;
+  font-weight: 600;
+}
+
+.react-datepicker__day,
+.react-datepicker__day-name {
+  color: #e2e8f0;
+  transition: background 0.2s, color 0.2s;
+  border-radius: 8px;
+  padding: 0.5em 0.7em;
+}
+
+.react-datepicker__day:hover,
+.react-datepicker__day--keyboard-selected {
+  background: #283046;
+  color: #fff;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--selected:hover {
+  background: #3476e3;
+  color: #fff;
+}
+
+.react-datepicker__day--today {
+  border-bottom: 2px solid #3476e3;
+}
+
+.react-datepicker__navigation {
+  top: 14px;
+  line-height: 1.3;
+}
+
+.react-datepicker__navigation-icon {
+  filter: invert(1) brightness(0.8);
+}
+
+.react-datepicker__month-dropdown,
+.react-datepicker__year-dropdown {
+  background: #202637;
+  color: #f1f5fa;
+  border: 1px solid #232b3a;
+}
+
+.react-datepicker__month-dropdown:hover,
+.react-datepicker__year-dropdown:hover {
+  background: #283046;
+}
+
+.react-datepicker__month-option,
+.react-datepicker__year-option {
+  background: none;
+  color: #f1f5fa;
+}
+
+.react-datepicker__month-option:hover,
+.react-datepicker__year-option:hover {
+  background: #283046;
+}
+
+.react-datepicker__close-icon::after {
+  background: #232b3a;
+  color: #f1f5fa;
+  border-radius: 50%;
+}

@@ -18,3 +18,13 @@ export function parseDDMMYYYYToISO(ddmm: string): string {
   if (!day || !month || !year) return "";
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
+
+export function formatDateDMY(dateStr?: string | Date) {
+  if (!dateStr) return "";
+  const d = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
+  if (isNaN(d.getTime())) return String(dateStr);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}.${month}.${year}`;
+}
