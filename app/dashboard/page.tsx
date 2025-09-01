@@ -36,6 +36,8 @@ import {
   Handshake,
   Building2,
   MessageSquareQuote,
+  ListTodo,
+  Mails,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -313,6 +315,7 @@ export default function Dashboard() {
       ? [{ href: "/port-calls/new", icon: Plus, label: "New Port Call" }]
       : []),
     { href: "/port-calls", icon: Ship, label: "Active Port Calls" },
+    { href: "/emails", icon: Mails, label: "Emails" },
     { href: "/customers", icon: Building2, label: "Customer Companies" },
     { href: "/vendors", icon: Handshake, label: "Vendor Management" },
     { href: "/services", icon: ClipboardList, label: "Services Management" },
@@ -322,6 +325,7 @@ export default function Dashboard() {
       : []),
     { href: "/vessels", icon: Ship, label: "Vessel Management" },
     { href: "/pic-management", icon: UserCog, label: "PIC Management" },
+    { href: "/tasks", icon: ListTodo, label: "Task Management" },
     { href: "/feedback", icon: MessageSquareQuote, label: "Feedback" },
     { href: "/glChat", icon: MessageCircle, label: "GL Chat" },
   ];
