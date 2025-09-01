@@ -414,24 +414,34 @@ export default function CustomerCompanies() {
             const pic = apiCustomer.customerPic;
             pics.push({
               id: pic.pic_id || Date.now().toString(),
-              title: pic.title || "Mr",
+              title: pic.prefix || pic.title || "Mr", // now using prefix from API
               firstName: pic.firstName || "",
               lastName: pic.lastName || "",
-              name: pic.name || "Unknown",
+              name:
+                (pic.prefix || pic.title || "Mr") +
+                " " +
+                (pic.firstName || "") +
+                " " +
+                (pic.lastName || ""),
               department: pic.department || "",
-              contactNumbers: pic.phone_number
-                ? pic.phone_number.split(",").map((n: string) => n.trim())
-                : [],
-              contactTypes: pic.phone_types || [],
-              emails: pic.email
-                ? pic.email.split(",").map((e: string) => e.trim())
-                : [],
-              emailTypes: pic.email_types || [],
+              contactNumbers: pic.phone_number ? [pic.phone_number] : [],
+              contactTypes: pic.phoneNumberType ? [pic.phoneNumberType] : [],
+              emails: pic.email ? [pic.email] : [],
+              emailTypes: pic.emailType ? [pic.emailType] : [],
               birthday: pic.birthday || "",
               remarks: pic.remark || "",
               receiveUpdates: Boolean(pic.receiveUpdates),
             });
           }
+
+          // Transform companyTypes array of objects into array of strings
+          const companyTypeArr = Array.isArray(apiCustomer.companyTypes)
+            ? apiCustomer.companyTypes.map((ct: any) => ct.company_type)
+            : Array.isArray(apiCustomer.company_type)
+            ? apiCustomer.company_type
+            : typeof apiCustomer.company_type === "string"
+            ? [apiCustomer.company_type]
+            : [];
 
           return {
             id: apiCustomer.customer_id,
@@ -442,11 +452,7 @@ export default function CustomerCompanies() {
             groupEmails: apiCustomer.email
               ? apiCustomer.email.split(",").map((e: string) => e.trim())
               : [],
-            companyType: Array.isArray(apiCustomer.company_type)
-              ? apiCustomer.company_type
-              : typeof apiCustomer.company_type === "string"
-              ? [apiCustomer.company_type]
-              : [],
+            companyType: companyTypeArr,
             remarks: apiCustomer.remark || "",
             pics: pics,
             createdAt: apiCustomer.createdAt,
@@ -1789,9 +1795,27 @@ export default function CustomerCompanies() {
                               {customer.companyName}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <Badge variant="outline">
-                                {customer.companyType}
-                              </Badge>
+                              {Array.isArray(customer.companyType) &&
+                              customer.companyType.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {customer.companyType.map((type, idx) => (
+                                    <Badge
+                                      key={idx}
+                                      variant="outline"
+                                      className="whitespace-nowrap"
+                                    >
+                                      {type}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="whitespace-nowrap"
+                                >
+                                  Not specified
+                                </Badge>
+                              )}
                               <Badge variant="secondary">
                                 {customer.pics.length} PICs
                               </Badge>
@@ -2020,7 +2044,26 @@ export default function CustomerCompanies() {
                             <Label className="text-sm font-medium">
                               Company Type
                             </Label>
-                            <p>{selectedCustomer.companyType}</p>
+                            {Array.isArray(selectedCustomer.companyType) &&
+                            selectedCustomer.companyType.length > 0 ? (
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {selectedCustomer.companyType.map(
+                                  (type, idx) => (
+                                    <Badge
+                                      key={idx}
+                                      variant="outline"
+                                      className="whitespace-nowrap"
+                                    >
+                                      {type}
+                                    </Badge>
+                                  )
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-muted-foreground">
+                                Not specified
+                              </p>
+                            )}
                           </div>
                           <div>
                             <Label className="text-sm font-medium">Phone</Label>
@@ -2039,12 +2082,19 @@ export default function CustomerCompanies() {
                             Group Emails
                           </Label>
                           <div className="flex flex-wrap gap-2 mt-1">
-                            {selectedCustomer.groupEmails.map(
-                              (email, index) => (
-                                <Badge key={index} variant="outline">
-                                  {email}
-                                </Badge>
+                            {selectedCustomer.groupEmails &&
+                            selectedCustomer.groupEmails.length > 0 ? (
+                              selectedCustomer.groupEmails.map(
+                                (email, index) => (
+                                  <Badge key={index} variant="outline">
+                                    {email}
+                                  </Badge>
+                                )
                               )
+                            ) : (
+                              <span className="text-muted-foreground">
+                                None
+                              </span>
                             )}
                           </div>
                         </div>
