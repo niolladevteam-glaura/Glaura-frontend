@@ -67,14 +67,14 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Update your PIC type definitions to make properties optional if needed
 interface BasePIC {
   id: number;
   pic_id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   phone_number: string;
   email: string;
-  remark?: string; // Make optional fields explicit
+  remark?: string;
   created_by?: string;
   updatedAt?: string;
   createdAt?: string;
@@ -83,6 +83,7 @@ interface BasePIC {
 interface VendorPIC extends BasePIC {
   type: "vendor";
   vendor_id: string;
+  picType?: string;
 }
 
 interface CustomerPIC extends BasePIC {
@@ -91,6 +92,9 @@ interface CustomerPIC extends BasePIC {
   birthday?: string;
   receiveUpdates?: boolean;
   department?: string;
+  prefix?: string;
+  phoneNumberType?: string;
+  emailType?: string;
 }
 
 type PIC = VendorPIC | CustomerPIC;
@@ -98,7 +102,7 @@ type PIC = VendorPIC | CustomerPIC;
 export default function PICManagement() {
   const router = useRouter();
   const { toast } = useToast();
-  // 1. Get current user from localStorage, fallback to Demo User
+
   const [currentUser, setCurrentUser] = useState<{
     name: string;
     accessLevel: string;
@@ -119,7 +123,6 @@ export default function PICManagement() {
     );
   }, []);
 
-  // PIC logic unchanged
   const [pics, setPics] = useState<PIC[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -135,16 +138,20 @@ export default function PICManagement() {
     type: "vendor" as "vendor" | "customer",
     vendor_id: "",
     customer_id: "",
-    name: "",
+    firstName: "",
+    lastName: "",
     phone_number: "",
     email: "",
     remark: "",
     birthday: "",
     receiveUpdates: false,
     department: "",
+    prefix: "",
+    phoneNumberType: "",
+    emailType: "",
+    picType: "", // <-- Added property
   });
 
-  // Fetch all PICs (both vendor and customer)
   useEffect(() => {
     const fetchPICs = async () => {
       try {
@@ -161,7 +168,6 @@ export default function PICManagement() {
           }),
         ]);
 
-        // Handle non-OK responses
         if (!vendorResponse.ok || !customerResponse.ok) {
           throw new Error("Failed to fetch PIC data");
         }
@@ -169,22 +175,24 @@ export default function PICManagement() {
         const vendorData = await vendorResponse.json();
         const customerData = await customerResponse.json();
 
-        // Validate and transform data
         const vendorPICs = (vendorData.data || []).map((item: any) => ({
           id: item.id,
           pic_id: item.pic_id || "N/A",
-          name: item.name || "N/A",
+          firstName: item.firstName || "",
+          lastName: item.lastName || "",
           phone_number: item.phone_number || "N/A",
           email: item.email || "N/A",
           remark: item.remark || "",
           vendor_id: item.vendor_id || "N/A",
+          picType: item.picType || "",
           type: "vendor",
         }));
 
         const customerPICs = (customerData.data || []).map((item: any) => ({
           id: item.id,
           pic_id: item.pic_id || "N/A",
-          name: item.name || "N/A",
+          firstName: item.firstName || "",
+          lastName: item.lastName || "",
           phone_number: item.phone_number || "N/A",
           email: item.email || "N/A",
           remark: item.remark || "",
@@ -192,6 +200,9 @@ export default function PICManagement() {
           birthday: item.birthday || "",
           receiveUpdates: item.receiveUpdates || false,
           department: item.department || "",
+          prefix: item.prefix || "",
+          phoneNumberType: item.phoneNumberType || "",
+          emailType: item.emailType || "",
           type: "customer",
         }));
 
@@ -203,7 +214,7 @@ export default function PICManagement() {
           description: error.message || "Failed to load PIC data",
           variant: "destructive",
         });
-        setPics([]); // Set empty array on error
+        setPics([]);
       } finally {
         setIsLoading(false);
       }
@@ -213,11 +224,16 @@ export default function PICManagement() {
   }, [toast]);
 
   const handleCreatePIC = async () => {
-    // Validate common fields
-    if (!newPic.name || !newPic.phone_number || !newPic.email) {
+    if (
+      !newPic.firstName ||
+      !newPic.lastName ||
+      !newPic.phone_number ||
+      !newPic.email
+    ) {
       toast({
         title: "Validation Error",
-        description: "Name, phone number, and email are required",
+        description:
+          "First name, last name, phone number, and email are required",
         variant: "destructive",
       });
       return;
@@ -231,7 +247,6 @@ export default function PICManagement() {
       });
       return;
     }
-
     if (newPic.type === "customer" && !newPic.customer_id) {
       toast({
         title: "Validation Error",
@@ -254,21 +269,27 @@ export default function PICManagement() {
         newPic.type === "vendor"
           ? {
               vendor_id: newPic.vendor_id,
-              name: newPic.name,
+              firstName: newPic.firstName,
+              lastName: newPic.lastName,
               phone_number: newPic.phone_number,
               email: newPic.email,
               remark: newPic.remark,
               created_by: currentUser?.name || "Demo User",
+              picType: newPic.picType,
             }
           : {
               customer_id: newPic.customer_id,
-              name: newPic.name,
+              firstName: newPic.firstName,
+              lastName: newPic.lastName,
               phone_number: newPic.phone_number,
               email: newPic.email,
               remark: newPic.remark,
               birthday: newPic.birthday,
               receiveUpdates: newPic.receiveUpdates,
               department: newPic.department,
+              prefix: newPic.prefix,
+              phoneNumberType: newPic.phoneNumberType,
+              emailType: newPic.emailType,
               created_by: currentUser?.name || "Demo User",
             };
 
@@ -295,7 +316,7 @@ export default function PICManagement() {
 
       toast({
         title: "PIC Created",
-        description: `${newPic.name} has been added successfully`,
+        description: `${newPic.firstName} ${newPic.lastName} has been added successfully`,
       });
     } catch (error: any) {
       console.error("Create PIC error:", error);
@@ -311,12 +332,16 @@ export default function PICManagement() {
 
   const handleEditPIC = async () => {
     if (!currentPic) return;
-
-    // Validate common fields
-    if (!currentPic.name || !currentPic.phone_number || !currentPic.email) {
+    if (
+      !currentPic.firstName ||
+      !currentPic.lastName ||
+      !currentPic.phone_number ||
+      !currentPic.email
+    ) {
       toast({
         title: "Validation Error",
-        description: "Name, phone number, and email are required",
+        description:
+          "First name, last name, phone number, and email are required",
         variant: "destructive",
       });
       return;
@@ -335,14 +360,17 @@ export default function PICManagement() {
       const payload =
         currentPic.type === "vendor"
           ? {
-              name: currentPic.name,
+              firstName: currentPic.firstName,
+              lastName: currentPic.lastName,
               phone_number: currentPic.phone_number,
               email: currentPic.email,
               remark: currentPic.remark,
               vendor_id: (currentPic as VendorPIC).vendor_id,
+              picType: (currentPic as VendorPIC).picType,
             }
           : {
-              name: currentPic.name,
+              firstName: currentPic.firstName,
+              lastName: currentPic.lastName,
               phone_number: currentPic.phone_number,
               email: currentPic.email,
               remark: currentPic.remark,
@@ -350,6 +378,9 @@ export default function PICManagement() {
               birthday: (currentPic as CustomerPIC).birthday,
               receiveUpdates: (currentPic as CustomerPIC).receiveUpdates,
               department: (currentPic as CustomerPIC).department,
+              prefix: (currentPic as CustomerPIC).prefix,
+              phoneNumberType: (currentPic as CustomerPIC).phoneNumberType,
+              emailType: (currentPic as CustomerPIC).emailType,
             };
 
       const response = await fetch(endpoint, {
@@ -366,7 +397,6 @@ export default function PICManagement() {
         throw new Error(errorData.message || "Failed to update PIC");
       }
 
-      // Refetch the updated PIC
       const fetchUpdatedPIC = async () => {
         const endpoint =
           currentPic.type === "vendor"
@@ -390,7 +420,7 @@ export default function PICManagement() {
       setCurrentPic(null);
       toast({
         title: "PIC Updated",
-        description: `${currentPic.name} updated successfully`,
+        description: `${currentPic.firstName} ${currentPic.lastName} updated successfully`,
       });
     } catch (error: any) {
       console.error("PIC update failed:", error);
@@ -456,13 +486,18 @@ export default function PICManagement() {
       type: "vendor",
       vendor_id: "",
       customer_id: "",
-      name: "",
+      firstName: "",
+      lastName: "",
       phone_number: "",
       email: "",
       remark: "",
       birthday: "",
       receiveUpdates: false,
       department: "",
+      prefix: "",
+      phoneNumberType: "",
+      emailType: "",
+      picType: "",
     });
   };
 
@@ -488,12 +523,12 @@ export default function PICManagement() {
     });
   };
 
-  // Filter PICs based on search query (by name, email, phone, or ID)
   const filteredPICs = pics.filter((pic) => {
     if (filterType !== "all" && pic.type !== filterType) return false;
     const query = searchQuery.toLowerCase();
     return (
-      (pic.name ?? "").toLowerCase().includes(query) ||
+      (pic.firstName ?? "").toLowerCase().includes(query) ||
+      (pic.lastName ?? "").toLowerCase().includes(query) ||
       (pic.email ?? "").toLowerCase().includes(query) ||
       (pic.phone_number ?? "").toLowerCase().includes(query) ||
       (pic.pic_id ?? "").toLowerCase().includes(query) ||
@@ -510,9 +545,7 @@ export default function PICManagement() {
       {/* Header */}
       <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          {/* Left Section */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
-            {/* Back Button */}
             <Link href="/dashboard" className="flex-shrink-0">
               <Button
                 variant="ghost"
@@ -523,7 +556,6 @@ export default function PICManagement() {
                 <span className="hidden xs:inline">Back to Dashboard</span>
               </Button>
             </Link>
-            {/* Page Title & Icon */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="bg-primary p-2 rounded-xl flex-shrink-0">
                 <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
@@ -538,7 +570,6 @@ export default function PICManagement() {
               </div>
             </div>
           </div>
-          {/* Right Section */}
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
             <Badge
@@ -556,7 +587,6 @@ export default function PICManagement() {
       </header>
 
       <div className="max-w-7xl mx-auto p-4 md:p-8">
-        {/* Controls */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">PIC Management</h1>
@@ -592,7 +622,6 @@ export default function PICManagement() {
           </div>
         </div>
 
-        {/* PICs Table */}
         <Card className="border rounded-xl overflow-hidden">
           <CardHeader className="bg-gray-100 dark:bg-gray-800 py-4">
             <CardTitle className="text-lg">All Points of Contact</CardTitle>
@@ -613,7 +642,8 @@ export default function PICManagement() {
                 <TableRow>
                   <TableHead className="w-[100px]">PIC ID</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Name</TableHead>
+                  <TableHead>First Name</TableHead>
+                  <TableHead>Last Name</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>
                     {picType === "vendor" ? "Vendor ID" : "Customer ID"}
@@ -666,7 +696,8 @@ export default function PICManagement() {
                           {pic.type === "vendor" ? "Vendor" : "Customer"}
                         </Badge>
                       </TableCell>
-                      <TableCell>{pic.name}</TableCell>
+                      <TableCell>{pic.firstName}</TableCell>
+                      <TableCell>{pic.lastName}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span>{pic.phone_number}</span>
@@ -762,19 +793,43 @@ export default function PICManagement() {
                                   />
                                 </div>
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                  <Label htmlFor="name" className="text-right">
-                                    Name
+                                  <Label
+                                    htmlFor="firstName"
+                                    className="text-right"
+                                  >
+                                    First Name
                                   </Label>
                                   <Input
-                                    id="name"
-                                    placeholder="John Doe"
+                                    id="firstName"
+                                    placeholder="John"
                                     className="col-span-3"
-                                    value={currentPic?.name || ""}
+                                    value={currentPic?.firstName || ""}
                                     onChange={(e) =>
                                       currentPic &&
                                       setCurrentPic({
                                         ...currentPic,
-                                        name: e.target.value,
+                                        firstName: e.target.value,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label
+                                    htmlFor="lastName"
+                                    className="text-right"
+                                  >
+                                    Last Name
+                                  </Label>
+                                  <Input
+                                    id="lastName"
+                                    placeholder="Doe"
+                                    className="col-span-3"
+                                    value={currentPic?.lastName || ""}
+                                    onChange={(e) =>
+                                      currentPic &&
+                                      setCurrentPic({
+                                        ...currentPic,
+                                        lastName: e.target.value,
                                       })
                                     }
                                   />
@@ -1001,8 +1056,8 @@ export default function PICManagement() {
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   This action cannot be undone. This will
-                                  permanently delete the "{pic.name}" point of
-                                  contact.
+                                  permanently delete the "{pic.firstName}{" "}
+                                  {pic.lastName}" point of contact.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

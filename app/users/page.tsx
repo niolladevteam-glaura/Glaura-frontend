@@ -44,6 +44,8 @@ import {
   Calendar,
   Activity,
   ArrowLeft,
+  Menu,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -413,6 +415,7 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editPrivileges, setEditPrivileges] = useState<string[]>([]);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Add state for privileges
   const [selectedPrivileges, setSelectedPrivileges] = useState<string[]>([]);
@@ -615,21 +618,6 @@ export default function UserManagement() {
 
   const [loading, setLoading] = useState(false);
 
-  // // Example usage in API calls
-  // const loadUsers = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const response = await userApi.getAllUsers();
-  //     setUsers(response.data);
-  //     setFilteredUsers(response.data);
-  //   } catch (error) {
-  //     console.error("Failed to load users:", error);
-  //     // Show error to user
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   // Update the access level change handler to set default privileges
   const handleAccessLevelChange = (value: string) => {
     setNewUser({ ...newUser, accessLevel: value });
@@ -745,9 +733,6 @@ export default function UserManagement() {
   }
 
   // Update user
-  // ...rest of your component above...
-
-  // Update user
   const updateUser = async () => {
     if (!editingUser) return;
 
@@ -820,8 +805,22 @@ export default function UserManagement() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* Left Section */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden p-1"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+
             {/* Back Button */}
-            <Link href="/dashboard" className="flex-shrink-0">
+            <Link href="/dashboard" className="flex-shrink-0 hidden md:block">
               <Button
                 variant="ghost"
                 size="sm"
@@ -853,7 +852,7 @@ export default function UserManagement() {
             <ThemeToggle />
             <Badge
               variant="outline"
-              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none"
             >
               <span className="truncate">{currentUser.name}</span>
               <span className="hidden xs:inline">
@@ -863,12 +862,35 @@ export default function UserManagement() {
             </Badge>
           </div>
         </div>
+
+        {/* Mobile Navigation */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col space-y-3">
+              <Link href="/dashboard">
+                <Button variant="ghost" className="w-full justify-start">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
+          <Card className="sm:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -881,7 +903,7 @@ export default function UserManagement() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="sm:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Active Users
@@ -896,7 +918,7 @@ export default function UserManagement() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="sm:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Inactive Users
@@ -913,7 +935,7 @@ export default function UserManagement() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="sm:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Departments</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
@@ -932,19 +954,22 @@ export default function UserManagement() {
         {/* Search and Filters */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <span>User Directory</span>
               <Dialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}
               >
                 <DialogTrigger asChild>
-                  <Button onClick={handleAddUserClick}>
+                  <Button
+                    onClick={handleAddUserClick}
+                    className="w-full sm:w-auto"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add User
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
                   <DialogHeader>
                     <div className="flex items-center justify-between">
                       <div>
@@ -1170,7 +1195,7 @@ export default function UserManagement() {
                     )}
                   </div>
 
-                  <div className="flex justify-end space-x-2 mt-6">
+                  <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-6">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -1178,6 +1203,7 @@ export default function UserManagement() {
                         setNewUser({});
                         setSelectedPrivileges([]);
                       }}
+                      className="w-full sm:w-auto"
                     >
                       Cancel
                     </Button>
@@ -1186,7 +1212,7 @@ export default function UserManagement() {
                       disabled={
                         !newUser.username || !newUser.name || !newUser.email
                       }
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
                     >
                       Create User
                     </Button>
@@ -1208,12 +1234,12 @@ export default function UserManagement() {
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Select
                   value={departmentFilter}
                   onValueChange={setDepartmentFilter}
                 >
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Department" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1227,7 +1253,7 @@ export default function UserManagement() {
                   </SelectContent>
                 </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1243,7 +1269,7 @@ export default function UserManagement() {
 
         {/* Edit User Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
               <DialogDescription>
@@ -1479,7 +1505,7 @@ export default function UserManagement() {
               </div>
             )}
 
-            <div className="flex justify-end space-x-2 mt-6">
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-6">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1487,6 +1513,7 @@ export default function UserManagement() {
                   setEditingUser(null);
                   setEditPrivileges([]);
                 }}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
@@ -1497,7 +1524,7 @@ export default function UserManagement() {
                   !editingUser?.name ||
                   !editingUser?.email
                 }
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
               >
                 Update User
               </Button>
@@ -1506,7 +1533,7 @@ export default function UserManagement() {
         </Dialog>
 
         <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-          <DialogContent className="max-w-sm">
+          <DialogContent className="max-w-sm p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>User Created!</DialogTitle>
               <DialogDescription>
@@ -1523,8 +1550,8 @@ export default function UserManagement() {
         <div className="space-y-4">
           {filteredUsers.map((user) => (
             <Card key={user.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
                   <div className="flex items-center space-x-4">
                     <div
                       className={`p-3 rounded-lg ${
@@ -1546,7 +1573,7 @@ export default function UserManagement() {
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         @{user.username}
                       </p>
-                      <div className="flex items-center space-x-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         <Badge className={getStatusColor(user.isActive)}>
                           {user.isActive ? "Active" : "Inactive"}
                         </Badge>
@@ -1559,55 +1586,62 @@ export default function UserManagement() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedUser(user)}
+                      className="flex-1 sm:flex-none"
                     >
                       <Eye className="h-4 w-4 mr-2" />
-                      View
+                      <span className="sr-only sm:not-sr-only">View</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditClick(user)}
+                      className="flex-1 sm:flex-none"
                     >
                       <Edit className="h-4 w-4 mr-2" />
-                      Edit
+                      <span className="sr-only sm:not-sr-only">Edit</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => toggleUserStatus(user.id)}
+                      className="flex-1 sm:flex-none"
                     >
                       {user.isActive ? (
                         <>
                           <UserX className="h-4 w-4 mr-2" />
-                          Deactivate
+                          <span className="sr-only sm:not-sr-only">
+                            Deactivate
+                          </span>
                         </>
                       ) : (
                         <>
                           <UserCheck className="h-4 w-4 mr-2" />
-                          Activate
+                          <span className="sr-only sm:not-sr-only">
+                            Activate
+                          </span>
                         </>
                       )}
                     </Button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Role
                     </p>
-                    <p className="font-medium">{user.role}</p>
+                    <p className="font-medium truncate">{user.role}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Email
                     </p>
-                    <p className="font-medium">{user.email}</p>
+                    <p className="font-medium truncate">{user.email}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1616,7 +1650,7 @@ export default function UserManagement() {
                     <p className="font-medium">{user.phoneNumber}</p>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Activity className="h-4 w-4 text-gray-400" />
+                    <Activity className="h-4 w-4 text-gray-400 flex-shrink-0" />
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         Last Login
@@ -1630,8 +1664,8 @@ export default function UserManagement() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-200 dark:border-gray-700 gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-600 dark:text-gray-300">
@@ -1677,10 +1711,12 @@ export default function UserManagement() {
         {selectedUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
+              <div className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                   <div className="flex items-center space-x-4">
-                    <h2 className="text-2xl font-bold">{selectedUser.name}</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold">
+                      {selectedUser.name}
+                    </h2>
                     <Badge className={getStatusColor(selectedUser.isActive)}>
                       {selectedUser.isActive ? "Active" : "Inactive"}
                     </Badge>
@@ -1688,19 +1724,20 @@ export default function UserManagement() {
                   <Button
                     variant="outline"
                     onClick={() => setSelectedUser(null)}
+                    className="w-full sm:w-auto"
                   >
                     Close
                   </Button>
                 </div>
 
                 <Tabs defaultValue="profile">
-                  <TabsList>
+                  <TabsList className="w-full grid grid-cols-3">
                     <TabsTrigger value="profile">Profile</TabsTrigger>
                     <TabsTrigger value="permissions">Permissions</TabsTrigger>
                     <TabsTrigger value="activity">Activity Log</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="profile" className="space-y-4">
+                  <TabsContent value="profile" className="space-y-4 mt-4">
                     <Card>
                       <CardHeader>
                         <CardTitle>User Information</CardTitle>
@@ -1762,7 +1799,7 @@ export default function UserManagement() {
                     </Card>
                   </TabsContent>
 
-                  <TabsContent value="permissions">
+                  <TabsContent value="permissions" className="mt-4">
                     <Card>
                       <CardHeader>
                         <CardTitle>System Permissions</CardTitle>
@@ -1777,8 +1814,8 @@ export default function UserManagement() {
                               key={index}
                               className="flex items-center space-x-2 p-3 border rounded-lg"
                             >
-                              <Shield className="h-4 w-4 text-green-600" />
-                              <span className="capitalize">
+                              <Shield className="h-4 w-4 text-green-600 flex-shrink-0" />
+                              <span className="capitalize text-sm">
                                 {permission.replace("_", " ")}
                               </span>
                             </div>
@@ -1788,7 +1825,7 @@ export default function UserManagement() {
                     </Card>
                   </TabsContent>
 
-                  <TabsContent value="activity">
+                  <TabsContent value="activity" className="mt-4">
                     <Card>
                       <CardHeader>
                         <CardTitle>Activity Log</CardTitle>
@@ -1798,7 +1835,7 @@ export default function UserManagement() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg gap-2">
                             <div>
                               <p className="font-medium">Last Login</p>
                               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1811,7 +1848,7 @@ export default function UserManagement() {
                             </div>
                             <Badge variant="outline">Login</Badge>
                           </div>
-                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg gap-2">
                             <div>
                               <p className="font-medium">Account Created</p>
                               <p className="text-sm text-gray-500 dark:text-gray-400">
