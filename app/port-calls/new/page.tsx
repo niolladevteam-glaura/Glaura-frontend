@@ -67,6 +67,21 @@ interface Customer {
   };
 }
 
+interface CustomerPic {
+  pic_id: string;
+  customer_id: string;
+  firstName: string;
+  lastName: string;
+  phone_number: string;
+  email: string;
+  birthday: string;
+  receiveUpdates: boolean;
+  department: string;
+  remark: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface CustomersResponse {
   success: boolean;
   message: string;
@@ -474,14 +489,14 @@ export default function NewPortCall() {
     loadFormalityStatuses();
   }, []);
 
+  // Fetch all customer PICs and set options
   useEffect(() => {
-    // Fetch the data
     fetchCustomerPics().then((pics: CustomerPic[]) => {
       setCustomerPICs(pics);
       setCustomerPICOptions(
         pics.map((pic) => ({
           value: pic.pic_id,
-          label: pic.name,
+          label: `${pic.firstName} ${pic.lastName}`,
         }))
       );
     });
@@ -847,7 +862,7 @@ export default function NewPortCall() {
       setCustomerPICOptions(
         pics.map((pic) => ({
           value: pic.pic_id,
-          label: pic.name,
+          label: `${pic.firstName} ${pic.lastName}`,
         }))
       );
     } catch (error) {
@@ -877,7 +892,9 @@ export default function NewPortCall() {
       ...prev,
       pic: {
         pic_id,
-        customerPIC: selected?.name || "",
+        customerPIC: selected
+          ? `${selected.firstName} ${selected.lastName}`
+          : "",
         email: selected?.email || "",
       },
     }));
