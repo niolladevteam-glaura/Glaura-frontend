@@ -46,6 +46,7 @@ import {
   Loader2,
   Check,
   X,
+  Pencil,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -88,6 +89,25 @@ interface ServiceTaskHeader {
   updatedAt?: string;
 }
 
+// Crew and Flight details interfaces
+interface CrewMember {
+  name: string;
+  nationality: string;
+  rank: string;
+  passportNo: string;
+  eTicketNo: string;
+}
+interface FlightDetail {
+  flightNumber: string;
+  flightName: string;
+  departureDate: string; // DD.MM.YYYY
+  departureTime: string; // HH:mm
+  arrivalDate: string; // DD.MM.YYYY
+  arrivalTime: string; // HH:mm
+  from: string;
+  to: string;
+}
+
 export default function PortCallServicesPage() {
   const params = useParams();
   const router = useRouter();
@@ -106,6 +126,34 @@ export default function PortCallServicesPage() {
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<PCS | null>(null);
+
+  // Crew Change Dialog state
+  const [crewDialogOpen, setCrewDialogOpen] = useState(false);
+  const [crewDialogPCS, setCrewDialogPCS] = useState<PCS | null>(null);
+  // Crew Change Form state
+  const [crewName, setCrewName] = useState("");
+  const [airline, setAirline] = useState("");
+  const [onBoardDate, setOnBoardDate] = useState("");
+  const [crewList, setCrewList] = useState<CrewMember[]>([]);
+  const [flights, setFlights] = useState<FlightDetail[]>([]);
+  // Add row states
+  const [newCrew, setNewCrew] = useState<CrewMember>({
+    name: "",
+    nationality: "",
+    rank: "",
+    passportNo: "",
+    eTicketNo: "",
+  });
+  const [newFlight, setNewFlight] = useState<FlightDetail>({
+    flightNumber: "",
+    flightName: "",
+    departureDate: "",
+    departureTime: "",
+    arrivalDate: "",
+    arrivalTime: "",
+    from: "",
+    to: "",
+  });
 
   // Header stats for each PCS (service)
   const [headersStats, setHeadersStats] = useState<
@@ -378,6 +426,100 @@ export default function PortCallServicesPage() {
     }
   };
 
+  // Crew Change Dialog logic
+  const openCrewChangeDialog = (pcs: PCS) => {
+    setCrewDialogPCS(pcs);
+    setCrewDialogOpen(true);
+    // Optionally fetch existing Crew Change data here
+  };
+
+  const closeCrewChangeDialog = () => {
+    setCrewDialogOpen(false);
+    setCrewDialogPCS(null);
+    setCrewName("");
+    setAirline("");
+    setOnBoardDate("");
+    setCrewList([]);
+    setFlights([]);
+    setNewCrew({
+      name: "",
+      nationality: "",
+      rank: "",
+      passportNo: "",
+      eTicketNo: "",
+    });
+    setNewFlight({
+      flightNumber: "",
+      flightName: "",
+      departureDate: "",
+      departureTime: "",
+      arrivalDate: "",
+      arrivalTime: "",
+      from: "",
+      to: "",
+    });
+  };
+
+  // Add Crew/Flight rows
+  const addCrewRow = () => {
+    if (
+      newCrew.name &&
+      newCrew.nationality &&
+      newCrew.rank &&
+      newCrew.passportNo &&
+      newCrew.eTicketNo
+    ) {
+      setCrewList((list) => [...list, newCrew]);
+      setNewCrew({
+        name: "",
+        nationality: "",
+        rank: "",
+        passportNo: "",
+        eTicketNo: "",
+      });
+    }
+  };
+  const removeCrewRow = (idx: number) =>
+    setCrewList((list) => list.filter((_, i) => i !== idx));
+
+  const addFlightRow = () => {
+    if (
+      newFlight.flightNumber &&
+      newFlight.flightName &&
+      newFlight.departureDate &&
+      newFlight.departureTime &&
+      newFlight.arrivalDate &&
+      newFlight.arrivalTime &&
+      newFlight.from &&
+      newFlight.to
+    ) {
+      setFlights((list) => [...list, newFlight]);
+      setNewFlight({
+        flightNumber: "",
+        flightName: "",
+        departureDate: "",
+        departureTime: "",
+        arrivalDate: "",
+        arrivalTime: "",
+        from: "",
+        to: "",
+      });
+    }
+  };
+  const removeFlightRow = (idx: number) =>
+    setFlights((list) => list.filter((_, i) => i !== idx));
+
+  // Format date/time helpers
+  const dateInputToDDMMYYYY = (dateStr: string) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    return `${day}.${month}.${year}`;
+  };
+  const ddmmyyyyToDateInput = (ddmm: string) => {
+    const [day, month, year] = ddmm.split(".");
+    return `${year}-${month}-${day}`;
+  };
+
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -467,8 +609,6 @@ export default function PortCallServicesPage() {
                 <TableRow>
                   <TableHead>Service Name</TableHead>
                   <TableHead>Vendor</TableHead>
-                  {/* <TableHead>Status</TableHead> */}
-                  {/* <TableHead>Headers</TableHead> */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -478,6 +618,9 @@ export default function PortCallServicesPage() {
                     total: 0,
                     completed: 0,
                   };
+                  const isCrewChanges =
+                    pcs.service_name.trim().toLowerCase() ===
+                    "crew changes (on/off)";
                   return (
                     <TableRow
                       key={pcs.id}
@@ -487,27 +630,6 @@ export default function PortCallServicesPage() {
                         {pcs.service_name}
                       </TableCell>
                       <TableCell>{pcs.vendor_name}</TableCell>
-                      {/* <TableCell>
-                        <Badge
-                          variant={pcs.status ? "default" : "secondary"}
-                          className="flex items-center gap-1"
-                        >
-                          {pcs.status ? (
-                            <Check className="h-3 w-3" />
-                          ) : (
-                            <X className="h-3 w-3" />
-                          )}
-                          {pcs.status ? "Completed" : "Pending"}
-                        </Badge>
-                      </TableCell> */}
-                      {/* <TableCell>
-                        <span className="font-semibold text-sm">
-                          {stats.completed}/{stats.total}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-1">
-                          headers completed
-                        </span>
-                      </TableCell> */}
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -521,6 +643,35 @@ export default function PortCallServicesPage() {
                             >
                               <Eye className="h-4 w-4 text-gray-700" />
                             </Link>
+                          </Button>
+                          {/* Crew Changes Pencil Icon */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={
+                              isCrewChanges
+                                ? () => openCrewChangeDialog(pcs)
+                                : undefined
+                            }
+                            disabled={!isCrewChanges}
+                            className={
+                              isCrewChanges
+                                ? "bg-green-100 hover:bg-green-200"
+                                : "bg-gray-200 cursor-not-allowed"
+                            }
+                            title={
+                              isCrewChanges
+                                ? "Edit Crew Changes"
+                                : "Edit only available for Crew Changes (On/Off)"
+                            }
+                          >
+                            <Pencil
+                              className={
+                                isCrewChanges
+                                  ? "h-4 w-4 text-green-700"
+                                  : "h-4 w-4 text-gray-400"
+                              }
+                            />
                           </Button>
                           <Button
                             variant="destructive"
@@ -702,6 +853,349 @@ export default function PortCallServicesPage() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Crew Changes Dialog */}
+      <Dialog open={crewDialogOpen} onOpenChange={closeCrewChangeDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Crew Changes Details</DialogTitle>
+            <DialogDescription>
+              Fill crew change details below. Dates: DD.MM.YYYY. Times: 24hr
+              format.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              // TODO: handle save to API
+              closeCrewChangeDialog();
+            }}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Crew Name</Label>
+                <Input
+                  value={crewName}
+                  onChange={(e) => setCrewName(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Airline</Label>
+                <Input
+                  value={airline}
+                  onChange={(e) => setAirline(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label>On Board Date</Label>
+                <Input
+                  type="date"
+                  value={onBoardDate ? ddmmyyyyToDateInput(onBoardDate) : ""}
+                  onChange={(e) =>
+                    setOnBoardDate(dateInputToDDMMYYYY(e.target.value))
+                  }
+                  required
+                />
+                <div className="text-xs text-muted-foreground mt-1">
+                  Format: DD.MM.YYYY
+                </div>
+              </div>
+            </div>
+            <div>
+              <Label>Crew List</Label>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Nationality</TableHead>
+                    <TableHead>Rank</TableHead>
+                    <TableHead>Passport No.</TableHead>
+                    <TableHead>eTicket No.</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {crewList.map((crew, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{crew.name}</TableCell>
+                      <TableCell>{crew.nationality}</TableCell>
+                      <TableCell>{crew.rank}</TableCell>
+                      <TableCell>{crew.passportNo}</TableCell>
+                      <TableCell>{crew.eTicketNo}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => removeCrewRow(idx)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow>
+                    <TableCell>
+                      <Input
+                        value={newCrew.name}
+                        onChange={(e) =>
+                          setNewCrew((c) => ({ ...c, name: e.target.value }))
+                        }
+                        placeholder="Name"
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={newCrew.nationality}
+                        onChange={(e) =>
+                          setNewCrew((c) => ({
+                            ...c,
+                            nationality: e.target.value,
+                          }))
+                        }
+                        placeholder="Nationality"
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={newCrew.rank}
+                        onChange={(e) =>
+                          setNewCrew((c) => ({ ...c, rank: e.target.value }))
+                        }
+                        placeholder="Rank"
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={newCrew.passportNo}
+                        onChange={(e) =>
+                          setNewCrew((c) => ({
+                            ...c,
+                            passportNo: e.target.value,
+                          }))
+                        }
+                        placeholder="Passport No."
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={newCrew.eTicketNo}
+                        onChange={(e) =>
+                          setNewCrew((c) => ({
+                            ...c,
+                            eTicketNo: e.target.value,
+                          }))
+                        }
+                        placeholder="eTicket No."
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        type="button"
+                        onClick={addCrewRow}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+            <div>
+              <Label>Flights</Label>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Flight Number</TableHead>
+                    <TableHead>Flight Name</TableHead>
+                    <TableHead>Departure Date</TableHead>
+                    <TableHead>Departure Time</TableHead>
+                    <TableHead>Arrival Date</TableHead>
+                    <TableHead>Arrival Time</TableHead>
+                    <TableHead>From</TableHead>
+                    <TableHead>To</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {flights.map((flight, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{flight.flightNumber}</TableCell>
+                      <TableCell>{flight.flightName}</TableCell>
+                      <TableCell>{flight.departureDate}</TableCell>
+                      <TableCell>{flight.departureTime}</TableCell>
+                      <TableCell>{flight.arrivalDate}</TableCell>
+                      <TableCell>{flight.arrivalTime}</TableCell>
+                      <TableCell>{flight.from}</TableCell>
+                      <TableCell>{flight.to}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => removeFlightRow(idx)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow>
+                    <TableCell>
+                      <Input
+                        value={newFlight.flightNumber}
+                        onChange={(e) =>
+                          setNewFlight((f) => ({
+                            ...f,
+                            flightNumber: e.target.value,
+                          }))
+                        }
+                        placeholder="Flight Number"
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={newFlight.flightName}
+                        onChange={(e) =>
+                          setNewFlight((f) => ({
+                            ...f,
+                            flightName: e.target.value,
+                          }))
+                        }
+                        placeholder="Flight Name"
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="date"
+                        value={
+                          newFlight.departureDate
+                            ? ddmmyyyyToDateInput(newFlight.departureDate)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          setNewFlight((f) => ({
+                            ...f,
+                            departureDate: dateInputToDDMMYYYY(e.target.value),
+                          }))
+                        }
+                        required
+                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        DD.MM.YYYY
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="time"
+                        value={newFlight.departureTime}
+                        onChange={(e) =>
+                          setNewFlight((f) => ({
+                            ...f,
+                            departureTime: e.target.value,
+                          }))
+                        }
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="date"
+                        value={
+                          newFlight.arrivalDate
+                            ? ddmmyyyyToDateInput(newFlight.arrivalDate)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          setNewFlight((f) => ({
+                            ...f,
+                            arrivalDate: dateInputToDDMMYYYY(e.target.value),
+                          }))
+                        }
+                        required
+                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        DD.MM.YYYY
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="time"
+                        value={newFlight.arrivalTime}
+                        onChange={(e) =>
+                          setNewFlight((f) => ({
+                            ...f,
+                            arrivalTime: e.target.value,
+                          }))
+                        }
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={newFlight.from}
+                        onChange={(e) =>
+                          setNewFlight((f) => ({
+                            ...f,
+                            from: e.target.value,
+                          }))
+                        }
+                        placeholder="From"
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={newFlight.to}
+                        onChange={(e) =>
+                          setNewFlight((f) => ({
+                            ...f,
+                            to: e.target.value,
+                          }))
+                        }
+                        placeholder="To"
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        type="button"
+                        onClick={addFlightRow}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+            <DialogFooter className="mt-6">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={closeCrewChangeDialog}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="ml-2">
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
