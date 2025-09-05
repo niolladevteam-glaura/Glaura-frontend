@@ -51,18 +51,20 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "@/components/ui/use-toast";
 import dynamic from "next/dynamic";
 
-// SSR-safe DatePicker
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const DatePicker = dynamic(() => import("@/components/ui/date-picker"), {
   ssr: false,
 });
+
 import CrewChangesDialog, {
-  type CrewChangesForm,
+  type CrewChangesPayload,
+  type ExistingCrewRecord,
 } from "@/components/pcs/CrewChangesDialog";
+
 import ShipSparesDialog, {
   type ShipSparesForm,
 } from "@/components/pcs/ShipSparesDialog";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface PCS {
   id: string;
@@ -75,12 +77,10 @@ interface PCS {
   createdAt?: string;
   updatedAt?: string;
 }
-
 interface Vendor {
   vendor_id: string;
   name: string;
 }
-
 interface Service {
   service_id: string;
   service_name: string;
@@ -109,12 +109,26 @@ interface CrewMember {
 interface FlightDetail {
   flightNumber: string;
   flightName: string;
-  departureDate: string; // "yyyy-MM-dd"
-  departureTime: string; // "HH:mm"
-  arrivalDate: string; // "yyyy-MM-dd"
-  arrivalTime: string; // "HH:mm"
+  departureDate: string;
+  departureTime: string;
+  arrivalDate: string;
+  arrivalTime: string;
   from: string;
   to: string;
+}
+
+interface PortCall {
+  job_id: string;
+  vessel_name: string;
+  vessel_imo: string;
+  port: string;
+  client_company: string;
+  eta: string;
+  etd?: string;
+  assigned_pic: string;
+  priority: string;
+  created: string;
+  updatedAt: string;
 }
 
 export default function PortCallServicesPage() {
@@ -124,8 +138,8 @@ export default function PortCallServicesPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [pcsList, setPCSList] = useState<PCS[]>([]);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
+  const [vendors, setVendors] = useState<(Vendor | null)[]>([]);
+  const [services, setServices] = useState<(Service | null)[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [selectedVendorId, setSelectedVendorId] = useState("");
@@ -136,17 +150,20 @@ export default function PortCallServicesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<PCS | null>(null);
 
-  // Crew Change Dialog state
   const [crewDialogOpen, setCrewDialogOpen] = useState(false);
   const [crewDialogPCS, setCrewDialogPCS] = useState<PCS | null>(null);
 
-  // If you already have persisted values, preload them here.
-  // (Keeping local state in case other parts of the page use them.)
   const [crewName, setCrewName] = useState("");
   const [airline, setAirline] = useState("");
-  const [onBoardDate, setOnBoardDate] = useState<string>(""); // "yyyy-MM-dd"
+  const [onBoardDate, setOnBoardDate] = useState<string>("");
   const [crewList, setCrewList] = useState<CrewMember[]>([]);
   const [flights, setFlights] = useState<FlightDetail[]>([]);
+
+  const [existingCrewRecords, setExistingCrewRecords] = useState<
+    ExistingCrewRecord[]
+  >([]);
+
+  const [portCall, setPortCall] = useState<PortCall | null>(null);
 
   const SHIP_SPARES_NAMES = [
     "ship spares clearance and delivery",
@@ -161,21 +178,222 @@ export default function PortCallServicesPage() {
 
   const [shipDialogOpen, setShipDialogOpen] = useState(false);
   const [shipDialogPCS, setShipDialogPCS] = useState<PCS | null>(null);
+  const [shipInitial, setShipInitial] = useState<ShipSparesForm | undefined>(
+    undefined
+  );
 
-  const openShipSparesDialog = (pcs: PCS) => {
+  // ───────────────── open dialog + preload existing ─────────────────
+  const openShipSparesDialog = async (pcs: PCS) => {
     setShipDialogPCS(pcs);
-    // If you have existing values for this PCS, load and pass as initialValues below.
-    setShipDialogOpen(true);
+    setShipInitial(undefined);
+
+    const token = getTokenOrRedirect();
+    if (!token || !portCall) {
+      setShipDialogOpen(true);
+      return;
+    }
+
+    try {
+      // Fetch all, filter by vessel & imo (API doesn't expose a filter endpoint)
+      const res = await fetch(`${API_BASE_URL}/spares`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const json = await res.json();
+      if (json?.success && Array.isArray(json?.data)) {
+        const relevant = (json.data as ApiSpare[]).filter(
+          (s) =>
+            s.vessel === portCall.vessel_name &&
+            String(s.imo) === String(portCall.vessel_imo)
+        );
+        setShipInitial(fromApiToForm(relevant));
+      }
+    } catch {
+      // ignore
+    } finally {
+      setShipDialogOpen(true);
+    }
   };
+
   const closeShipSparesDialog = () => {
     setShipDialogOpen(false);
     setShipDialogPCS(null);
+    setShipInitial(undefined);
   };
 
-  // Header stats for each PCS (service)
+  // ───────────────── save (create + update) ─────────────────
+  const handleShipSparesSave = async (form: ShipSparesForm) => {
+    const token = getTokenOrRedirect();
+    if (!token || !portCall) return;
+
+    const vessel = portCall.vessel_name;
+    const imo = portCall.vessel_imo;
+
+    const toCreate = form.items.filter((i) => !i.id);
+    const toUpdate = form.items.filter((i) => !!i.id);
+
+    try {
+      // POST new rows (if any)
+      if (toCreate.length > 0) {
+        const body = toApiCreateBody(toCreate, vessel, imo);
+        const resp = await fetch(`${API_BASE_URL}/spares`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || data?.success === false) {
+          throw new Error(
+            data?.message || `Create failed (HTTP ${resp.status})`
+          );
+        }
+      }
+
+      // PUT updates (if any) — API expects an array
+      if (toUpdate.length > 0) {
+        const body = toApiUpdateBody(toUpdate, vessel, imo);
+        const resp = await fetch(`${API_BASE_URL}/spares`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || data?.success === false) {
+          throw new Error(
+            data?.message || `Update failed (HTTP ${resp.status})`
+          );
+        }
+      }
+
+      toast({
+        title: "Saved",
+        description:
+          toCreate.length && toUpdate.length
+            ? "Created and updated ship spares."
+            : toCreate.length
+            ? "Ship spares created."
+            : "Ship spares updated.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e?.message || "Failed to save ship spares",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // ───────────────── delete a single spare row ─────────────────
+  const handleShipSpareDelete = async (id: string): Promise<boolean> => {
+    const token = getTokenOrRedirect();
+    if (!token) return false;
+    if (!id) {
+      toast({
+        title: "Error",
+        description: "Invalid spare id",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      const resp = await fetch(`${API_BASE_URL}/spares/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || data?.success === false) {
+        toast({
+          title: "Error",
+          description: data?.message || `Delete failed (HTTP ${resp.status})`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      toast({ title: "Deleted", description: "Ship spare deleted." });
+      return true;
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e?.message || "Failed to delete ship spare",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const [headersStats, setHeadersStats] = useState<
     Record<string, { total: number; completed: number }>
   >({});
+
+  type ApiSpare = {
+    id: string;
+    iteamName: string; // (sic) from API
+    vessel: string;
+    imo: string;
+    awbNumber: string;
+    qty: number;
+    Weight: number;
+    arraival: string;
+    remarks?: string | null;
+  };
+
+  function fromApiToForm(items: ApiSpare[]): ShipSparesForm {
+    return {
+      items: items.map((s) => ({
+        id: s.id,
+        itemName: s.iteamName ?? "",
+        awbNumber: s.awbNumber ?? "",
+        pcs: Number(s.qty ?? 0),
+        weight: Number(s.Weight ?? 0),
+        airlineFlight: s.arraival ?? "",
+        remarks: s.remarks ?? "",
+      })),
+    };
+  }
+
+  function toApiCreateBody(
+    items: ShipSparesForm["items"],
+    vessel: string,
+    imo: string
+  ) {
+    return items.map((i) => ({
+      iteamName: i.itemName, // API field name is intentionally misspelled
+      vessel,
+      imo,
+      awbNumber: i.awbNumber,
+      qty: i.pcs,
+      Weight: i.weight,
+      arraival: i.airlineFlight, // UI uses airline/flight; API uses 'arraival'
+      remarks: i.remarks ?? "",
+    }));
+  }
+
+  function toApiUpdateBody(
+    items: ShipSparesForm["items"],
+    vessel: string,
+    imo: string
+  ) {
+    return items.map((i) => ({
+      id: i.id,
+      iteamName: i.itemName,
+      vessel,
+      imo,
+      awbNumber: i.awbNumber,
+      qty: i.pcs,
+      Weight: i.weight,
+      arraival: i.airlineFlight,
+      remarks: i.remarks ?? "",
+    }));
+  }
 
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
@@ -195,7 +413,6 @@ export default function PortCallServicesPage() {
     return token;
   }
 
-  // Fetch all port call services for this job
   useEffect(() => {
     if (!job_id) return;
     const token = getTokenOrRedirect();
@@ -208,9 +425,7 @@ export default function PortCallServicesPage() {
       },
     })
       .then((res) => res.json())
-      .then((data) => {
-        setPCSList(data.data || []);
-      })
+      .then((data) => setPCSList(data.data || []))
       .catch(() => {
         toast({
           title: "Error",
@@ -221,7 +436,25 @@ export default function PortCallServicesPage() {
       .finally(() => setLoading(false));
   }, [job_id, openDialog]);
 
-  // Fetch all services
+  useEffect(() => {
+    if (!job_id) return;
+    const token = getTokenOrRedirect();
+    if (!token) return;
+    fetch(`${API_BASE_URL}/portcall?job_id=${job_id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data) && data.data.length) {
+          setPortCall(data.data[0]);
+        }
+      })
+      .catch(() => setPortCall(null));
+  }, [job_id]);
+
   useEffect(() => {
     const token = getTokenOrRedirect();
     if (!token) return;
@@ -234,8 +467,6 @@ export default function PortCallServicesPage() {
       .then((res) => res.json())
       .then((data) => setServices(data.data || []));
   }, []);
-
-  // Fetch all vendors
   useEffect(() => {
     const token = getTokenOrRedirect();
     if (!token) return;
@@ -249,14 +480,11 @@ export default function PortCallServicesPage() {
       .then((data) => setVendors(data.data || []));
   }, []);
 
-  // Fetch headers stats for all services (using correct endpoint and logic)
   useEffect(() => {
     async function fetchStats() {
       const token = getTokenOrRedirect();
       if (!token || pcsList.length === 0) return;
-
       const stats: Record<string, { total: number; completed: number }> = {};
-
       for (const pcs of pcsList) {
         const headersRes = await fetch(
           `${API_BASE_URL}/servicetask/headers/service/${pcs.service_id}`,
@@ -271,11 +499,9 @@ export default function PortCallServicesPage() {
         const headers: ServiceTaskHeader[] = Array.isArray(headersData.data)
           ? headersData.data
           : [];
-
         const completed = headers.filter(
           (h: any) => h.status === true || h.status === "true"
         ).length;
-
         stats[pcs.id] = { total: headers.length, completed };
 
         if (headers.length > 0 && completed === headers.length && !pcs.status) {
@@ -299,11 +525,18 @@ export default function PortCallServicesPage() {
     fetchStats();
   }, [pcsList]);
 
-  const filteredServices = services.filter((s) =>
-    s.service_name.toLowerCase().includes(searchService.toLowerCase())
+  // NULL-SAFE filters
+  const filteredServices = (services ?? []).filter(
+    (s): s is Service =>
+      !!s &&
+      typeof s.service_name === "string" &&
+      s.service_name.toLowerCase().includes((searchService ?? "").toLowerCase())
   );
-  const filteredVendors = vendors.filter((v) =>
-    v.name.toLowerCase().includes(searchVendor.toLowerCase())
+  const filteredVendors = (vendors ?? []).filter(
+    (v): v is Vendor =>
+      !!v &&
+      typeof v.name === "string" &&
+      v.name.toLowerCase().includes((searchVendor ?? "").toLowerCase())
   );
 
   const handleAddService = async () => {
@@ -319,13 +552,12 @@ export default function PortCallServicesPage() {
       return;
     }
 
-    const selectedService = services.find(
-      (s) => s.service_id === selectedServiceId
+    const selectedService = (services as Service[]).find(
+      (s) => s?.service_id === selectedServiceId
     );
-    const selectedVendor = vendors.find(
-      (v) => v.vendor_id === selectedVendorId
+    const selectedVendor = (vendors as Vendor[]).find(
+      (v) => v?.vendor_id === selectedVendorId
     );
-
     if (!selectedService || !selectedVendor) {
       toast({
         title: "Error",
@@ -354,18 +586,11 @@ export default function PortCallServicesPage() {
         },
         body: JSON.stringify(payload),
       });
-
       const responseData = await response.json();
-
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(responseData?.message || "Failed to add service");
-      }
 
-      toast({
-        title: "Success",
-        description: "Service added successfully",
-      });
-
+      toast({ title: "Success", description: "Service added successfully" });
       setOpenDialog(false);
       setSelectedServiceId("");
       setSelectedVendorId("");
@@ -402,7 +627,6 @@ export default function PortCallServicesPage() {
     if (!token) return;
 
     setDeleting((prev) => ({ ...prev, [serviceToDelete.id]: true }));
-
     try {
       const response = await fetch(
         `${API_BASE_URL}/pcs/${serviceToDelete.id}`,
@@ -414,18 +638,11 @@ export default function PortCallServicesPage() {
           },
         }
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete service");
-      }
-
+      if (!response.ok) throw new Error("Failed to delete service");
       setPCSList((list) => list.filter((svc) => svc.id !== serviceToDelete.id));
-      toast({
-        title: "Success",
-        description: "Service deleted successfully",
-      });
+      toast({ title: "Success", description: "Service deleted successfully" });
       setDeleteDialogOpen(false);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete service",
@@ -436,34 +653,232 @@ export default function PortCallServicesPage() {
     }
   };
 
-  // Crew Change Dialog logic
-  const openCrewChangeDialog = (pcs: PCS) => {
+  const openCrewChangeDialog = async (pcs: PCS) => {
     setCrewDialogPCS(pcs);
 
-    // If you fetch existing crew data for this PCS, map it into state here before opening.
-    // setCrewName(...); setAirline(...); setOnBoardDate(...); setCrewList(...); setFlights(...);
-
-    setCrewDialogOpen(true);
-  };
-
-  const closeCrewChangeDialog = () => {
-    setCrewDialogOpen(false);
-    setCrewDialogPCS(null);
     setCrewName("");
     setAirline("");
     setOnBoardDate("");
     setCrewList([]);
     setFlights([]);
+    setExistingCrewRecords([]);
+
+    const token = getTokenOrRedirect();
+    if (!token || !portCall) {
+      setCrewDialogOpen(true);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/crew`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const json = await res.json();
+
+      if (json?.success && Array.isArray(json?.data)) {
+        const matches = json.data
+          .filter(
+            (c: any) =>
+              c?.VesselName === portCall.vessel_name &&
+              c?.imo === portCall.vessel_imo &&
+              c?.port === portCall.port
+          )
+          .map((c: any) => ({
+            id: c.Crw_Chg_Serv_id || c.id,
+            crewName: c.crewName,
+            type: c.type,
+            onBoardDate: c.onBoardDate,
+            airline: c.airline,
+            crewList: c.crewList,
+            crewFlights: c.crewFlights,
+            createdAt: c.createdAt,
+          })) as ExistingCrewRecord[];
+
+        matches.sort(
+          (a, b) =>
+            new Date(b.createdAt || 0).getTime() -
+            new Date(a.createdAt || 0).getTime()
+        );
+
+        setExistingCrewRecords(matches);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setCrewDialogOpen(true);
+    }
   };
 
-  // Format date for display as DD.MM.YYYY
-  const formatDisplayDate = (val: string) => {
-    if (!val) return "";
-    const [year, month, day] = val.split("-");
-    return `${day}.${month}.${year}`;
-    // (Kept in case other parts use it)
+  const closeCrewChangeDialog = () => {
+    setCrewDialogOpen(false);
+    setCrewDialogPCS(null);
+    setExistingCrewRecords([]);
   };
 
+  // CREATE / UPDATE
+  const handleCrewChangeSave = async (
+    data: CrewChangesPayload,
+    meta: { id?: string | null }
+  ): Promise<boolean> => {
+    const token = getTokenOrRedirect();
+    if (!token) return false;
+
+    const flights = Array.isArray(data.flights) ? data.flights : [];
+
+    const body = {
+      VesselName: portCall?.vessel_name || "",
+      imo: portCall?.vessel_imo || "",
+      port: portCall?.port || "",
+      crewName: data.crewName,
+      onBoardDate: data.onBoardDate,
+      airline: data.airline,
+      type: data.type === "on" ? "signon" : "signoff",
+      crewList: data.crewList.map((c) => ({
+        personName: c.name,
+        nationality: c.nationality,
+        eTicketNo: c.eTicketNo,
+        passportNumber: c.passportNo,
+        rank: c.rank,
+      })),
+      crewFlights: flights.map((f) => ({
+        flightName: f.flightName,
+        flightNumber: f.flightNumber,
+        depatureTime: f.departureTime,
+        depatureDate: f.departureDate,
+        arriveTime: f.arrivalTime,
+        arriveDate: f.arrivalDate,
+        destination: f.destination,
+      })),
+    };
+
+    try {
+      const doingEdit = !!(meta.id && meta.id !== "new");
+      const id = doingEdit ? String(meta.id).trim() : "";
+
+      let url = doingEdit
+        ? `${API_BASE_URL}/crew/${id}`
+        : `${API_BASE_URL}/crew`;
+      let method = doingEdit ? "PUT" : "POST";
+
+      let resp = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      // fallback to plural endpoints if server uses /crews
+      if (resp.status === 404 || resp.status === 405) {
+        url = doingEdit
+          ? `${API_BASE_URL}/crews/${id}`
+          : `${API_BASE_URL}/crews`;
+        resp = await fetch(url, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        });
+      }
+
+      const respData = await resp.json().catch(() => ({} as any));
+
+      if (!resp.ok || respData?.success === false) {
+        toast({
+          title: "Error",
+          description:
+            respData?.message ||
+            `Failed to ${doingEdit ? "update" : "create"} (HTTP ${
+              resp.status
+            })`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      toast({
+        title: doingEdit ? "Updated" : "Created",
+        description: doingEdit
+          ? "Crew change updated successfully."
+          : "Crew change created successfully.",
+      });
+
+      setCrewDialogOpen(false);
+      setExistingCrewRecords([]);
+      return true;
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e?.message || "Failed to save Crew Change Service",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  // DELETE a crew record
+  const handleCrewDelete = async (id: string): Promise<boolean> => {
+    const token = getTokenOrRedirect();
+    if (!token) return false;
+    if (!id || id === "new") {
+      toast({
+        title: "Error",
+        description: "Invalid record id",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      let url = `${API_BASE_URL}/crew/${id}`;
+      let resp = await fetch(url, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // fallback to plural
+      if (resp.status === 404 || resp.status === 405) {
+        url = `${API_BASE_URL}/crews/${id}`;
+        resp = await fetch(url, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      const json = await resp.json().catch(() => ({} as any));
+      if (!resp.ok || json?.success === false) {
+        toast({
+          title: "Error",
+          description:
+            json?.message || `Failed to delete (HTTP ${resp.status})`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      toast({ title: "Deleted", description: "Crew change record deleted." });
+      setExistingCrewRecords((list) => list.filter((r) => r.id !== id));
+      return true;
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e?.message || "Failed to delete Crew Change record",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const completedServices = pcsList.filter((pcs) => pcs.status).length;
+  const totalServices = pcsList.length;
+
+  // EARLY RETURN while currentUser is null (prevents crash)
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -471,9 +886,6 @@ export default function PortCallServicesPage() {
       </div>
     );
   }
-
-  const completedServices = pcsList.filter((pcs) => pcs.status).length;
-  const totalServices = pcsList.length;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -511,10 +923,11 @@ export default function PortCallServicesPage() {
               variant="outline"
               className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
             >
-              <span className="truncate">{currentUser.name}</span>
+              <span className="truncate">{currentUser?.name ?? "User"}</span>
               <span className="hidden xs:inline">
-                {" "}
-                - Level {currentUser.accessLevel}
+                {currentUser?.accessLevel != null
+                  ? ` - Level ${currentUser.accessLevel}`
+                  : ""}
               </span>
             </Badge>
           </div>
@@ -534,6 +947,7 @@ export default function PortCallServicesPage() {
             Add Service
           </Button>
         </div>
+
         <Card className="border rounded-xl overflow-hidden">
           <CardHeader className="bg-gray-100 dark:bg-gray-800 py-4">
             <CardTitle className="text-lg">Services</CardTitle>
@@ -552,21 +966,16 @@ export default function PortCallServicesPage() {
               </TableHeader>
               <TableBody>
                 {pcsList.map((pcs) => {
-                  const name = pcs.service_name?.trim().toLowerCase();
-
-                  const isCrewChanges = name === "crew changes (on/off)";
-                  const isShipSpares = [
-                    "ship spares clearance and delivery",
-                    "ship spares off-landing and re-forwarding",
-                    "ship spares off-landing and connect to another vessel",
-                  ].includes(name);
-
+                  const svcName = (pcs?.service_name ?? "").trim();
+                  const nameLc = svcName.toLowerCase();
+                  const isCrewChanges = nameLc === "crew changes (on/off)";
+                  const isShipSpares = isShipSparesService(svcName);
                   const canEdit = isCrewChanges || isShipSpares;
 
                   const editOnClick = isCrewChanges
                     ? () => openCrewChangeDialog(pcs)
                     : isShipSpares
-                    ? () => openShipSparesDialog(pcs) // <-- make sure this exists (from earlier step)
+                    ? () => openShipSparesDialog(pcs)
                     : undefined;
 
                   const editClass = isCrewChanges
@@ -574,13 +983,11 @@ export default function PortCallServicesPage() {
                     : isShipSpares
                     ? "bg-amber-100 hover:bg-amber-200"
                     : "bg-gray-200 cursor-not-allowed";
-
                   const editTitle = isCrewChanges
                     ? "Edit Crew Changes"
                     : isShipSpares
                     ? "Enter Ship Spares details"
                     : "Edit not available";
-
                   const editIconClass = isCrewChanges
                     ? "text-green-700"
                     : isShipSpares
@@ -593,9 +1000,9 @@ export default function PortCallServicesPage() {
                       className="hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
                       <TableCell className="font-medium">
-                        {pcs.service_name}
+                        {svcName || "-"}
                       </TableCell>
-                      <TableCell>{pcs.vendor_name}</TableCell>
+                      <TableCell>{pcs?.vendor_name ?? "-"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -611,7 +1018,6 @@ export default function PortCallServicesPage() {
                             </Link>
                           </Button>
 
-                          {/* Edit button: Crew / Ship Spares */}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -806,61 +1212,23 @@ export default function PortCallServicesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Crew Changes Dialog (refactored) */}
+      {/* Crew Changes Dialog */}
       <CrewChangesDialog
         open={crewDialogOpen}
-        onOpenChange={(open) =>
-          open ? setCrewDialogOpen(true) : closeCrewChangeDialog()
-        }
-        initialValues={{
-          crewName,
-          airline,
-          onBoardDate,
-          crewList,
-          flights,
-        }}
-        onSave={async (data: CrewChangesForm) => {
-          // 🔗 Save to your API here
-          // Example payload: include job_id, pcs id, etc.
-          // const token = getTokenOrRedirect();
-          // await fetch(`${API_BASE_URL}/crew-changes/${crewDialogPCS?.id}`, { ... })
-
-          // Mirror saved values into local state if the page shows them elsewhere
-          setCrewName(data.crewName);
-          setAirline(data.airline);
-          setOnBoardDate(data.onBoardDate);
-          setCrewList(data.crewList as CrewMember[]);
-          setFlights(data.flights as FlightDetail[]);
-
-          toast({
-            title: "Saved",
-            description: "Crew changes updated successfully.",
-          });
-        }}
+        onOpenChange={closeCrewChangeDialog}
+        initialValues={{ crewName, airline, onBoardDate, crewList, flights }}
+        existingRecords={existingCrewRecords}
+        onSave={handleCrewChangeSave}
+        onDelete={handleCrewDelete} // <-- delete wired here
       />
 
       <ShipSparesDialog
         open={shipDialogOpen}
-        onOpenChange={(open) =>
-          open ? setShipDialogOpen(true) : closeShipSparesDialog()
-        }
+        onOpenChange={closeShipSparesDialog}
         serviceName={shipDialogPCS?.service_name}
-        // initialValues={...} // if you load existing values, pass them here
-        onSave={async (data: ShipSparesForm) => {
-          // 🔗 Save to your API here (example)
-          // const token = getTokenOrRedirect();
-          // if (!token) return;
-          // await fetch(`${API_BASE_URL}/ship-spares/${shipDialogPCS?.id}`, {
-          //   method: "POST",
-          //   headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          //   body: JSON.stringify({ ...data, job_id, pcs_id: shipDialogPCS?.id }),
-          // });
-
-          toast({
-            title: "Saved",
-            description: "Ship spares details saved successfully.",
-          });
-        }}
+        initialValues={shipInitial}
+        onSave={handleShipSparesSave}
+        onDelete={handleShipSpareDelete}
       />
     </div>
   );

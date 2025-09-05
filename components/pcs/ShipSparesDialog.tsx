@@ -25,7 +25,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Trash2 } from "lucide-react";
 
+/** ───────────────── schemas ───────────────── **/
 const itemSchema = z.object({
+  id: z.string().uuid().optional(), // <-- to support editing & deletion
   itemName: z.string().min(1, "Required"),
   awbNumber: z.string().min(1, "Required"),
   pcs: z.coerce.number().int().positive("Must be > 0"),
@@ -45,7 +47,10 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialValues?: Partial<ShipSparesForm>;
+  /** Save handler: parent will POST/PUT as needed */
   onSave: (data: ShipSparesForm) => Promise<void> | void;
+  /** Optional row delete handler: parent will DELETE /spares/:id */
+  onDelete?: (id: string) => Promise<boolean> | boolean;
   serviceName?: string;
 }
 
@@ -54,12 +59,14 @@ export default function ShipSparesDialog({
   onOpenChange,
   initialValues,
   onSave,
+  onDelete,
   serviceName,
 }: Props) {
   const {
     control,
     register,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ShipSparesForm>({
     resolver: zodResolver(formSchema),
@@ -73,7 +80,7 @@ export default function ShipSparesDialog({
     name: "items",
   });
 
-  // Optional UX: when opened with no rows, start with one empty row
+  // When dialog opens with no rows, start with one
   useEffect(() => {
     if (open && fields.length === 0) {
       append({
@@ -90,10 +97,7 @@ export default function ShipSparesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="w-[98vw] sm:max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl
-             max-h-[85vh] p-0 overflow-hidden rounded-2xl flex flex-col"
-      >
+      <DialogContent className="w-[98vw] sm:max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl max-h-[85vh] p-0 overflow-hidden rounded-2xl flex flex-col">
         {/* Header */}
         <div className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur px-6 py-4">
           <DialogHeader>
@@ -144,106 +148,124 @@ export default function ShipSparesDialog({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {fields.map((f, idx) => (
-                  <TableRow key={f.id} className="align-middle">
-                    <TableCell className="py-2">
-                      <Input
-                        placeholder="e.g. Fuel Pump"
-                        {...register(`items.${idx}.itemName` as const)}
-                        className="h-9"
-                      />
-                      {errors.items?.[idx]?.itemName && (
-                        <p className="text-[10px] text-destructive mt-1">
-                          {errors.items[idx]?.itemName?.message}
-                        </p>
-                      )}
-                    </TableCell>
+                {fields.map((f, idx) => {
+                  const hasId = !!(f as any).id;
+                  return (
+                    <TableRow key={f.id} className="align-middle">
+                      <TableCell className="py-2">
+                        <Input
+                          placeholder="e.g. Fuel Pump"
+                          {...register(`items.${idx}.itemName` as const)}
+                          className="h-9"
+                        />
+                        {errors.items?.[idx]?.itemName && (
+                          <p className="text-[10px] text-destructive mt-1">
+                            {errors.items[idx]?.itemName?.message}
+                          </p>
+                        )}
+                      </TableCell>
 
-                    <TableCell className="py-2">
-                      <Input
-                        placeholder="e.g. 176-12345678"
-                        {...register(`items.${idx}.awbNumber` as const)}
-                        className="h-9"
-                      />
-                      {errors.items?.[idx]?.awbNumber && (
-                        <p className="text-[10px] text-destructive mt-1">
-                          {errors.items[idx]?.awbNumber?.message}
-                        </p>
-                      )}
-                    </TableCell>
+                      <TableCell className="py-2">
+                        <Input
+                          placeholder="e.g. 176-12345678"
+                          {...register(`items.${idx}.awbNumber` as const)}
+                          className="h-9"
+                        />
+                        {errors.items?.[idx]?.awbNumber && (
+                          <p className="text-[10px] text-destructive mt-1">
+                            {errors.items[idx]?.awbNumber?.message}
+                          </p>
+                        )}
+                      </TableCell>
 
-                    <TableCell className="py-2">
-                      <Input
-                        type="number"
-                        inputMode="numeric"
-                        step={1}
-                        min={1}
-                        placeholder="1"
-                        {...register(`items.${idx}.pcs` as const, {
-                          valueAsNumber: true,
-                        })}
-                        className="h-9 text-center"
-                      />
-                      {errors.items?.[idx]?.pcs && (
-                        <p className="text-[10px] text-destructive mt-1">
-                          {errors.items[idx]?.pcs?.message}
-                        </p>
-                      )}
-                    </TableCell>
+                      <TableCell className="py-2">
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          step={1}
+                          min={1}
+                          placeholder="1"
+                          {...register(`items.${idx}.pcs` as const, {
+                            valueAsNumber: true,
+                          })}
+                          className="h-9 text-center"
+                        />
+                        {errors.items?.[idx]?.pcs && (
+                          <p className="text-[10px] text-destructive mt-1">
+                            {errors.items[idx]?.pcs?.message}
+                          </p>
+                        )}
+                      </TableCell>
 
-                    <TableCell className="py-2">
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        step="any"
-                        min={0}
-                        placeholder="45.5"
-                        {...register(`items.${idx}.weight` as const, {
-                          valueAsNumber: true,
-                        })}
-                        className="h-9 text-center"
-                      />
-                      {errors.items?.[idx]?.weight && (
-                        <p className="text-[10px] text-destructive mt-1">
-                          {errors.items[idx]?.weight?.message}
-                        </p>
-                      )}
-                    </TableCell>
+                      <TableCell className="py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          step="any"
+                          min={0}
+                          placeholder="45.5"
+                          {...register(`items.${idx}.weight` as const, {
+                            valueAsNumber: true,
+                          })}
+                          className="h-9 text-center"
+                        />
+                        {errors.items?.[idx]?.weight && (
+                          <p className="text-[10px] text-destructive mt-1">
+                            {errors.items[idx]?.weight?.message}
+                          </p>
+                        )}
+                      </TableCell>
 
-                    <TableCell className="py-2">
-                      <Input
-                        placeholder="e.g. QR 654"
-                        {...register(`items.${idx}.airlineFlight` as const)}
-                        className="h-9"
-                      />
-                      {errors.items?.[idx]?.airlineFlight && (
-                        <p className="text-[10px] text-destructive mt-1">
-                          {errors.items[idx]?.airlineFlight?.message}
-                        </p>
-                      )}
-                    </TableCell>
+                      <TableCell className="py-2">
+                        <Input
+                          placeholder="e.g. QR 654"
+                          {...register(`items.${idx}.airlineFlight` as const)}
+                          className="h-9"
+                        />
+                        {errors.items?.[idx]?.airlineFlight && (
+                          <p className="text-[10px] text-destructive mt-1">
+                            {errors.items[idx]?.airlineFlight?.message}
+                          </p>
+                        )}
+                      </TableCell>
 
-                    <TableCell className="py-2">
-                      <Input
-                        placeholder="Optional notes…"
-                        {...register(`items.${idx}.remarks` as const)}
-                        className="h-9"
-                      />
-                    </TableCell>
+                      <TableCell className="py-2">
+                        <Input
+                          placeholder="Optional notes…"
+                          {...register(`items.${idx}.remarks` as const)}
+                          className="h-9"
+                        />
+                      </TableCell>
 
-                    <TableCell className="py-2 text-right">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => remove(idx)}
-                        aria-label={`Remove item ${idx + 1}`}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      <TableCell className="py-2 text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={async () => {
+                            const row = getValues(`items.${idx}`);
+                            // If we have an API delete handler and an id, call it
+                            if (row?.id && onDelete) {
+                              const sure = window.confirm(
+                                "Delete this item? This cannot be undone."
+                              );
+                              if (!sure) return;
+                              const ok = await onDelete(row.id);
+                              if (ok) remove(idx);
+                            } else {
+                              // Local-only delete (unsaved row)
+                              remove(idx);
+                            }
+                          }}
+                          aria-label={`Remove item ${idx + 1}`}
+                          title="Remove item"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
 
                 {fields.length === 0 && (
                   <TableRow>
@@ -308,7 +330,19 @@ export default function ShipSparesDialog({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    onClick={() => remove(idx)}
+                    onClick={async () => {
+                      const row = getValues(`items.${idx}`);
+                      if (row?.id && onDelete) {
+                        const sure = window.confirm(
+                          "Delete this item? This cannot be undone."
+                        );
+                        if (!sure) return;
+                        const ok = await onDelete(row.id);
+                        if (ok) remove(idx);
+                      } else {
+                        remove(idx);
+                      }
+                    }}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
