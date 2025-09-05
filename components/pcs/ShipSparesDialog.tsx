@@ -77,7 +77,7 @@ export default function ShipSparesDialog({
           itemName: "",
           awbNumber: "",
           pcs: 1,
-          weight: 0.01, // must be positive
+          weight: 0.0, // must be positive
           airlineFlight: "",
           remarks: "",
         },
@@ -112,7 +112,7 @@ export default function ShipSparesDialog({
                 ? r.weight
                 : Number.isFinite(Number(r.weight))
                 ? Number(r.weight)
-                : 0.01,
+                : 0.0,
             airlineFlight: r.airlineFlight ?? "",
             remarks: r.remarks ?? "",
           }))
@@ -121,7 +121,7 @@ export default function ShipSparesDialog({
               itemName: "",
               awbNumber: "",
               pcs: 1,
-              weight: 0.01,
+              weight: 0.0,
               airlineFlight: "",
               remarks: "",
             },
@@ -180,7 +180,7 @@ export default function ShipSparesDialog({
                     itemName: "",
                     awbNumber: "",
                     pcs: 1,
-                    weight: 0.01,
+                    weight: 0.0,
                     airlineFlight: "",
                     remarks: "",
                   })
@@ -198,7 +198,7 @@ export default function ShipSparesDialog({
                     <TableHead className="w-[220px]">Item Name</TableHead>
                     <TableHead className="w-[180px]">AWB Number</TableHead>
                     <TableHead className="w-[110px]">No. of Pcs</TableHead>
-                    <TableHead className="w-[120px]">Weight</TableHead>
+                    <TableHead className="w-[120px]">Weight (kg)</TableHead>
                     <TableHead className="w-[180px]">
                       Arrival Airline/Flight
                     </TableHead>
@@ -306,7 +306,7 @@ export default function ShipSparesDialog({
                                 type="number"
                                 inputMode="decimal"
                                 step="any"
-                                min={0.01}
+                                min={0.0}
                                 placeholder="45.5"
                                 value={
                                   field.value === undefined
@@ -473,7 +473,7 @@ export default function ShipSparesDialog({
                             type="number"
                             inputMode="decimal"
                             step="any"
-                            min={0.01}
+                            min={0.0}
                             placeholder="Weight"
                             value={
                               field.value === undefined

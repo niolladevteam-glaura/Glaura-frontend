@@ -457,7 +457,7 @@ export default function CrewChangesDialog({
               </div>
 
               <div className="col-span-12 md:col-span-4">
-                <Label>On Board Date</Label>
+                <Label>Sign On/Off Date</Label>
                 <Controller
                   control={control}
                   name="onBoardDate"
