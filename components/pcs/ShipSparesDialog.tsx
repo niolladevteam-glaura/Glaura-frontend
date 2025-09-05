@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Trash2 } from "lucide-react";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 /* ───────────── schemas ───────────── */
 const itemSchema = z.object({
@@ -90,6 +91,11 @@ export default function ShipSparesDialog({
     name: "items",
   });
 
+  // row delete confirmation state
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [deletingRow, setDeletingRow] = React.useState(false);
+  const [pendingIndex, setPendingIndex] = React.useState<number | null>(null);
+
   // Reset form when dialog opens / initial values change
   useEffect(() => {
     if (!open) return;
@@ -136,16 +142,43 @@ export default function ShipSparesDialog({
     onOpenChange(false);
   };
 
-  const removeRow = async (idx: number) => {
-    const row = getValues(`items.${idx}` as Path<ShipSparesForm>);
-    if ((row as any)?.id && onDelete) {
-      const sure = window.confirm("Delete this item? This cannot be undone.");
-      if (!sure) return;
-      const ok = await onDelete((row as any).id);
-      if (!ok) return;
-    }
-    remove(idx);
+  const requestRowDelete = (idx: number) => {
+    setPendingIndex(idx);
+    setConfirmOpen(true);
   };
+
+  const confirmRowDelete = async () => {
+    if (pendingIndex == null) return;
+
+    const row = getValues(`items.${pendingIndex}` as Path<ShipSparesForm>);
+    const id = (row as any)?.id as string | undefined;
+    const itemName = (row as any)?.itemName as string | undefined;
+
+    // If this row exists in backend (has id) and onDelete is provided, call it
+    if (id && onDelete) {
+      try {
+        setDeletingRow(true);
+        const ok = await onDelete(id);
+        if (!ok) return; // keep dialog open so user can retry/cancel
+      } finally {
+        setDeletingRow(false);
+      }
+    }
+
+    // Remove the row locally
+    remove(pendingIndex);
+
+    // close dialog + reset state
+    setConfirmOpen(false);
+    setPendingIndex(null);
+  };
+
+  const pendingItemName =
+    pendingIndex != null
+      ? (getValues(
+          `items.${pendingIndex}.itemName` as Path<ShipSparesForm>
+        ) as unknown as string) || ""
+      : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -380,7 +413,7 @@ export default function ShipSparesDialog({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => removeRow(idx)}
+                            onClick={() => requestRowDelete(idx)}
                             aria-label={`Remove item ${idx + 1}`}
                             title="Remove item"
                           >
@@ -526,7 +559,7 @@ export default function ShipSparesDialog({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        onClick={() => removeRow(idx)}
+                        onClick={() => requestRowDelete(idx)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -591,6 +624,33 @@ export default function ShipSparesDialog({
           </div>
         </form>
       </DialogContent>
+
+      {/* Row Delete Confirm Dialog */}
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={(o) => {
+          setConfirmOpen(o);
+          if (!o) setPendingIndex(null);
+        }}
+        title="Delete item?"
+        description={
+          <span>
+            {pendingItemName ? (
+              <>
+                Delete <span className="font-semibold">{pendingItemName}</span>?
+              </>
+            ) : (
+              "Delete this item?"
+            )}{" "}
+            This action cannot be undone.
+          </span>
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        destructive
+        loading={deletingRow}
+        onConfirm={confirmRowDelete}
+      />
     </Dialog>
   );
 }

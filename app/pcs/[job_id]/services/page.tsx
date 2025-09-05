@@ -50,6 +50,7 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "@/components/ui/use-toast";
 import dynamic from "next/dynamic";
+import ConfirmDialog from "@/components/ui/confirm-dialog"; // <<— NEW
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -146,8 +147,12 @@ export default function PortCallServicesPage() {
   const [searchService, setSearchService] = useState("");
   const [searchVendor, setSearchVendor] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // map: serviceId -> deleting flag (so we can show spinner on the exact row)
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // ——— New generic confirm state for deleting a service
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<PCS | null>(null);
 
   const [crewDialogOpen, setCrewDialogOpen] = useState(false);
@@ -616,11 +621,13 @@ export default function PortCallServicesPage() {
     }
   };
 
+  // Open confirm dialog
   const openDeleteDialog = (service: PCS) => {
     setServiceToDelete(service);
-    setDeleteDialogOpen(true);
+    setConfirmDeleteOpen(true);
   };
 
+  // Do the deletion (called by confirm dialog)
   const handleDeleteService = async () => {
     if (!serviceToDelete) return;
     const token = getTokenOrRedirect();
@@ -639,9 +646,11 @@ export default function PortCallServicesPage() {
         }
       );
       if (!response.ok) throw new Error("Failed to delete service");
+
       setPCSList((list) => list.filter((svc) => svc.id !== serviceToDelete.id));
       toast({ title: "Success", description: "Service deleted successfully" });
-      setDeleteDialogOpen(false);
+      setConfirmDeleteOpen(false);
+      setServiceToDelete(null);
     } catch {
       toast({
         title: "Error",
@@ -649,7 +658,10 @@ export default function PortCallServicesPage() {
         variant: "destructive",
       });
     } finally {
-      setDeleting((prev) => ({ ...prev, [serviceToDelete.id]: false }));
+      setDeleting((prev) => ({
+        ...prev,
+        [serviceToDelete?.id || ""]: false,
+      }));
     }
   };
 
@@ -822,7 +834,7 @@ export default function PortCallServicesPage() {
     }
   };
 
-  // DELETE a crew record
+  // DELETE a crew record (the confirm should now be inside CrewChangesDialog using the same ConfirmDialog)
   const handleCrewDelete = async (id: string): Promise<boolean> => {
     const token = getTokenOrRedirect();
     if (!token) return false;
@@ -878,7 +890,6 @@ export default function PortCallServicesPage() {
   const completedServices = pcsList.filter((pcs) => pcs.status).length;
   const totalServices = pcsList.length;
 
-  // EARLY RETURN while currentUser is null (prevents crash)
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1074,7 +1085,7 @@ export default function PortCallServicesPage() {
         </Card>
       </div>
 
-      {/* Add Service Dialog */}
+      {/* Add Service Dialog (unchanged) */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
           <DialogHeader>
@@ -1165,52 +1176,33 @@ export default function PortCallServicesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onOpenChange={(open) => {
-          setDeleteDialogOpen(open);
-          if (!open) setServiceToDelete(null);
+      {/* Reusable Confirm for delete (replaces window.confirm & ad-hoc dialog) */}
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={(o) => {
+          setConfirmDeleteOpen(o);
+          if (!o) setServiceToDelete(null);
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Service</DialogTitle>
-            <DialogDescription>
-              {serviceToDelete ? (
-                <>
-                  Are you sure you want to delete{" "}
-                  <span className="font-semibold text-destructive">
-                    {serviceToDelete.service_name}
-                  </span>
-                  ? This action cannot be undone.
-                </>
-              ) : (
-                <span className="text-destructive">No service selected</span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteService}
-              disabled={deleting[serviceToDelete?.id || ""]}
-            >
-              {deleting[serviceToDelete?.id || ""] ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title="Delete Service"
+        description={
+          serviceToDelete ? (
+            <>
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-destructive">
+                {serviceToDelete.service_name}
+              </span>
+              ? This action cannot be undone.
+            </>
+          ) : (
+            "No service selected."
+          )
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        destructive
+        loading={!!deleting[serviceToDelete?.id || ""]}
+        onConfirm={handleDeleteService}
+      />
 
       {/* Crew Changes Dialog */}
       <CrewChangesDialog
@@ -1219,9 +1211,10 @@ export default function PortCallServicesPage() {
         initialValues={{ crewName, airline, onBoardDate, crewList, flights }}
         existingRecords={existingCrewRecords}
         onSave={handleCrewChangeSave}
-        onDelete={handleCrewDelete} // <-- delete wired here
+        onDelete={handleCrewDelete}
       />
 
+      {/* Ship Spares Dialog */}
       <ShipSparesDialog
         open={shipDialogOpen}
         onOpenChange={closeShipSparesDialog}

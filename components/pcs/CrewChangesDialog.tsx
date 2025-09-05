@@ -45,6 +45,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 /* ---------------- Schema ---------------- */
 
@@ -306,6 +307,9 @@ export default function CrewChangesDialog({
 
   const isMdUp = useIsMdUp();
   const [selectedId, setSelectedId] = React.useState<string>("new");
+
+  // delete dialog state
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   React.useEffect(() => {
@@ -362,6 +366,11 @@ export default function CrewChangesDialog({
     const ok = await onSave(payload, { id: selectedId ?? undefined });
     if (ok) onOpenChange(false);
   };
+
+  const selectedRec = React.useMemo(
+    () => existingRecords.find((r) => r.id === selectedId),
+    [existingRecords, selectedId]
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -882,37 +891,63 @@ export default function CrewChangesDialog({
 
           {/* Footer */}
           <div className="border-t bg-background px-6 py-4 flex items-center justify-end gap-2">
-            {/* Show Delete only when editing an existing record */}
+            {/* Delete (with ConfirmDialog) when editing an existing record */}
             {onDelete && selectedId !== "new" && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={async () => {
-                  if (!selectedId || selectedId === "new") return;
-                  const sure = window.confirm(
-                    "Delete this crew change record? This cannot be undone."
-                  );
-                  if (!sure) return;
+              <>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setDeleteOpen(true)}
+                  disabled={isDeleting || isSubmitting}
+                >
+                  Delete
+                </Button>
 
-                  try {
-                    setIsDeleting(true);
-                    const ok = await onDelete(selectedId);
-                    if (ok) onOpenChange(false);
-                  } finally {
-                    setIsDeleting(false);
+                <ConfirmDialog
+                  open={deleteOpen}
+                  onOpenChange={(o) => {
+                    setDeleteOpen(o);
+                  }}
+                  title="Delete crew change record?"
+                  description={
+                    <span>
+                      This will permanently delete{" "}
+                      <span className="font-semibold">
+                        {selectedRec?.crewName || "this record"}
+                      </span>
+                      {selectedRec?.onBoardDate
+                        ? ` • ${toDisplay(selectedRec.onBoardDate)}`
+                        : ""}
+                      . This action cannot be undone.
+                    </span>
                   }
-                }}
-                disabled={isDeleting || isSubmitting}
-              >
-                {isDeleting ? "Deleting…" : "Delete"}
-              </Button>
+                  confirmText="Delete"
+                  cancelText="Cancel"
+                  destructive
+                  loading={isDeleting}
+                  onConfirm={async () => {
+                    if (!onDelete || !selectedId || selectedId === "new")
+                      return;
+                    try {
+                      setIsDeleting(true);
+                      const ok = await onDelete(selectedId);
+                      if (ok) {
+                        setDeleteOpen(false);
+                        onOpenChange(false);
+                      }
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  }}
+                />
+              </>
             )}
 
             <Button
               variant="outline"
               type="button"
               onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isDeleting}
             >
               Cancel
             </Button>
