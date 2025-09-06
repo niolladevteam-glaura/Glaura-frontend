@@ -20,17 +20,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Plus, Trash2, Anchor, LogOut, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Anchor } from "lucide-react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type Vessel = {
   id: string;
   vessel_name: string;
-  // ...other fields
+};
+
+type CrewChangeService = {
+  Crw_Chg_Serv_id: string;
+  VesselName: string;
+  crewName: string;
+  onBoardDate: string;
+  airline: string;
+  crewList: {
+    id: string;
+    personName: string;
+    nationality: string;
+    eTicketNo: string;
+    passportNumber: string;
+    rank: string;
+  }[];
+  crewFlights: {
+    flight_id: string;
+    flightName: string;
+    flightNumber: string;
+    depatureDate: string;
+    depatureTime: string;
+    arriveDate: string;
+    arriveTime: string;
+    destination: string;
+  }[];
 };
 
 type Crew = {
@@ -46,6 +70,8 @@ type Flight = {
   flight_name: string;
   flight_date: string;
   flight_time: string;
+  arrive_date?: string;
+  arrive_time?: string;
   flight_from: string;
   flight_to: string;
 };
@@ -53,6 +79,7 @@ type Flight = {
 export default function OKTBPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
+
   // Form state
   const [date, setDate] = useState<string>(
     new Date().toISOString().slice(0, 10)
@@ -60,9 +87,11 @@ export default function OKTBPage() {
   const [principle, setPrinciple] = useState<string>("");
   const [vessel, setVessel] = useState<string>("");
   const [vessels, setVessels] = useState<Vessel[]>([]);
+  const [crewServices, setCrewServices] = useState<CrewChangeService[]>([]);
+  const [selectedCrewServiceID, setSelectedCrewServiceID] =
+    useState<string>("");
   const [airline, setAirline] = useState<string>("");
   const [onBoardDate, setOnBoardDate] = useState<string>("");
-  const [isMoreThanOne, setIsMoreThanOne] = useState<boolean>(false);
   const [bookingReference, setBookingReference] = useState<string>("");
   const [airLinePNR, setAirLinePNR] = useState<string>("");
   const [crew, setCrew] = useState<Crew[]>([
@@ -86,7 +115,6 @@ export default function OKTBPage() {
   useEffect(() => {
     const fetchVessels = async () => {
       const token = localStorage.getItem("token");
-      //console.log("Token:", token);
       try {
         const res = await fetch(`${API_BASE_URL}/vessel`, {
           method: "GET",
@@ -95,9 +123,7 @@ export default function OKTBPage() {
             Authorization: `Bearer ${token}`,
           },
         });
-        //console.log("Status:", res.status);
         const data = await res.json();
-        //console.log("Data:", data);
         if (data.success && Array.isArray(data.data)) {
           setVessels(data.data);
         } else {
@@ -105,7 +131,6 @@ export default function OKTBPage() {
         }
         if (res.status === 401) setError("Unauthorized. Please login again.");
       } catch (e) {
-        //console.log("Fetch error:", e);
         setVessels([]);
         setError("Failed to fetch vessels.");
       }
@@ -123,7 +148,117 @@ export default function OKTBPage() {
     setCurrentUser(JSON.parse(userData));
   }, [router]);
 
-  // Handlers for dynamic crew
+  // When vessel changes, fetch crew services
+  useEffect(() => {
+    if (!vessel) {
+      setCrewServices([]);
+      setSelectedCrewServiceID("");
+      setCrew([
+        {
+          name: "",
+          natinality: "",
+          rank: "",
+          passport_number: "",
+          eTicketNo: "",
+        },
+      ]);
+      setFlights([
+        {
+          flight_number: "",
+          flight_name: "",
+          flight_date: "",
+          flight_time: "",
+          flight_from: "",
+          flight_to: "",
+        },
+      ]);
+      setAirline("");
+      setOnBoardDate("");
+      return;
+    }
+    const fetchCrewServices = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/crew/vessel/${encodeURIComponent(vessel)}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setCrewServices(data.data);
+        } else {
+          setCrewServices([]);
+        }
+      } catch (e) {
+        setCrewServices([]);
+      }
+    };
+    fetchCrewServices();
+  }, [vessel]);
+
+  // When crew change service changes, autofill crew/flights
+  useEffect(() => {
+    if (!selectedCrewServiceID) return;
+    const selectedService = crewServices.find(
+      (s) => s.Crw_Chg_Serv_id === selectedCrewServiceID
+    );
+    if (!selectedService) return;
+
+    setAirline(selectedService.airline || "");
+    setOnBoardDate(selectedService.onBoardDate || "");
+
+    // Crew autofill
+    setCrew(
+      selectedService.crewList.length > 0
+        ? selectedService.crewList.map((c) => ({
+            name: c.personName,
+            natinality: c.nationality,
+            rank: c.rank,
+            passport_number: c.passportNumber,
+            eTicketNo: c.eTicketNo,
+          }))
+        : [
+            {
+              name: "",
+              natinality: "",
+              rank: "",
+              passport_number: "",
+              eTicketNo: "",
+            },
+          ]
+    );
+
+    // Flights autofill
+    setFlights(
+      selectedService.crewFlights.length > 0
+        ? selectedService.crewFlights.map((f) => ({
+            flight_number: f.flightNumber,
+            flight_name: f.flightName,
+            flight_date: f.depatureDate,
+            flight_time: f.depatureTime,
+            flight_from: f.destination.split(" - ")[0] || "",
+            flight_to: f.destination.split(" - ")[1] || "",
+          }))
+        : [
+            {
+              flight_number: "",
+              flight_name: "",
+              flight_date: "",
+              flight_time: "",
+              flight_from: "",
+              flight_to: "",
+            },
+          ]
+    );
+  }, [selectedCrewServiceID, crewServices]);
+
+  // Crew dynamic handlers
   const handleCrewChange = (
     index: number,
     field: keyof Crew,
@@ -149,7 +284,7 @@ export default function OKTBPage() {
       prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
     );
 
-  // Handlers for dynamic flights
+  // Flights dynamic handlers
   const handleFlightChange = (
     index: number,
     field: keyof Flight,
@@ -201,7 +336,6 @@ export default function OKTBPage() {
           vessel,
           airline,
           onBoardDate,
-          isMoreThanOne,
           bookingReference,
           airLinePNR,
           crew,
@@ -220,15 +354,8 @@ export default function OKTBPage() {
 
       // --- PDF handling here ---
       const blob = await res.blob();
-      // Option 1: Open in new tab
       const blobUrl = window.URL.createObjectURL(blob);
       window.open(blobUrl, "_blank");
-      // Optionally, you can trigger a download instead:
-      // const link = document.createElement("a");
-      // link.href = blobUrl;
-      // link.download = "OKTB.pdf";
-      // link.click();
-
       setSuccess(
         "OKTB Document generated successfully! PDF should open/download automatically."
       );
@@ -236,11 +363,6 @@ export default function OKTBPage() {
       setError(err.message || "An error occurred");
     }
     setLoading(false);
-  };
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("token");
-    router.push("/");
   };
 
   if (!currentUser) {
@@ -335,6 +457,32 @@ export default function OKTBPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {crewServices.length > 0 && (
+                  <div>
+                    <label className="block mb-1 text-sm font-medium">
+                      Crew Change Name
+                    </label>
+                    <Select
+                      value={selectedCrewServiceID}
+                      onValueChange={setSelectedCrewServiceID}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select crew change name" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {crewServices.map((cs) => (
+                          <SelectItem
+                            key={cs.Crw_Chg_Serv_id}
+                            value={cs.Crw_Chg_Serv_id}
+                          >
+                            {cs.crewName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div>
                   <label className="block mb-1 text-sm font-medium">
                     Airline
@@ -355,18 +503,6 @@ export default function OKTBPage() {
                     onChange={(e) => setOnBoardDate(e.target.value)}
                     required
                   />
-                </div>
-                <div className="flex items-center space-x-2 mt-6">
-                  <Checkbox
-                    checked={isMoreThanOne}
-                    onCheckedChange={(checked) =>
-                      setIsMoreThanOne(Boolean(checked))
-                    }
-                    id="isMoreThanOne"
-                  />
-                  <label htmlFor="isMoreThanOne" className="text-sm">
-                    More Than One Crew
-                  </label>
                 </div>
                 <div>
                   <label className="block mb-1 text-sm font-medium">
@@ -403,10 +539,17 @@ export default function OKTBPage() {
                     <Plus className="w-4 h-4 mr-1" /> Add Crew
                   </Button>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2 font-semibold">
+                  <span>Name</span>
+                  <span>Nationality</span>
+                  <span>Rank</span>
+                  <span>Passport No.</span>
+                  <span>eTicket No.</span>
+                </div>
                 {crew.map((c, i) => (
                   <div
                     key={i}
-                    className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2 items-end"
+                    className="grid grid-cols-1 md:grid-cols-6 gap-2 mb-2 items-end"
                   >
                     <Input
                       placeholder="Name"
@@ -464,7 +607,7 @@ export default function OKTBPage() {
               {/* Flights Section */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">Flight(s)</span>
+                  <span className="font-medium">Flights</span>
                   <Button
                     type="button"
                     size="sm"
@@ -474,10 +617,20 @@ export default function OKTBPage() {
                     <Plus className="w-4 h-4 mr-1" /> Add Flight
                   </Button>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-7 gap-2 mb-2 font-semibold">
+                  <span>Number</span>
+                  <span>Name</span>
+                  <span>Dep. Date</span>
+                  <span>Dep. Time</span>
+                  <span>Arr. Date</span>
+                  <span>Arr. Time</span>
+                  <span>From</span>
+                  <span>To</span>
+                </div>
                 {flights.map((f, i) => (
                   <div
                     key={i}
-                    className="grid grid-cols-1 md:grid-cols-7 gap-2 mb-2 items-end"
+                    className="grid grid-cols-1 md:grid-cols-9 gap-2 mb-2 items-end"
                   >
                     <Input
                       placeholder="Flight Number"
@@ -497,7 +650,7 @@ export default function OKTBPage() {
                     />
                     <Input
                       type="date"
-                      placeholder="Flight Date"
+                      placeholder="Dep. Date"
                       value={f.flight_date}
                       onChange={(e) =>
                         handleFlightChange(i, "flight_date", e.target.value)
@@ -506,12 +659,28 @@ export default function OKTBPage() {
                     />
                     <Input
                       type="time"
-                      placeholder="Flight Time"
+                      placeholder="Dep. Time"
                       value={f.flight_time}
                       onChange={(e) =>
                         handleFlightChange(i, "flight_time", e.target.value)
                       }
                       required
+                    />
+                    <Input
+                      type="date"
+                      placeholder="Arr. Date"
+                      value={f.arrive_date || ""}
+                      onChange={(e) =>
+                        handleFlightChange(i, "arrive_date", e.target.value)
+                      }
+                    />
+                    <Input
+                      type="time"
+                      placeholder="Arr. Time"
+                      value={f.arrive_time || ""}
+                      onChange={(e) =>
+                        handleFlightChange(i, "arrive_time", e.target.value)
+                      }
                     />
                     <Input
                       placeholder="From"

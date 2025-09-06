@@ -38,6 +38,7 @@ import {
   MessageSquareQuote,
   ListTodo,
   Mails,
+  ListChecks,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -315,6 +316,7 @@ export default function Dashboard() {
       ? [{ href: "/port-calls/new", icon: Plus, label: "New Port Call" }]
       : []),
     { href: "/port-calls", icon: Ship, label: "Active Port Calls" },
+    { href: "/all-services", icon: ListChecks, label: "Active Services" },
     { href: "/emails", icon: Mails, label: "Emails" },
     { href: "/customers", icon: Building2, label: "Customer Companies" },
     { href: "/vendors", icon: Handshake, label: "Vendor Management" },
