@@ -128,6 +128,8 @@ export default function DocumentManagement() {
   const [oktbDocs, setOKTBDocs] = useState<Document[]>([]);
   const [signOnDocs, setSignOnDocs] = useState<Document[]>([]);
   const [pdaDocs, setPDADocs] = useState<Document[]>([]);
+  const [workDoneDocs, setWorkDoneDocs] = useState<Document[]>([]);
+  const [deliveryNoteDocs, setDeliveryNoteDocs] = useState<Document[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedTab, setSelectedTab] = useState("documents");
@@ -166,6 +168,23 @@ export default function DocumentManagement() {
       color: "bg-yellow-100 dark:bg-yellow-900",
       iconColor: "text-yellow-600 dark:text-yellow-400",
       route: "/documents/pda",
+    },
+    {
+      label: "Work Done",
+      cardLabel: "Work Done Certificate",
+      description:
+        "Generate Work Done Certificate for vessel and crew changes.",
+      color: "bg-purple-100 dark:bg-purple-900",
+      iconColor: "text-purple-700 dark:text-purple-400",
+      route: "/documents/work-done",
+    },
+    {
+      label: "Delivery Note",
+      cardLabel: "Delivery Note",
+      description: "Generate Delivery Note for vessel supply deliveries.",
+      color: "bg-pink-100 dark:bg-pink-900",
+      iconColor: "text-pink-700 dark:text-pink-400",
+      route: "/documents/delivery-note",
     },
   ];
 
@@ -232,10 +251,50 @@ export default function DocumentManagement() {
           raw: d,
         }));
         setPDADocs(pdaDocs);
+
+        // Work Done
+        const workDoneJson = await apiCall(`${API_URL}/documents/work-done`);
+        const workDoneDocs: Document[] = (workDoneJson.data || []).map(
+          (d: any) => ({
+            id: d.id,
+            name: "Work Done Certificate",
+            type: "Work Done",
+            category: "Work Done",
+            vesselName: d.vesselName,
+            principle: d.approvedBy,
+            generatedAt: d.createdAt,
+            status: "Generated",
+            format: "PDF",
+            raw: d,
+          })
+        );
+        setWorkDoneDocs(workDoneDocs);
+
+        // Delivery Note
+        const deliveryNoteJson = await apiCall(
+          `${API_URL}/documents/delivery-note`
+        );
+        const deliveryNoteDocs: Document[] = (deliveryNoteJson.data || []).map(
+          (d: any) => ({
+            id: String(d.id),
+            name: "Delivery Note",
+            type: "Delivery Note",
+            category: "Delivery Note",
+            vesselName: d.vesselName,
+            principle: d.masterSignature,
+            generatedAt: d.dateOfSupply || d.createdAt || "",
+            status: "Generated",
+            format: "PDF",
+            raw: d,
+          })
+        );
+        setDeliveryNoteDocs(deliveryNoteDocs);
       } catch (err) {
         setOKTBDocs([]);
         setSignOnDocs([]);
         setPDADocs([]);
+        setWorkDoneDocs([]);
+        setDeliveryNoteDocs([]);
       }
     };
 
@@ -266,6 +325,8 @@ export default function DocumentManagement() {
     if (type === "OKTB") return filterDocuments(oktbDocs);
     if (type === "Crew Sign On") return filterDocuments(signOnDocs);
     if (type === "PDA") return filterDocuments(pdaDocs);
+    if (type === "Work Done") return filterDocuments(workDoneDocs);
+    if (type === "Delivery Note") return filterDocuments(deliveryNoteDocs);
     return [];
   };
 
@@ -297,6 +358,10 @@ export default function DocumentManagement() {
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
       case "PDA":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+      case "Work Done":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
+      case "Delivery Note":
+        return "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
@@ -334,6 +399,11 @@ export default function DocumentManagement() {
       url = `${API_URL}/documents/signon/${document.id}/pdf`;
     } else if (document.category === "PDA") {
       url = `${API_URL}/documents/pda/${document.id}/pdf`;
+    } else if (document.category === "Work Done") {
+      url = `${API_URL}/documents/work-done/${document.id}/pdf`;
+    } else if (document.category === "Delivery Note") {
+      // NOTE: Delivery Note API returns PDF at GET /api/documents/delivery-note/:id
+      url = `${API_URL}/documents/delivery-note/${document.id}`;
     }
     if (url) {
       openDocumentWithToken(url);
@@ -355,6 +425,10 @@ export default function DocumentManagement() {
       endpoint = `${API_URL}/documents/signon/${deleteTarget.id}`;
     } else if (deleteTarget.category === "PDA") {
       endpoint = `${API_URL}/documents/pda/${deleteTarget.id}`;
+    } else if (deleteTarget.category === "Work Done") {
+      endpoint = `${API_URL}/documents/work-done/${deleteTarget.id}`;
+    } else if (deleteTarget.category === "Delivery Note") {
+      endpoint = `${API_URL}/documents/delivery-note/${deleteTarget.id}`;
     }
     try {
       await apiCall(endpoint, { method: "DELETE" });
@@ -364,6 +438,12 @@ export default function DocumentManagement() {
         setSignOnDocs((prev) => prev.filter((d) => d.id !== deleteTarget.id));
       } else if (deleteTarget.category === "PDA") {
         setPDADocs((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+      } else if (deleteTarget.category === "Work Done") {
+        setWorkDoneDocs((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+      } else if (deleteTarget.category === "Delivery Note") {
+        setDeliveryNoteDocs((prev) =>
+          prev.filter((d) => d.id !== deleteTarget.id)
+        );
       }
     } catch (e) {
       // Optionally show error toast
@@ -448,7 +528,7 @@ export default function DocumentManagement() {
                     Generate Document
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
                   {docTypes.map((doc) => (
                     <Card
                       key={doc.label}

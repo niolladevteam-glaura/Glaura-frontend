@@ -20,9 +20,11 @@ const documentOptions = [
   { label: "OKTB Documents", path: "/documents/oktb" },
   { label: "Crew Sign On Documents", path: "/documents/crew-signon" },
   { label: "Port Disbursement Account", path: "/documents/pda" },
-  { label: "Customs Letters", path: "/documents/customs" },
-  { label: "FDA Applications", path: "/documents/fda" },
-  { label: "TW Applications", path: "/documents/tw-applications" },
+  { label: "Work Done Certificate", path: "/documents/work-done" },
+  { label: "Delivery Note", path: "/documents/delivery-note" },
+  //{ label: "Customs Letters", path: "/documents/customs" },
+  //{ label: "FDA Applications", path: "/documents/fda" },
+  //{ label: "TW Applications", path: "/documents/tw-applications" },
 ];
 
 export function DocumentTypeModal({ open, onClose }: Props) {
