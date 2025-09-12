@@ -329,7 +329,7 @@ export default function Dashboard() {
     { href: "/pic-management", icon: UserCog, label: "PIC Management" },
     { href: "/tasks", icon: ListTodo, label: "Task Management" },
     { href: "/feedback", icon: MessageSquareQuote, label: "Feedback" },
-    { href: "/glChat", icon: MessageCircle, label: "GL Chat" },
+    //{ href: "/glChat", icon: MessageCircle, label: "GL Chat" },
   ];
 
   const WelcomeCard = ({ user }: { user: UserType }) => (

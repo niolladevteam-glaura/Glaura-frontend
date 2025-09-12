@@ -50,7 +50,7 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "@/components/ui/use-toast";
 import dynamic from "next/dynamic";
-import ConfirmDialog from "@/components/ui/confirm-dialog"; // <<— NEW
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -453,9 +453,12 @@ export default function PortCallServicesPage() {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && Array.isArray(data.data) && data.data.length) {
-          setPortCall(data.data[0]);
-        }
+        // Ensure you select the port call with job_id === params.job_id
+        const correctPortCall = Array.isArray(data.data)
+          ? data.data.find((pc: PortCall) => pc.job_id === job_id)
+          : null;
+        if (correctPortCall) setPortCall(correctPortCall);
+        else setPortCall(null);
       })
       .catch(() => setPortCall(null));
   }, [job_id]);
@@ -665,9 +668,9 @@ export default function PortCallServicesPage() {
     }
   };
 
+  // Crew Change Service logic: always send job_id for GET and POST/PUT
   const openCrewChangeDialog = async (pcs: PCS) => {
     setCrewDialogPCS(pcs);
-
     setCrewName("");
     setAirline("");
     setOnBoardDate("");
@@ -676,13 +679,14 @@ export default function PortCallServicesPage() {
     setExistingCrewRecords([]);
 
     const token = getTokenOrRedirect();
-    if (!token || !portCall) {
+    if (!token || !portCall || !job_id) {
       setCrewDialogOpen(true);
       return;
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/crew`, {
+      const res = await fetch(`${API_BASE_URL}/crew?job_id=${job_id}`, {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -691,13 +695,9 @@ export default function PortCallServicesPage() {
       const json = await res.json();
 
       if (json?.success && Array.isArray(json?.data)) {
+        // Redundant, but safe: only records for the current job_id
         const matches = json.data
-          .filter(
-            (c: any) =>
-              c?.VesselName === portCall.vessel_name &&
-              c?.imo === portCall.vessel_imo &&
-              c?.port === portCall.port
-          )
+          .filter((c: any) => c.job_id === job_id)
           .map((c: any) => ({
             id: c.Crw_Chg_Serv_id || c.id,
             crewName: c.crewName,
@@ -707,14 +707,7 @@ export default function PortCallServicesPage() {
             crewList: c.crewList,
             crewFlights: c.crewFlights,
             createdAt: c.createdAt,
-          })) as ExistingCrewRecord[];
-
-        matches.sort(
-          (a, b) =>
-            new Date(b.createdAt || 0).getTime() -
-            new Date(a.createdAt || 0).getTime()
-        );
-
+          }));
         setExistingCrewRecords(matches);
       }
     } catch {
@@ -745,6 +738,7 @@ export default function PortCallServicesPage() {
       imo: portCall?.vessel_imo || "",
       port: portCall?.port || "",
       crewName: data.crewName,
+      job_id,
       onBoardDate: data.onBoardDate,
       airline: data.airline,
       type: data.type === "on" ? "signon" : "signoff",
@@ -766,6 +760,9 @@ export default function PortCallServicesPage() {
       })),
     };
 
+    console.log("body:", body);
+    console.log("Crew Change API will use portCall:", portCall);
+
     try {
       const doingEdit = !!(meta.id && meta.id !== "new");
       const id = doingEdit ? String(meta.id).trim() : "";
@@ -783,21 +780,6 @@ export default function PortCallServicesPage() {
         },
         body: JSON.stringify(body),
       });
-
-      // fallback to plural endpoints if server uses /crews
-      if (resp.status === 404 || resp.status === 405) {
-        url = doingEdit
-          ? `${API_BASE_URL}/crews/${id}`
-          : `${API_BASE_URL}/crews`;
-        resp = await fetch(url, {
-          method,
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(body),
-        });
-      }
 
       const respData = await resp.json().catch(() => ({} as any));
 
@@ -853,15 +835,6 @@ export default function PortCallServicesPage() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      // fallback to plural
-      if (resp.status === 404 || resp.status === 405) {
-        url = `${API_BASE_URL}/crews/${id}`;
-        resp = await fetch(url, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
 
       const json = await resp.json().catch(() => ({} as any));
       if (!resp.ok || json?.success === false) {

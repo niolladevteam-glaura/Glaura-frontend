@@ -35,6 +35,24 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+// Utility functions for date/time formatting
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "-";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
+function formatTime(dateString: string): string {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "-";
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
 interface ServiceHeader {
   header_id: string;
   header_name: string;
@@ -52,7 +70,7 @@ interface PortCall {
   etd?: string;
   port: string;
   assigned_pic: string;
-  priority: "High" | "Medium" | "Low";
+  priority: "High" | "Medium" | "Low" | "high" | "medium" | "low";
   created: string;
   updatedAt: string;
 }
@@ -192,7 +210,7 @@ export default function ActivePortCalls() {
           case "completed":
             return status === "Completed";
           case "urgent":
-            return pc.priority === "High";
+            return pc.priority === "High" || pc.priority === "high";
           default:
             return true;
         }
@@ -288,15 +306,23 @@ export default function ActivePortCalls() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "High":
+      case "high":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
       case "Medium":
+      case "medium":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
       case "Low":
+      case "low":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
   };
+
+  // --- SORT BY RECENTLY UPDATED ---
+  const sortedPortCalls = [...filteredPortCalls].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
 
   if (!currentUser) {
     return (
@@ -473,7 +499,12 @@ export default function ActivePortCalls() {
                     className="flex-1 min-w-[120px] text-center px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition sm:min-w-[150px] sm:flex-none"
                   >
                     Urgent (
-                    {portCalls.filter((pc) => pc.priority === "High").length})
+                    {
+                      portCalls.filter(
+                        (pc) => pc.priority === "High" || pc.priority === "high"
+                      ).length
+                    }
+                    )
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -482,7 +513,7 @@ export default function ActivePortCalls() {
         </Card>
         {/* Port Calls List */}
         <div className="space-y-4">
-          {filteredPortCalls.map((portCall) => {
+          {sortedPortCalls.map((portCall) => {
             const headers = portCallHeaders[portCall.job_id] || [];
             const headersAreLoading = headersLoading[portCall.job_id];
             const { progress, totalHeaders, completedHeaders } =
@@ -539,13 +570,6 @@ export default function ActivePortCalls() {
                           <span className="text-xs sm:text-sm">Services</span>
                         </Button>
                       </Link>
-                      {/* <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 sm:flex-none min-w-[50px]"
-                      >
-                        <SquareSlash />
-                      </Button> */}
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -588,7 +612,10 @@ export default function ActivePortCalls() {
                           ETA
                         </p>
                         <p className="font-medium">
-                          {new Date(portCall.eta).toLocaleString()}
+                          {formatDate(portCall.eta)}{" "}
+                          <span className="text-xs text-gray-400">
+                            {formatTime(portCall.eta)}
+                          </span>
                         </p>
                       </div>
                     </div>
@@ -600,7 +627,10 @@ export default function ActivePortCalls() {
                             ETD
                           </p>
                           <p className="font-medium">
-                            {new Date(portCall.etd).toLocaleString()}
+                            {formatDate(portCall.etd)}{" "}
+                            <span className="text-xs text-gray-400">
+                              {formatTime(portCall.etd)}
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -612,21 +642,24 @@ export default function ActivePortCalls() {
                           Last Updated
                         </p>
                         <p className="font-medium">
-                          {new Date(portCall.updatedAt).toLocaleString()}
+                          {formatDate(portCall.updatedAt)}{" "}
+                          <span className="text-xs text-gray-400">
+                            {formatTime(portCall.updatedAt)}
+                          </span>
                         </p>
                       </div>
                     </div>
                   </div>
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                     <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      Created: {new Date(portCall.created).toLocaleDateString()}
+                      Created: {formatDate(portCall.created)}
                     </div>
                   </div>
                 </CardContent>
               </Card>
             );
           })}
-          {filteredPortCalls.length === 0 && !loading && (
+          {sortedPortCalls.length === 0 && !loading && (
             <Card>
               <CardContent className="text-center py-12">
                 <Ship className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />

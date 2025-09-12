@@ -60,6 +60,23 @@ interface Service {
   updatedAt: string;
 }
 
+function getServiceCategory(serviceName: string): "crew" | "spares" | "other" {
+  // Crew Changes
+  if (serviceName === "Crew Changes (On/Off)") {
+    return "crew";
+  }
+  // Spares: match any of these
+  const sparesNames = [
+    "Ship Spares Clearance and Delivery",
+    "Ship Spares Off-Landing and Re-Forwarding",
+    "Ship Spares Off-Landing and Connect to another Vessel",
+  ];
+  if (sparesNames.includes(serviceName)) {
+    return "spares";
+  }
+  return "other";
+}
+
 export default function ActiveServicesPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [services, setServices] = useState<Service[]>([]);
@@ -130,16 +147,41 @@ export default function ActiveServicesPage() {
     if (vendorFilter !== "all") {
       filtered = filtered.filter((svc) => svc.vendor === vendorFilter);
     }
-    if (selectedTab !== "all") {
-      // Example tab logic: "recent" tab = services created in last 7 days
-      if (selectedTab === "recent") {
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        filtered = filtered.filter((svc) => new Date(svc.createdAt) > weekAgo);
-      }
+    // Tab logic:
+    if (selectedTab === "crew") {
+      filtered = filtered.filter(
+        (svc) => getServiceCategory(svc.serviceName) === "crew"
+      );
+    } else if (selectedTab === "spares") {
+      filtered = filtered.filter(
+        (svc) => getServiceCategory(svc.serviceName) === "spares"
+      );
+    } else if (selectedTab === "recent") {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      filtered = filtered.filter((svc) => new Date(svc.createdAt) > weekAgo);
     }
+    // "all" tab shows everything
     setFilteredServices(filtered);
   }, [searchTerm, vendorFilter, selectedTab, services]);
+
+  // Counts for tabs
+  const crewCount = services.filter(
+    (svc) => getServiceCategory(svc.serviceName) === "crew"
+  ).length;
+  const sparesCount = services.filter(
+    (svc) => getServiceCategory(svc.serviceName) === "spares"
+  ).length;
+  const recentCount = services.filter((svc) => {
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return new Date(svc.createdAt) > weekAgo;
+  }).length;
+
+  // Sort by updatedAt (desc)
+  const sortedServices = [...filteredServices].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
 
   if (!currentUser) {
     return (
@@ -220,7 +262,7 @@ export default function ActiveServicesPage() {
                   variant="outline"
                   className="w-full sm:w-auto text-center"
                 >
-                  {filteredServices.length} services
+                  {sortedServices.length} services
                 </Badge>
                 <Link href="/port-calls/new" className="w-full sm:w-auto">
                   <Button size="sm" className="w-full sm:w-auto">
@@ -276,18 +318,22 @@ export default function ActiveServicesPage() {
                     All ({services.length})
                   </TabsTrigger>
                   <TabsTrigger
+                    value="crew"
+                    className="flex-1 min-w-[120px] text-center px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition sm:min-w-[150px] sm:flex-none"
+                  >
+                    Crew Changes ({crewCount})
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="spares"
+                    className="flex-1 min-w-[120px] text-center px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition sm:min-w-[150px] sm:flex-none"
+                  >
+                    Spares ({sparesCount})
+                  </TabsTrigger>
+                  <TabsTrigger
                     value="recent"
                     className="flex-1 min-w-[120px] text-center px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition sm:min-w-[150px] sm:flex-none"
                   >
-                    Recent (
-                    {
-                      services.filter((svc) => {
-                        const weekAgo = new Date();
-                        weekAgo.setDate(weekAgo.getDate() - 7);
-                        return new Date(svc.createdAt) > weekAgo;
-                      }).length
-                    }
-                    )
+                    Recent ({recentCount})
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -297,7 +343,7 @@ export default function ActiveServicesPage() {
 
         {/* Services List */}
         <div className="space-y-4">
-          {filteredServices.length === 0 ? (
+          {sortedServices.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <Inbox className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -312,7 +358,7 @@ export default function ActiveServicesPage() {
               </CardContent>
             </Card>
           ) : (
-            filteredServices.map((svc) => (
+            sortedServices.map((svc) => (
               <Card
                 key={`${svc.job_id}-${svc.serviceName}`}
                 className="hover:shadow-md transition-shadow"
@@ -332,31 +378,11 @@ export default function ActiveServicesPage() {
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
-                        {/* <Badge
-                          variant="secondary"
-                          className="border border-gray-200 dark:border-gray-700"
-                        >
-                          Vendor
-                        </Badge> */}
                         <Badge className="bg-primary/10 text-primary border-primary/20">
                           {"Vendor: " + svc.vendor || "—"}
                         </Badge>
                       </div>
                     </div>
-                    {/* <div className="flex flex-row flex-wrap gap-2 mt-2 sm:mt-0">
-                      <Link href={`/pcs/${svc.job_id}/services`}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-2 flex-1 sm:flex-none min-w-[90px]"
-                        >
-                          <Building2 className="h-4 w-4" />
-                          <span className="text-xs sm:text-sm">
-                            Open Port Call
-                          </span>
-                        </Button>
-                      </Link>
-                    </div> */}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
