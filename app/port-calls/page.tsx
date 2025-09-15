@@ -22,7 +22,6 @@ import {
   Calendar,
   Clock,
   Users,
-  FileText,
   Eye,
   LogOut,
   Anchor,
@@ -32,6 +31,8 @@ import {
   AlertCircle,
   XCircle,
   ArrowLeft,
+  Table2,
+  LayoutGrid,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -73,6 +74,10 @@ interface PortCall {
   priority: "High" | "Medium" | "Low" | "high" | "medium" | "low";
   created: string;
   updatedAt: string;
+  call_type?: string; // optional, for table column
+  portkey?: string; // optional, for table column
+  draft?: string; // optional, for table column
+  tags?: string[]; // optional, for table column
 }
 
 export default function ActivePortCalls() {
@@ -92,6 +97,9 @@ export default function ActivePortCalls() {
   const [headersLoading, setHeadersLoading] = useState<Record<string, boolean>>(
     {}
   );
+
+  // View toggle state
+  const [viewType, setViewType] = useState<"card" | "table">("card");
 
   useEffect(() => {
     const fetchPortCalls = async () => {
@@ -340,6 +348,114 @@ export default function ActivePortCalls() {
     );
   }
 
+  // -------------------- TABLE VIEW COMPONENT ------------------------
+  const TableView = () => (
+    <div className="overflow-x-auto rounded-lg shadow bg-white dark:bg-gray-900 border">
+      <table className="min-w-full text-sm">
+        <thead className="bg-blue-50 dark:bg-gray-800">
+          <tr>
+            <th className="px-2 py-3 text-left font-semibold">Status</th>
+            <th className="px-2 py-3 text-left font-semibold">Job ID</th>
+            <th className="px-2 py-3 text-left font-semibold">ETA</th>
+            <th className="px-2 py-3 text-left font-semibold">Port</th>
+            <th className="px-2 py-3 text-left font-semibold">Priority</th>
+            <th className="px-2 py-3 text-left font-semibold">Client</th>
+            <th className="px-2 py-3 text-left font-semibold">Assigned PIC</th>
+            <th className="px-2 py-3 text-left font-semibold">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedPortCalls.map((portCall) => {
+            const headers = portCallHeaders[portCall.job_id] || [];
+            const status = getPortCallStatus(headers);
+
+            return (
+              <tr
+                key={portCall.job_id}
+                className="border-b dark:border-gray-700"
+              >
+                {/* Status */}
+                <td className="px-2 py-2">
+                  <span
+                    className={
+                      "inline-block w-3 h-3 rounded-full mr-2 align-middle " +
+                      (status === "Completed"
+                        ? "bg-green-500"
+                        : status === "Pending"
+                        ? "bg-yellow-500"
+                        : "bg-gray-400")
+                    }
+                  ></span>
+                  <span className="align-middle">{status}</span>
+                </td>
+                {/* Job ID and Vessel Name */}
+                <td className="px-2 py-2">
+                  <span className="font-bold">{portCall.job_id}</span>
+                  <br />
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {portCall.vessel_name}
+                  </span>
+                </td>
+                {/* ETA */}
+                <td className="px-2 py-2">
+                  {formatDate(portCall.eta)} {formatTime(portCall.eta)}
+                </td>
+                {/* Port */}
+                <td className="px-2 py-2">{portCall.port}</td>
+                {/* Priority */}
+                <td className="px-2 py-2">
+                  <Badge className={getPriorityColor(portCall.priority)}>
+                    {portCall.priority}
+                  </Badge>
+                </td>
+                {/* Client */}
+                <td className="px-2 py-2">{portCall.client_company}</td>
+                {/* Assigned PIC */}
+                <td className="px-2 py-2">{portCall.assigned_pic}</td>
+                {/* Action */}
+                <td className="px-2 py-2">
+                  <div className="flex gap-2">
+                    <Link href={`/pcs/${portCall.job_id}/services`}>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="p-1 h-8 w-8"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+          {sortedPortCalls.length === 0 && (
+            <tr>
+              <td colSpan={8} className="text-center py-8">
+                <Ship className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  No port calls found
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  {searchTerm || statusFilter !== "all" || portFilter !== "all"
+                    ? "Try adjusting your search criteria"
+                    : "No active port calls at the moment"}
+                </p>
+                <Link href="/port-calls/new">
+                  <Button className="w-full sm:w-auto">
+                    <Ship className="h-4 w-4 mr-2" />
+                    Create New Port Call
+                  </Button>
+                </Link>
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // -------------------- MAIN RENDER ------------------------
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -454,8 +570,29 @@ export default function ActivePortCalls() {
                 </Select>
               </div>
             </div>
-            {/* Tabs: Responsive row/scroll on mobile, row on desktop */}
-            <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            {/* View Toggle Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 mb-4">
+              <div className="flex gap-2 mb-2 sm:mb-0">
+                <Button
+                  variant={viewType === "table" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewType("table")}
+                  className="flex items-center gap-2"
+                >
+                  <Table2 className="h-4 w-4" />
+                  Table View
+                </Button>
+                <Button
+                  variant={viewType === "card" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewType("card")}
+                  className="flex items-center gap-2"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  Card View
+                </Button>
+              </div>
+              {/* Tabs: Responsive row/scroll on mobile, row on desktop */}
               <Tabs
                 value={selectedTab}
                 onValueChange={setSelectedTab}
@@ -513,153 +650,159 @@ export default function ActivePortCalls() {
         </Card>
         {/* Port Calls List */}
         <div className="space-y-4">
-          {sortedPortCalls.map((portCall) => {
-            const headers = portCallHeaders[portCall.job_id] || [];
-            const headersAreLoading = headersLoading[portCall.job_id];
-            const { progress, totalHeaders, completedHeaders } =
-              getHeaderProgress(headers);
-            const remainingHeaders = totalHeaders - completedHeaders;
-            let completionPhrase = "";
-            if (remainingHeaders === 0 && totalHeaders > 0) {
-              completionPhrase =
-                "All headers completed. This port call is marked as completed!";
-            } else if (remainingHeaders > 0) {
-              completionPhrase = `${remainingHeaders} more header${
-                remainingHeaders > 1 ? "s" : ""
-              } to be completed.`;
-            } else {
-              completionPhrase = "No headers found.";
-            }
-            const status = getPortCallStatus(headers);
-            return (
-              <Card
-                key={portCall.job_id}
-                className="hover:shadow-md transition-shadow"
-              >
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(status)}
-                        <div>
-                          <h3 className="font-semibold text-base sm:text-lg truncate">
-                            {portCall.vessel_name}
-                          </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                            {portCall.job_id}
-                          </p>
+          {viewType === "table" ? (
+            <TableView />
+          ) : (
+            sortedPortCalls.map((portCall) => {
+              const headers = portCallHeaders[portCall.job_id] || [];
+              const headersAreLoading = headersLoading[portCall.job_id];
+              const { progress, totalHeaders, completedHeaders } =
+                getHeaderProgress(headers);
+              const remainingHeaders = totalHeaders - completedHeaders;
+              let completionPhrase = "";
+              if (remainingHeaders === 0 && totalHeaders > 0) {
+                completionPhrase =
+                  "All headers completed. This port call is marked as completed!";
+              } else if (remainingHeaders > 0) {
+                completionPhrase = `${remainingHeaders} more header${
+                  remainingHeaders > 1 ? "s" : ""
+                } to be completed.`;
+              } else {
+                completionPhrase = "No headers found.";
+              }
+              const status = getPortCallStatus(headers);
+              return (
+                <Card
+                  key={portCall.job_id}
+                  className="hover:shadow-md transition-shadow"
+                >
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(status)}
+                          <div>
+                            <h3 className="font-semibold text-base sm:text-lg truncate">
+                              {portCall.vessel_name}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                              {portCall.job_id}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+                          <Badge className={getStatusColor(status)}>
+                            {status}
+                          </Badge>
+                          <Badge
+                            className={getPriorityColor(portCall.priority)}
+                          >
+                            {portCall.priority}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
-                        <Badge className={getStatusColor(status)}>
-                          {status}
-                        </Badge>
-                        <Badge className={getPriorityColor(portCall.priority)}>
-                          {portCall.priority}
-                        </Badge>
+                      <div className="flex flex-row flex-wrap gap-2 mt-2 sm:mt-0">
+                        <Link href={`/pcs/${portCall.job_id}/services`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2 flex-1 sm:flex-none min-w-[90px]"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="text-xs sm:text-sm">Services</span>
+                          </Button>
+                        </Link>
                       </div>
                     </div>
-                    <div className="flex flex-row flex-wrap gap-2 mt-2 sm:mt-0">
-                      <Link href={`/pcs/${portCall.job_id}/services`}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-2 flex-1 sm:flex-none min-w-[90px]"
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span className="text-xs sm:text-sm">Services</span>
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Client
-                      </p>
-                      <p className="font-medium">{portCall.client_company}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        IMO
-                      </p>
-                      <p className="font-medium">{portCall.vessel_imo}</p>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <MapPin className="h-4 w-4 text-gray-400" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Port
+                          Client
                         </p>
-                        <p className="font-medium">{portCall.port}</p>
+                        <p className="font-medium">{portCall.client_company}</p>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Users className="h-4 w-4 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Assigned PIC
+                          IMO
                         </p>
-                        <p className="font-medium">{portCall.assigned_pic}</p>
+                        <p className="font-medium">{portCall.vessel_imo}</p>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Port
+                          </p>
+                          <p className="font-medium">{portCall.port}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Assigned PIC
+                          </p>
+                          <p className="font-medium">{portCall.assigned_pic}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          ETA
-                        </p>
-                        <p className="font-medium">
-                          {formatDate(portCall.eta)}{" "}
-                          <span className="text-xs text-gray-400">
-                            {formatTime(portCall.eta)}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                    {portCall.etd && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-4 w-4 text-gray-400" />
                         <div>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            ETD
+                            ETA
                           </p>
                           <p className="font-medium">
-                            {formatDate(portCall.etd)}{" "}
+                            {formatDate(portCall.eta)}{" "}
                             <span className="text-xs text-gray-400">
-                              {formatTime(portCall.etd)}
+                              {formatTime(portCall.eta)}
                             </span>
                           </p>
                         </div>
                       </div>
-                    )}
-                    <div className="flex items-center space-x-1">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Last Updated
-                        </p>
-                        <p className="font-medium">
-                          {formatDate(portCall.updatedAt)}{" "}
-                          <span className="text-xs text-gray-400">
-                            {formatTime(portCall.updatedAt)}
-                          </span>
-                        </p>
+                      {portCall.etd && (
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              ETD
+                            </p>
+                            <p className="font-medium">
+                              {formatDate(portCall.etd)}{" "}
+                              <span className="text-xs text-gray-400">
+                                {formatTime(portCall.etd)}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Last Updated
+                          </p>
+                          <p className="font-medium">
+                            {formatDate(portCall.updatedAt)}{" "}
+                            <span className="text-xs text-gray-400">
+                              {formatTime(portCall.updatedAt)}
+                            </span>
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      Created: {formatDate(portCall.created)}
+                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        Created: {formatDate(portCall.created)}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-          {sortedPortCalls.length === 0 && !loading && (
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+          {sortedPortCalls.length === 0 && !loading && viewType === "card" && (
             <Card>
               <CardContent className="text-center py-12">
                 <Ship className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
