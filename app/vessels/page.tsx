@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Dialog,
@@ -38,8 +38,6 @@ import {
   Plus,
   Edit,
   Eye,
-  MoreHorizontal,
-  LogOut,
   Anchor,
   AlertTriangle,
   Calendar,
@@ -148,22 +146,21 @@ export default function VesselManagement() {
   }
 
   function formatSSCECExpiry(expiry: string) {
-    // Handles both 'YYYY-MM-DD' and 'YYYY-MM-DDTHH:MM:SS.sssZ' and 'DD.MM.YYYY'
     if (!expiry) return "";
     // If already in DD.MM.YYYY format
     if (/^\d{2}\.\d{2}\.\d{4}$/.test(expiry)) return expiry;
 
-    // If ISO string
-    const dateObj = new Date(expiry);
-    if (!isNaN(dateObj.getTime())) {
-      const dd = String(dateObj.getDate()).padStart(2, "0");
-      const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-      const yyyy = dateObj.getFullYear();
+    // If ISO string or date string with time, use JS Date
+    const date = new Date(expiry);
+    if (!isNaN(date.getTime())) {
+      const dd = String(date.getDate()).padStart(2, "0");
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const yyyy = date.getFullYear();
       return `${dd}.${mm}.${yyyy}`;
     }
 
-    // If malformed, fallback
-    const onlyDate = expiry.split("T")[0];
+    // Try to fallback to manual split (handles "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM:SS.sssZ")
+    const onlyDate = expiry.split("T")[0]; // "2026-12-02"
     const [yyyy, mm, dd] = onlyDate.split("-");
     if (dd && mm && yyyy) {
       return `${dd}.${mm}.${yyyy}`;
@@ -171,8 +168,8 @@ export default function VesselManagement() {
     return expiry;
   }
 
-  // Helper: calculate expiry 6 months from issued date, in DD.MM.YYYY
   function calcSSCECExpiry(issued: string): string {
+    // For DISPLAY: returns DD.MM.YYYY
     if (!issued) return "";
     const [yyyy, mm, dd] = issued.split("-");
     const issuedDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
@@ -184,7 +181,18 @@ export default function VesselManagement() {
     return `${expDD}.${expMM}.${expYYYY}`;
   }
 
-  // Helper: for edit, get issued from expiry (for migration / edit dialog)
+  function calcSSCECExpiryISO(issued: string): string {
+    // For API: returns YYYY-MM-DD
+    if (!issued) return "";
+    const [yyyy, mm, dd] = issued.split("-");
+    const issuedDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    issuedDate.setMonth(issuedDate.getMonth() + 6);
+    const expYYYY = issuedDate.getFullYear();
+    const expMM = String(issuedDate.getMonth() + 1).padStart(2, "0");
+    const expDD = String(issuedDate.getDate()).padStart(2, "0");
+    return `${expYYYY}-${expMM}-${expDD}`;
+  }
+
   function getIssuedFromExpiry(expiry: string): string {
     if (!expiry) return "";
     const [dd, mm, yyyy] = expiry.split(".");
@@ -248,14 +256,13 @@ export default function VesselManagement() {
     const response = await apiCall(`${API_BASE_URL}/vessel`);
     if (response && response.success && Array.isArray(response.data)) {
       return response.data.map((vessel: any) => {
-        // If backend only returns expiry, reconstruct issued field
         let sscecExpiry: string =
           vessel.SSCEC_expires || vessel.sscecExpiry || "";
         let sscecIssued: string =
           vessel.SSCEC_issued ||
           vessel.sscecIssued ||
           (sscecExpiry ? getIssuedFromExpiry(sscecExpiry) : "");
-        // Ensure expiry is always DD.MM.YYYY
+        // Ensure expiry is always DD.MM.YYYY for display
         if (sscecExpiry.includes("-")) {
           // If it's in YYYY-MM-DD, convert
           const [yyyy, mm, dd] = sscecExpiry.split("-");
@@ -380,13 +387,14 @@ export default function VesselManagement() {
         });
         return;
       }
-      const expiry = calcSSCECExpiry(newVessel.sscecIssued);
+      const expiryISO = calcSSCECExpiryISO(newVessel.sscecIssued); // <-- ISO for backend
+      const expiryDisplay = calcSSCECExpiry(newVessel.sscecIssued); // <-- For display
 
       const vesselData = {
         vessel_name: newVessel.name,
         imo_number: newVessel.imo,
         SSCEC_issued: newVessel.sscecIssued,
-        SSCEC_expires: expiry,
+        SSCEC_expires: expiryISO,
         company: newVessel.owner,
         vessel_type: newVessel.vesselType,
         flag: newVessel.flag,
@@ -403,9 +411,9 @@ export default function VesselManagement() {
       const vesselWithId: Vessel = {
         ...newVessel,
         id: response.vessel_id,
-        sscecExpiry: expiry,
+        sscecExpiry: expiryDisplay,
         sscecIssued: newVessel.sscecIssued,
-        sscecStatus: calculateSSCECStatus(expiry),
+        sscecStatus: calculateSSCECStatus(expiryDisplay),
         createdAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
         lastPortCall: new Date().toISOString().split("T")[0],
