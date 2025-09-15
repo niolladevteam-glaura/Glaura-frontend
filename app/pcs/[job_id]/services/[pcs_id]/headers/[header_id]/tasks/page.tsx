@@ -301,11 +301,14 @@ export default function PCSTasksPage() {
       if (!token) throw new Error("No authentication token found");
 
       const body = {
+        job_id, // <-- required by backend
         header_id,
         task_name: newTaskName,
         created_by: currentUser?.id || currentUser?.user_id || "unknown",
-        status: false,
+        status: 0, // <-- backend expects 0, not false
       };
+
+      console.log("Add Task payload:", body); // Debugging line
 
       const response = await fetch(`${API_BASE_URL}/tasks`, {
         method: "POST",

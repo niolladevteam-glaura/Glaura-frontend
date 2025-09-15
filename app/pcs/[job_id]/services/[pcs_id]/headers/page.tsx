@@ -33,9 +33,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/servicetask";
-
 const API_BASE_URL_NORMAL = process.env.NEXT_PUBLIC_API_URL;
 
 interface PCS {
@@ -77,6 +77,13 @@ interface ServiceTaskHeader {
   updatedAt?: string;
 }
 
+interface TaskTemplate {
+  id: string;
+  task_name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // Helper: header is completed if all tasks are completed
 function isHeaderCompletedByTasks(header: ServiceTaskHeader): boolean {
   if (!header.tasks || header.tasks.length === 0) return false;
@@ -98,12 +105,18 @@ export default function PCSJobPage() {
   const [headerToDelete, setHeaderToDelete] =
     useState<ServiceTaskHeader | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [newTasks, setNewTasks] = useState([{ task_name: "", status: false }]);
-
-  // Add Header Dialog State
+  const [newTasks, setNewTasks] = useState<
+    { task_name: string; status: boolean }[]
+  >([{ task_name: "", status: false }]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newHeaderName, setNewHeaderName] = useState("");
   const [adding, setAdding] = useState(false);
+
+  // Task templates from API
+  const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([]);
+  const [selectedTaskTemplateIds, setSelectedTaskTemplateIds] = useState<
+    string[]
+  >([]);
 
   // Fetch PCS (service) for this page (to get service_id)
   useEffect(() => {
@@ -186,6 +199,28 @@ export default function PCSJobPage() {
       setLoading(false);
     }
   };
+
+  // Fetch all task templates
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    fetch(`${API_BASE_URL_NORMAL}/task`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setTaskTemplates(data.data);
+        } else {
+          setTaskTemplates([]);
+        }
+      })
+      .catch(() => setTaskTemplates([]));
+  }, []);
 
   // Only fetch headers when PCS is loaded
   useEffect(() => {
@@ -292,6 +327,18 @@ export default function PCSJobPage() {
     }
     if (!pcs) return;
     setAdding(true);
+
+    // Build tasks from selected task templates + manual
+    const selectedTemplates = taskTemplates.filter((t) =>
+      selectedTaskTemplateIds.includes(t.id)
+    );
+    const tasksFromTemplates = selectedTemplates.map((t) => ({
+      task_name: t.task_name,
+      status: false,
+    }));
+    const manualTasks = newTasks.filter((t) => t.task_name.trim());
+    const finalTasks = [...tasksFromTemplates, ...manualTasks];
+
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
@@ -302,7 +349,7 @@ export default function PCSJobPage() {
         header_name: newHeaderName,
         created_by: currentUser?.id || currentUser?.user_id || "unknown",
         status: false,
-        tasks: newTasks,
+        tasks: finalTasks,
       };
 
       const response = await fetch(`${API_BASE_URL}/headers`, {
@@ -329,6 +376,8 @@ export default function PCSJobPage() {
         });
         setAddDialogOpen(false);
         setNewHeaderName("");
+        setSelectedTaskTemplateIds([]);
+        setNewTasks([{ task_name: "", status: false }]);
       } else {
         toast({
           title: "Error",
@@ -440,9 +489,6 @@ export default function PCSJobPage() {
             <CardTitle className="text-lg">
               Service Task Headers for {pcs.service_name}
             </CardTitle>
-            {/* <CardFooter>
-              {completedHeaders} of {totalHeaders} headers completed
-            </CardFooter> */}
           </CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -556,7 +602,7 @@ export default function PCSJobPage() {
             <DialogTitle>Add Service Task Header</DialogTitle>
             <DialogDescription>
               Create a new Service Task Header for this service. You can add
-              tasks later.
+              tasks below using existing templates or manually.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddHeader} className="space-y-4">
@@ -569,46 +615,69 @@ export default function PCSJobPage() {
                 required
               />
             </div>
-            {newTasks.map((task, idx) => (
-              <div key={idx} className="flex gap-2 mb-2">
-                <Input
-                  value={task.task_name}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setNewTasks((tasks) =>
-                      tasks.map((t, i) =>
-                        i === idx ? { ...t, task_name: val } : t
-                      )
-                    );
-                  }}
-                  placeholder="Task name"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    setNewTasks((tasks) => tasks.filter((_, i) => i !== idx))
-                  }
-                  disabled={newTasks.length === 1}
-                >
-                  Remove
-                </Button>
+            <div>
+              <Label>Choose Tasks from Templates</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                {taskTemplates.map((task) => (
+                  <div key={task.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      checked={selectedTaskTemplateIds.includes(task.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedTaskTemplateIds((ids) =>
+                          checked
+                            ? [...ids, task.id]
+                            : ids.filter((id) => id !== task.id)
+                        );
+                      }}
+                    />
+                    <span>{task.task_name}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-            <Button
-              type="button"
-              variant="secondary"
-              className="mt-2"
-              onClick={() =>
-                setNewTasks((tasks) => [
-                  ...tasks,
-                  { task_name: "", status: false },
-                ])
-              }
-            >
-              Add Task
-            </Button>
+            </div>
+            <div className="mt-4">
+              <Label>Manually Add Tasks</Label>
+              {newTasks.map((task, idx) => (
+                <div key={idx} className="flex gap-2 mb-2">
+                  <Input
+                    value={task.task_name}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewTasks((tasks) =>
+                        tasks.map((t, i) =>
+                          i === idx ? { ...t, task_name: val } : t
+                        )
+                      );
+                    }}
+                    placeholder="Task name"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      setNewTasks((tasks) => tasks.filter((_, i) => i !== idx))
+                    }
+                    disabled={newTasks.length === 1}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="secondary"
+                className="mt-2"
+                onClick={() =>
+                  setNewTasks((tasks) => [
+                    ...tasks,
+                    { task_name: "", status: false },
+                  ])
+                }
+              >
+                Add Task
+              </Button>
+            </div>
             <DialogFooter>
               <Button
                 type="button"
