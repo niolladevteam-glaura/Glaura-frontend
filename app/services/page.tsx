@@ -336,15 +336,13 @@ export default function ServicesManagement() {
     }
   };
 
+  // 24-hour format
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${pad(date.getDate())}-${pad(
+      date.getMonth() + 1
+    )}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
   };
 
   return (
