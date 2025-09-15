@@ -411,19 +411,21 @@ export default function EmailTabsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <Link href="/dashboard" className="flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+                className="flex items-center p-2"
               >
-                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden xs:inline">Back to Dashboard</span>
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="sr-only sm:not-sr-only">
+                  Back to Dashboard
+                </span>
               </Button>
             </Link>
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <div className="bg-primary p-2 rounded-xl flex-shrink-0">
                 <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
@@ -437,14 +439,14 @@ export default function EmailTabsPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <div className="flex items-center justify-between w-full sm:w-auto gap-2">
             <ThemeToggle />
             <Badge
               variant="outline"
-              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none"
             >
               <span className="truncate">{currentUser.name}</span>
-              <span className="hidden xs:inline">
+              <span className="hidden sm:inline">
                 {" "}
                 - Level {currentUser.accessLevel}
               </span>
@@ -452,44 +454,46 @@ export default function EmailTabsPage() {
           </div>
         </div>
       </header>
+
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
         {/* Tabs: Emails first, then Queued */}
         <div className="flex gap-2 mb-6">
           <Button
             onClick={() => setTab("emails")}
             variant={tab === "emails" ? "default" : "outline"}
-            className="flex-1 flex items-center gap-2"
+            className="flex-1 flex items-center gap-2 py-2 text-xs sm:text-sm"
           >
-            <ListChecks className="h-4 w-4" /> Emails
+            <ListChecks className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="truncate">Emails</span>
           </Button>
           <Button
             onClick={() => setTab("queued")}
             variant={tab === "queued" ? "default" : "outline"}
-            className="flex-1 flex items-center gap-2"
+            className="flex-1 flex items-center gap-2 py-2 text-xs sm:text-sm"
           >
-            <Inbox className="h-4 w-4" /> Queued
+            <Inbox className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="truncate">Queued</span>
           </Button>
         </div>
+
         {/* Tab Content */}
         {tab === "emails" ? (
           <Card className="professional-card mb-6">
-            <CardHeader>
-              <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <span>Task Emails</span>
-                <div className="flex flex-wrap gap-2">
-                  <Input
-                    className="w-full sm:w-64"
-                    placeholder="Search subject/client/job/vessel"
-                    value={emailsSearch}
-                    onChange={(e) => setEmailsSearch(e.target.value)}
-                  />
-                </div>
-              </CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg sm:text-xl">Task Emails</CardTitle>
               <CardDescription>
                 Edit, search, and manage sent/generated task emails.
               </CardDescription>
+              <div className="mt-3">
+                <Input
+                  className="w-full"
+                  placeholder="Search subject/client/job/vessel"
+                  value={emailsSearch}
+                  onChange={(e) => setEmailsSearch(e.target.value)}
+                />
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-2 sm:px-6">
               {emailsLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="animate-spin w-8 h-8 text-primary" />
@@ -502,54 +506,50 @@ export default function EmailTabsPage() {
               ) : (
                 <div className="space-y-3">
                   {filteredTaskMails.map((mail) => (
-                    <Card
-                      key={mail.mail_id}
-                      className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border bg-muted/60"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium text-base truncate">
+                    <Card key={mail.mail_id} className="p-3 border bg-muted/60">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <div className="font-medium text-base truncate">
                             {mail.subject}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            Client: {mail.client_name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {mail.client_email}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            Vessel: {mail.vessel_name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            Port: {mail.port_name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            Job: {mail.job_id}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {mail.createdAt && mail.createdAt.slice(0, 10)}
-                          </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1 sm:gap-2 text-xs text-muted-foreground">
+                            <span>Client: {mail.client_name}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="truncate">
+                              {mail.client_email}
+                            </span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>Vessel: {mail.vessel_name}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>Port: {mail.port_name}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>Job: {mail.job_id}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>
+                              {mail.createdAt && mail.createdAt.slice(0, 10)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          title="Edit Email"
-                          onClick={() => openTaskMailEditDialog(mail)}
-                          className="flex-shrink-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Delete Email"
-                          onClick={() => confirmDeleteTaskMail(mail.mail_id)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 flex-shrink-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1 sm:gap-2 self-end">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            title="Edit Email"
+                            onClick={() => openTaskMailEditDialog(mail)}
+                            className="h-8 w-8 sm:h-9 sm:w-9"
+                          >
+                            <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Delete Email"
+                            onClick={() => confirmDeleteTaskMail(mail.mail_id)}
+                            className="h-8 w-8 sm:h-9 sm:w-9 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </Card>
                   ))}
@@ -559,34 +559,35 @@ export default function EmailTabsPage() {
           </Card>
         ) : (
           <Card className="professional-card mb-6">
-            <CardHeader>
-              <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <span>Queued Emails</span>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={sendAllPending}
-                    disabled={queuedLoading}
-                    className="gap-1"
-                  >
-                    <Send className="h-4 w-4" />
-                    Send All Pending
-                  </Button>
-                  <Input
-                    className="w-full sm:w-64"
-                    placeholder="Search header/task/job/status"
-                    value={queuedSearch}
-                    onChange={(e) => setQueuedSearch(e.target.value)}
-                  />
-                </div>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg sm:text-xl">
+                Queued Emails
               </CardTitle>
               <CardDescription>
                 View, send, update, or delete queued emails. All actions require
                 valid JWT token.
               </CardDescription>
+              <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={sendAllPending}
+                  disabled={queuedLoading}
+                  className="gap-1 order-2 sm:order-1"
+                >
+                  <Send className="h-4 w-4" />
+                  <span className="hidden sm:inline">Send All Pending</span>
+                  <span className="sm:hidden">Send All</span>
+                </Button>
+                <Input
+                  className="w-full order-1 sm:order-2"
+                  placeholder="Search header/task/job/status"
+                  value={queuedSearch}
+                  onChange={(e) => setQueuedSearch(e.target.value)}
+                />
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-2 sm:px-6">
               {queuedLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="animate-spin w-8 h-8 text-primary" />
@@ -599,73 +600,72 @@ export default function EmailTabsPage() {
               ) : (
                 <div className="space-y-3">
                   {filteredQueuedEmails.map((email) => (
-                    <Card
-                      key={email.id}
-                      className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border bg-muted/60"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium text-base truncate">
-                            {email.header_name}
-                          </span>
-                          <Badge
-                            className={`text-xs ${statusColor(email.status)}`}
-                          >
-                            {email.status}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            Task: {email.task_name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            Job #{email.job_id}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {email.completed_date} {email.completed_time}
-                          </span>
+                    <Card key={email.id} className="p-3 border bg-muted/60">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-base truncate">
+                              {email.header_name}
+                            </span>
+                            <Badge
+                              className={`text-xs ${statusColor(email.status)}`}
+                            >
+                              {email.status}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap gap-1 sm:gap-2 text-xs text-muted-foreground">
+                            <span>Task: {email.task_name}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>Job #{email.job_id}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>
+                              {email.completed_date} {email.completed_time}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          title="View / Edit"
-                          onClick={() => {
-                            setSelectedQueuedEmail(email);
-                            setQueuedEditStatus(email.status);
-                            setIsQueuedEditDialogOpen(true);
-                          }}
-                          className="flex-shrink-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          title="Send All For Job"
-                          disabled={sendingJobId === email.job_id}
-                          onClick={() => handleSendJobEmails(email.job_id)}
-                          className="flex-shrink-0"
-                        >
-                          <Send className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Delete Email"
-                          onClick={() => deleteQueuedEmail(email.id)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 flex-shrink-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Delete All For Job"
-                          onClick={() => deleteJobEmails(email.job_id)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 flex-shrink-0"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1 sm:gap-2 self-end">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            title="View / Edit"
+                            onClick={() => {
+                              setSelectedQueuedEmail(email);
+                              setQueuedEditStatus(email.status);
+                              setIsQueuedEditDialogOpen(true);
+                            }}
+                            className="h-8 w-8 sm:h-9 sm:w-9"
+                          >
+                            <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            title="Send All For Job"
+                            disabled={sendingJobId === email.job_id}
+                            onClick={() => handleSendJobEmails(email.job_id)}
+                            className="h-8 w-8 sm:h-9 sm:w-9"
+                          >
+                            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Delete Email"
+                            onClick={() => deleteQueuedEmail(email.id)}
+                            className="h-8 w-8 sm:h-9 sm:w-9 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Delete All For Job"
+                            onClick={() => deleteJobEmails(email.job_id)}
+                            className="h-8 w-8 sm:h-9 sm:w-9 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            <XCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </Card>
                   ))}
@@ -681,16 +681,14 @@ export default function EmailTabsPage() {
           open={showQueuedSendInfo !== null}
           onOpenChange={(open) => !open && setShowQueuedSendInfo(null)}
         >
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>
-                <span className="flex items-center gap-2">
-                  <Info className="text-yellow-600 h-5 w-5 flex-shrink-0" />
-                  <span>Do you want to send?</span>
-                </span>
+              <DialogTitle className="flex items-center gap-2">
+                <Info className="text-yellow-600 h-5 w-5 flex-shrink-0" />
+                <span>Do you want to send?</span>
               </DialogTitle>
             </DialogHeader>
-            <div className="font-semibold mb-2">
+            <div className="font-semibold mb-2 text-sm">
               If you need to change the email content, please go to the{" "}
               <b>Emails</b> tab and edit before sending.
             </div>
@@ -725,12 +723,13 @@ export default function EmailTabsPage() {
             </div>
           </DialogContent>
         </Dialog>
+
         {/* Queued (queue) edit */}
         <Dialog
           open={isQueuedEditDialogOpen}
           onOpenChange={setIsQueuedEditDialogOpen}
         >
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Edit Queued Email</DialogTitle>
             </DialogHeader>
@@ -752,7 +751,7 @@ export default function EmailTabsPage() {
                 <div>
                   <label className="block font-medium mb-1">Status</label>
                   <select
-                    className="form-input rounded border-gray-300 p-2"
+                    className="w-full rounded border border-gray-300 p-2 text-sm"
                     value={queuedEditStatus}
                     onChange={(e) =>
                       setQueuedEditStatus(e.target.value as EmailStatus)
@@ -764,7 +763,7 @@ export default function EmailTabsPage() {
                     <option value="failed">failed</option>
                   </select>
                 </div>
-                <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-6">
                   <Button
                     variant="outline"
                     onClick={() => setIsQueuedEditDialogOpen(false)}
@@ -775,7 +774,7 @@ export default function EmailTabsPage() {
                   </Button>
                   <Button
                     onClick={updateQueuedEmailStatus}
-                    className="professional-button-primary w-full sm:w-auto"
+                    className="w-full sm:w-auto"
                     disabled={queuedLoading}
                   >
                     {queuedLoading ? (
@@ -790,19 +789,20 @@ export default function EmailTabsPage() {
             )}
           </DialogContent>
         </Dialog>
+
         {/* Emails (task mail) edit */}
         <Dialog
           open={isTaskMailEditDialogOpen}
           onOpenChange={setIsTaskMailEditDialogOpen}
         >
-          <DialogContent>
+          <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Task Email</DialogTitle>
             </DialogHeader>
             {selectedTaskMail && (
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto">
                 <div>
-                  <div className="font-medium">Subject</div>
+                  <div className="font-medium mb-1">Subject</div>
                   <Input
                     value={taskMailEdit.subject}
                     onChange={(e) =>
@@ -811,10 +811,11 @@ export default function EmailTabsPage() {
                         subject: e.target.value,
                       }))
                     }
+                    className="w-full"
                   />
                 </div>
                 <div>
-                  <div className="font-medium">Client Email</div>
+                  <div className="font-medium mb-1">Client Email</div>
                   <Input
                     value={taskMailEdit.client_email}
                     onChange={(e) =>
@@ -823,10 +824,13 @@ export default function EmailTabsPage() {
                         client_email: e.target.value,
                       }))
                     }
+                    className="w-full"
                   />
                 </div>
                 <div>
-                  <div className="font-medium">CC Emails (comma separated)</div>
+                  <div className="font-medium mb-1">
+                    CC Emails (comma separated)
+                  </div>
                   <Input
                     value={taskMailEdit.ccs}
                     onChange={(e) =>
@@ -835,10 +839,11 @@ export default function EmailTabsPage() {
                         ccs: e.target.value,
                       }))
                     }
+                    className="w-full"
                   />
                 </div>
                 <div>
-                  <div className="font-medium">Body</div>
+                  <div className="font-medium mb-1">Body</div>
                   <textarea
                     value={taskMailEdit.body}
                     onChange={(e) =>
@@ -847,11 +852,10 @@ export default function EmailTabsPage() {
                         body: e.target.value,
                       }))
                     }
-                    className="form-input rounded border-gray-300 p-2 w-full"
-                    rows={7}
+                    className="w-full rounded border border-gray-300 p-2 text-sm min-h-[200px]"
                   />
                 </div>
-                <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-6">
                   <Button
                     variant="outline"
                     onClick={() => setIsTaskMailEditDialogOpen(false)}
@@ -862,7 +866,7 @@ export default function EmailTabsPage() {
                   </Button>
                   <Button
                     onClick={updateTaskMail}
-                    className="professional-button-primary w-full sm:w-auto"
+                    className="w-full sm:w-auto"
                     disabled={emailsLoading}
                   >
                     {emailsLoading ? (
@@ -877,29 +881,29 @@ export default function EmailTabsPage() {
             )}
           </DialogContent>
         </Dialog>
+
         {/* Task Mail delete dialog */}
         <Dialog
           open={!!deletingTaskMailId}
           onOpenChange={(open) => !open && setDeletingTaskMailId(null)}
         >
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>
-                <span className="flex items-center gap-2">
-                  <Trash2 className="text-red-600 h-5 w-5 flex-shrink-0" />
-                  <span>Delete Task Email?</span>
-                </span>
+              <DialogTitle className="flex items-center gap-2">
+                <Trash2 className="text-red-600 h-5 w-5 flex-shrink-0" />
+                <span>Delete Task Email?</span>
               </DialogTitle>
             </DialogHeader>
-            <div className="mb-2">
+            <div className="mb-2 text-sm">
               Are you sure you want to delete this Task Email? This action
               cannot be undone.
             </div>
-            <div className="flex gap-2 justify-end mt-4">
+            <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end mt-4">
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => setDeletingTaskMailId(null)}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
@@ -908,6 +912,7 @@ export default function EmailTabsPage() {
                 variant="destructive"
                 onClick={deleteTaskMail}
                 disabled={emailsLoading}
+                className="w-full sm:w-auto"
               >
                 {emailsLoading ? (
                   <Loader2 className="animate-spin h-4 w-4 mr-2" />
