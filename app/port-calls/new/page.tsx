@@ -346,6 +346,8 @@ export default function NewPortCall() {
     clientCompany: "",
     agencyName: "",
     eta: "",
+    etaDate: "",
+    etaTime: "",
     formalityStatus: "",
     priority: "",
     remarks: "",
@@ -1046,9 +1048,30 @@ export default function NewPortCall() {
   const handleSubmit = async () => {
     try {
       setLoading(true);
+
+      // Required fields check
       if (!formData.vesselName || !formData.clientCompany || !formData.port) {
         throw new Error("Vessel name, client company, and port are required");
       }
+
+      // ETA validation
+      if (
+        !formData.etaDate ||
+        !formData.etaTime ||
+        !formData.etaDate.match(/^\d{2}-\d{2}-\d{4}$/) ||
+        !formData.etaTime.match(/^([01]\d|2[0-3]):([0-5]\d)$/)
+      ) {
+        throw new Error(
+          "ETA Date (DD-MM-YYYY) and Time (HH:mm, 24hr) are required and must be correctly formatted."
+        );
+      }
+
+      // Convert ETA to ISO format
+      const [dd, mm, yyyy] = formData.etaDate.split("-");
+      const etaIsoString = new Date(
+        `${yyyy}-${mm}-${dd}T${formData.etaTime}:00`
+      ).toISOString();
+
       // Find port and client names
       const portLabel =
         ports.find((p) => p.value === formData.port)?.label || "";
@@ -1071,6 +1094,7 @@ export default function NewPortCall() {
         status: true,
       }));
 
+      // Build payload
       const payload = {
         vessel_id: formData.vesselId || `VES-${Date.now()}`,
         vessel_name: formData.vesselName,
@@ -1079,8 +1103,7 @@ export default function NewPortCall() {
         client_company: clientLabel,
         agency_name: formData.agencyName,
         status_of_formalities: formData.formalityStatus || "Pending",
-        eta: formData.eta ? new Date(formData.eta).toISOString() : null,
-        // ETD: omit if not needed
+        eta: etaIsoString,
         pic: {
           id: formData.pic.pic_id,
           name: formData.pic.customerPIC,
@@ -1593,17 +1616,41 @@ export default function NewPortCall() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="eta" className="form-label">
-                      ETA (Estimated Time of Arrival)
-                    </Label>
-                    <Input
-                      id="eta"
-                      type="datetime-local"
-                      value={formData.eta}
-                      onChange={(e) => handleInputChange("eta", e.target.value)}
-                      className="form-input"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="etaDate" className="form-label">
+                        ETA Date (DD-MM-YYYY)
+                      </Label>
+                      <Input
+                        id="etaDate"
+                        type="text"
+                        value={formData.etaDate}
+                        onChange={(e) =>
+                          handleInputChange("etaDate", e.target.value)
+                        }
+                        placeholder="DD-MM-YYYY"
+                        className="form-input"
+                        pattern="\d{2}-\d{2}-\d{4}"
+                        maxLength={10}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="etaTime" className="form-label">
+                        ETA Time (24hr, HH:mm)
+                      </Label>
+                      <Input
+                        id="etaTime"
+                        type="text"
+                        value={formData.etaTime}
+                        onChange={(e) =>
+                          handleInputChange("etaTime", e.target.value)
+                        }
+                        placeholder="HH:mm"
+                        className="form-input"
+                        pattern="^([01]\d|2[0-3]):([0-5]\d)$"
+                        maxLength={5}
+                      />
+                    </div>
                   </div>
                 </div>
 
