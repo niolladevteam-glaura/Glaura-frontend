@@ -137,7 +137,7 @@ export default function CustomerCompanies() {
   // PIC Form States
   const [currentPicIndex, setCurrentPicIndex] = useState<number>(-1); // -1 = new PIC, >=0 = editing existing
   const [picForm, setPicForm] = useState<Partial<PIC>>({
-    title: "Mr",
+    title: "Mr.",
     firstName: "",
     lastName: "",
     department: "",
@@ -1312,7 +1312,7 @@ export default function CustomerCompanies() {
                           <div className="grid grid-cols-12 gap-3">
                             <div className="col-span-12 sm:col-span-2">
                               <Select
-                                value={picForm.title || "Mr"}
+                                value={picForm.title || "Mr."}
                                 onValueChange={(val) =>
                                   handlePicFormChange("title", val)
                                 }
@@ -1321,9 +1321,13 @@ export default function CustomerCompanies() {
                                   <SelectValue placeholder="Title" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="Mr">Mr</SelectItem>
-                                  <SelectItem value="Ms">Ms</SelectItem>
-                                  <SelectItem value="Miss">Miss</SelectItem>
+                                  <SelectItem value="Mr.">Mr.</SelectItem>
+                                  <SelectItem value="Ms.">Ms.</SelectItem>
+                                  <SelectItem value="Mrs.">Mrs.</SelectItem>
+                                  <SelectItem value="Dr.">Dr.</SelectItem>
+                                  <SelectItem value="Captain.">
+                                    Captain.
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1428,7 +1432,7 @@ export default function CustomerCompanies() {
                                           General Line
                                         </SelectItem>
                                         <SelectItem value="Land Line">
-                                          Land Line
+                                          Mobile
                                         </SelectItem>
                                       </SelectContent>
                                     </Select>

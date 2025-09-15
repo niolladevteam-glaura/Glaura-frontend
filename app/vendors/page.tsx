@@ -173,7 +173,7 @@ export default function VendorManagement() {
       {
         id: `${Date.now()}`,
         type: "Primary",
-        title: "Mr",
+        title: "Mr.",
         firstName: "",
         lastName: "",
         name: "",
@@ -368,7 +368,7 @@ export default function VendorManagement() {
         {
           id: Date.now().toString(),
           type: "Secondary",
-          title: "Mr",
+          title: "Mr.",
           firstName: "",
           lastName: "",
           name: "",
@@ -580,7 +580,7 @@ export default function VendorManagement() {
           {
             id: `${Date.now()}`,
             type: "Primary",
-            title: "Mr",
+            title: "Mr.",
             firstName: "",
             lastName: "",
             name: "",
@@ -1272,14 +1272,20 @@ export default function VendorManagement() {
                                                 <SelectValue placeholder="Title" />
                                               </SelectTrigger>
                                               <SelectContent>
-                                                <SelectItem value="Mr">
-                                                  Mr
+                                                <SelectItem value="Mr.">
+                                                  Mr.
                                                 </SelectItem>
-                                                <SelectItem value="Ms">
-                                                  Ms
+                                                <SelectItem value="Ms.">
+                                                  Ms.
                                                 </SelectItem>
-                                                <SelectItem value="Miss">
-                                                  Miss
+                                                <SelectItem value="Mrs.">
+                                                  Mrs.
+                                                </SelectItem>
+                                                <SelectItem value="Dr.">
+                                                  Dr.
+                                                </SelectItem>
+                                                <SelectItem value="Captain.">
+                                                  Captain.
                                                 </SelectItem>
                                               </SelectContent>
                                             </Select>
