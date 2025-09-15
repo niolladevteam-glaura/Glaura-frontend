@@ -69,6 +69,7 @@ export default function TaskManagement() {
         },
         ...options,
       });
+
       if (response.status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("currentUser");
@@ -86,7 +87,9 @@ export default function TaskManagement() {
           errorData.message || `Request failed with status ${response.status}`
         );
       }
-      return await response.json();
+      const result = await response.json();
+      console.log("Parsed tasks response:", result);
+      return result;
     } catch (error: any) {
       toast({
         title: "API Error",
@@ -102,11 +105,18 @@ export default function TaskManagement() {
       setLoading(true);
       const response = await apiCall(API_ENDPOINTS.TASKS);
       // Support both array or { data: [...] }
-      if (Array.isArray(response)) {
-        setTasks(response.filter((task) => typeof task?.name === "string"));
-      } else if (Array.isArray(response.data)) {
+      if (Array.isArray(response.data)) {
         setTasks(
-          response.data.filter((task: any) => typeof task?.name === "string")
+          response.data
+            .filter(
+              (task: any) =>
+                typeof task?.task_name === "string" &&
+                typeof task?.id === "string"
+            )
+            .map((task: any) => ({
+              id: task.id,
+              name: task.task_name, // map to expected field!
+            }))
         );
       } else {
         setTasks([]);
