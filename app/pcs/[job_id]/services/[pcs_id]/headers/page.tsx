@@ -650,7 +650,6 @@ export default function PCSJobPage() {
                       );
                     }}
                     placeholder="Task name"
-                    required
                   />
                   <Button
                     type="button"
