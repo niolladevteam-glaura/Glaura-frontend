@@ -23,6 +23,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import DatePicker from "@/components/ui/date-picker";
+import TimePicker from "@/components/ui/TimePicker";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +36,7 @@ import {
 import { ArrowLeft, Ship, X, Plus, Users, Anchor, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { format } from "date-fns";
 
 // API Configuration - Replace with your actual API endpoints
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -425,6 +428,33 @@ export default function NewPortCall() {
   const [newFormalityStatus, setNewFormalityStatus] = useState("");
   const [isAddPortOpen, setIsAddPortOpen] = useState(false);
   const [isAddFormalityOpen, setIsAddFormalityOpen] = useState(false);
+  const [restoredFromStorage, setRestoredFromStorage] = useState(false);
+  // Restore from localStorage on mount
+  useEffect(() => {
+    if (!restoredFromStorage) {
+      const savedFormData = localStorage.getItem("portCallFormData");
+      if (savedFormData) setFormData(JSON.parse(savedFormData));
+      const savedServices = localStorage.getItem("portCallSelectedServices");
+      if (savedServices) setSelectedServices(JSON.parse(savedServices));
+      setRestoredFromStorage(true);
+    }
+  }, [restoredFromStorage]);
+
+  // Only persist after initial restore
+  useEffect(() => {
+    if (restoredFromStorage) {
+      localStorage.setItem("portCallFormData", JSON.stringify(formData));
+    }
+  }, [formData, restoredFromStorage]);
+
+  useEffect(() => {
+    if (restoredFromStorage) {
+      localStorage.setItem(
+        "portCallSelectedServices",
+        JSON.stringify(selectedServices)
+      );
+    }
+  }, [selectedServices, restoredFromStorage]);
 
   const priorities = [
     { value: "high", label: "High" },
@@ -463,6 +493,88 @@ export default function NewPortCall() {
       return;
     }
   }, [router]);
+
+  const handleCancel = () => {
+    // Reset state
+    setFormData({
+      vesselId: "",
+      vesselName: "",
+      imo: "",
+      vesselType: "",
+      grt: "",
+      nrt: "",
+      flag: "",
+      callSign: "",
+      loa: "",
+      dwt: "",
+      builtYear: "",
+      sscecExpiry: "",
+      clientCompany: "",
+      agencyName: "",
+      eta: "",
+      etaDate: "",
+      etaTime: "",
+      formalityStatus: "",
+      priority: "",
+      remarks: "",
+      port: "",
+      piClub: "",
+      pic: {
+        pic_id: "",
+        customerPIC: "",
+        email: "",
+      },
+    });
+    setSelectedServices([]);
+    // Remove from localStorage
+    localStorage.removeItem("portCallFormData");
+    localStorage.removeItem("portCallSelectedServices");
+    toast({
+      title: "Form Cleared",
+      description: "Port call form has been cleared.",
+      variant: "default",
+    });
+    router.push("/dashboard");
+  };
+
+  const handleClearFormFields = () => {
+    setFormData({
+      vesselId: "",
+      vesselName: "",
+      imo: "",
+      vesselType: "",
+      grt: "",
+      nrt: "",
+      flag: "",
+      callSign: "",
+      loa: "",
+      dwt: "",
+      builtYear: "",
+      sscecExpiry: "",
+      clientCompany: "",
+      agencyName: "",
+      eta: "",
+      etaDate: "",
+      etaTime: "",
+      formalityStatus: "",
+      priority: "",
+      remarks: "",
+      port: "",
+      piClub: "",
+      pic: {
+        pic_id: "",
+        customerPIC: "",
+        email: "",
+      },
+    });
+    setSelectedServices([]);
+    toast({
+      title: "Form Fields Cleared",
+      description:
+        "All form fields have been reset (local storage not cleared).",
+      variant: "default",
+    });
+  };
 
   // Load ports when component mounts
   useEffect(() => {
@@ -809,7 +921,7 @@ export default function NewPortCall() {
           loa: response.data.loa ? String(response.data.loa) : prev.loa,
           nrt: response.data.nrt ? String(response.data.nrt) : prev.nrt,
           sscecExpiry: response.data.SSCEC_expires
-            ? formatDateToDDMMYYYY(new Date(response.data.SSCEC_expires))
+            ? format(new Date(response.data.SSCEC_expires), "yyyy-MM-dd")
             : prev.sscecExpiry,
           remarks: response.data.remark || prev.remarks,
         }));
@@ -881,8 +993,11 @@ export default function NewPortCall() {
       return;
     }
     setCurrentUser(JSON.parse(userData));
-    loadInitialData();
-  }, [router]);
+    if (!restoredFromStorage) {
+      // Only load initial API data if not restoring from storage
+      loadInitialData();
+    }
+  }, [router, restoredFromStorage]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -1142,7 +1257,8 @@ export default function NewPortCall() {
         description: "Port call created successfully!",
         duration: 5000,
       });
-
+      localStorage.removeItem("portCallFormData");
+      localStorage.removeItem("portCallSelectedServices");
       router.push("/dashboard");
     } catch (error) {
       toast({
@@ -1390,18 +1506,17 @@ export default function NewPortCall() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="sscecExpiry" className="form-label">
+                  <div className="flex flex-col">
+                    <Label htmlFor="sscecExpiry" className="form-label mb-1">
                       SSCEC Expiry
                     </Label>
-                    <Input
+                    <DatePicker
                       id="sscecExpiry"
-                      type="text"
                       value={formData.sscecExpiry}
-                      onChange={(e) =>
-                        handleInputChange("sscecExpiry", e.target.value)
+                      onChange={(date) =>
+                        handleInputChange("sscecExpiry", date)
                       }
-                      placeholder="DD-MM-YYYY"
+                      placeholder="DD.MM.YYYY"
                       className="form-input"
                     />
                   </div>
@@ -1518,6 +1633,7 @@ export default function NewPortCall() {
                                 className="w-full"
                               />
                             </div>
+
                             <div className="flex justify-end space-x-3">
                               <Button
                                 variant="outline"
@@ -1621,34 +1737,24 @@ export default function NewPortCall() {
                       <Label htmlFor="etaDate" className="form-label">
                         ETA Date (DD-MM-YYYY)
                       </Label>
-                      <Input
+                      <DatePicker
                         id="etaDate"
-                        type="text"
                         value={formData.etaDate}
-                        onChange={(e) =>
-                          handleInputChange("etaDate", e.target.value)
-                        }
-                        placeholder="DD-MM-YYYY"
+                        onChange={(date) => handleInputChange("etaDate", date)}
+                        placeholder="DD.MM.YYYY"
                         className="form-input"
-                        pattern="\d{2}-\d{2}-\d{4}"
-                        maxLength={10}
                       />
                     </div>
                     <div>
                       <Label htmlFor="etaTime" className="form-label">
                         ETA Time (24hr, HH:mm)
                       </Label>
-                      <Input
-                        id="etaTime"
-                        type="text"
+                      <TimePicker
                         value={formData.etaTime}
-                        onChange={(e) =>
-                          handleInputChange("etaTime", e.target.value)
+                        onChange={(value) =>
+                          handleInputChange("etaTime", value)
                         }
-                        placeholder="HH:mm"
-                        className="form-input"
-                        pattern="^([01]\d|2[0-3]):([0-5]\d)$"
-                        maxLength={5}
+                        className="" // Let it inherit from parent if needed
                       />
                     </div>
                   </div>
@@ -2052,6 +2158,24 @@ export default function NewPortCall() {
               }
             >
               {loading ? "Creating..." : "Create Port Call"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full h-12 text-base mt-2"
+              onClick={handleClearFormFields}
+              disabled={loading}
+            >
+              Clear Form Fields
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-12 text-base mt-2"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Cancel
             </Button>
           </div>
         </div>

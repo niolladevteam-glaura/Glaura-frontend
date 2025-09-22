@@ -1058,6 +1058,7 @@ export default function UserManagement() {
                             <SelectItem value="Management">
                               Management
                             </SelectItem>
+                            <SelectItem value="Finance ">Finance</SelectItem>
                             <SelectItem value="Operations">
                               Operations
                             </SelectItem>

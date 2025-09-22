@@ -45,6 +45,7 @@ import {
   AlertTriangle,
   X,
   ArrowLeft,
+  Cake,
 } from "lucide-react";
 import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -57,7 +58,6 @@ import {
 } from "@/components/ui/accordion";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
 import { Separator } from "@/components/ui/separator";
 
 // API Configuration
@@ -139,6 +139,81 @@ function getVendorPICArray(vendor: Vendor) {
   return [];
 }
 
+// -- Type for vendorForm --
+type VendorFormType = {
+  name: string;
+  address: string;
+  phoneCountryCode: string;
+  phoneNumber: string;
+  company_type: string;
+  email: string;
+  remark: string;
+  services: string[];
+  status: { status: boolean };
+  pics: VendorPIC[];
+};
+
+const blankVendorForm = (): VendorFormType => ({
+  name: "",
+  address: "",
+  phoneCountryCode: "+94",
+  phoneNumber: "",
+  company_type: "",
+  email: "",
+  remark: "",
+  services: [],
+  status: { status: true },
+  pics: [
+    {
+      id: `${Date.now()}`,
+      type: "Primary",
+      title: "Mr.",
+      firstName: "",
+      lastName: "",
+      name: "",
+      department: "",
+      birthday: "",
+      contactNumbers: [""],
+      contactTypes: ["Direct Line"],
+      emails: [""],
+      emailTypes: ["Personal"],
+      remark: "",
+    },
+  ],
+});
+
+function isVendorFormBlank(form: VendorFormType) {
+  return (
+    !form.name &&
+    !form.address &&
+    !form.phoneNumber &&
+    !form.company_type &&
+    !form.email &&
+    !form.remark &&
+    form.services.length === 0 &&
+    form.pics.length === 1 &&
+    !form.pics[0].firstName &&
+    !form.pics[0].lastName &&
+    !form.pics[0].department &&
+    !form.pics[0].birthday &&
+    (!form.pics[0].contactNumbers[0] ||
+      form.pics[0].contactNumbers.length === 0) &&
+    (!form.pics[0].emails[0] || form.pics[0].emails.length === 0)
+  );
+}
+
+function getInitialVendorForm(): VendorFormType {
+  if (typeof window !== "undefined") {
+    const draft = localStorage.getItem("vendorFormDraft");
+    if (draft) {
+      try {
+        return JSON.parse(draft);
+      } catch {}
+    }
+  }
+  return blankVendorForm();
+}
+
 export default function VendorManagement() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -148,6 +223,7 @@ export default function VendorManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [expiryAlerts, setExpiryAlerts] = useState<any[]>([]);
+  const [vendorBirthdayAlerts, setVendorBirthdayAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceCategories, setServiceCategories] = useState<string[]>([]);
@@ -159,34 +235,15 @@ export default function VendorManagement() {
 
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
-  const [vendorForm, setVendorForm] = useState({
-    name: "",
-    address: "",
-    phoneCountryCode: "+94",
-    phoneNumber: "",
-    company_type: "",
-    email: "",
-    remark: "",
-    services: [] as string[],
-    status: { status: true },
-    pics: [
-      {
-        id: `${Date.now()}`,
-        type: "Primary",
-        title: "Mr.",
-        firstName: "",
-        lastName: "",
-        name: "",
-        department: "",
-        birthday: "",
-        contactNumbers: [""],
-        contactTypes: ["Direct Line"],
-        emails: [""],
-        emailTypes: ["Personal"],
-        remark: "",
-      },
-    ] as VendorPIC[],
-  });
+
+  const [vendorForm, setVendorForm] = useState<VendorFormType>(
+    getInitialVendorForm()
+  );
+
+  const [serviceSearchTerm, setServiceSearchTerm] = useState("");
+  const filteredServiceCategories = serviceCategories.filter((cat) =>
+    cat.toLowerCase().includes(serviceSearchTerm.toLowerCase())
+  );
 
   const router = useRouter();
 
@@ -233,6 +290,61 @@ export default function VendorManagement() {
     }
   };
 
+  function calcVendorBirthdayAlerts(vendors: Vendor[]) {
+    const today = new Date();
+    const alerts: {
+      name: string;
+      company: string;
+      birthday: Date;
+      daysUntil: number;
+    }[] = [];
+
+    vendors.forEach((vendor) => {
+      (vendor.vendorPics || []).forEach((pic) => {
+        if (!pic.birthday) return;
+        try {
+          const birthday = new Date(pic.birthday);
+          if (isNaN(birthday.getTime())) return;
+          let thisYearBirthday = new Date(
+            today.getFullYear(),
+            birthday.getMonth(),
+            birthday.getDate()
+          );
+          // Handle Feb 29
+          if (birthday.getMonth() === 1 && birthday.getDate() === 29) {
+            if (
+              !(
+                (today.getFullYear() % 4 === 0 &&
+                  today.getFullYear() % 100 !== 0) ||
+                today.getFullYear() % 400 === 0
+              )
+            ) {
+              thisYearBirthday.setDate(28);
+            }
+          }
+          const daysUntil = Math.ceil(
+            (thisYearBirthday.getTime() - today.getTime()) /
+              (1000 * 60 * 60 * 24)
+          );
+          if (daysUntil >= 0 && daysUntil <= 7) {
+            alerts.push({
+              name:
+                (pic.title ? pic.title + " " : "") +
+                (pic.firstName || "") +
+                (pic.lastName ? " " + pic.lastName : ""),
+              company: vendor.name,
+              birthday: thisYearBirthday,
+              daysUntil,
+            });
+          }
+        } catch (e) {
+          // ignore invalid birthday
+        }
+      });
+    });
+    setVendorBirthdayAlerts(alerts.sort((a, b) => a.daysUntil - b.daysUntil));
+  }
+
   const loadVendors = async () => {
     try {
       setLoading(true);
@@ -276,6 +388,42 @@ export default function VendorManagement() {
       setLoading(false);
     }
   };
+
+  // Only save to localStorage if form is not blank, dialog is open, and not editing
+  useEffect(() => {
+    if (isAddVendorOpen && !editingVendor && !isVendorFormBlank(vendorForm)) {
+      localStorage.setItem("vendorFormDraft", JSON.stringify(vendorForm));
+    }
+  }, [vendorForm, isAddVendorOpen, editingVendor]);
+
+  useEffect(() => {
+    if (!isAddVendorOpen) setServiceSearchTerm("");
+  }, [isAddVendorOpen]);
+
+  // Restore vendor form from localStorage draft when opening dialog for new vendor
+  // When dialog opens (and not editing), restore draft or blank
+  useEffect(() => {
+    if (isAddVendorOpen && !editingVendor) {
+      const draft = localStorage.getItem("vendorFormDraft");
+      if (draft) {
+        try {
+          setVendorForm(JSON.parse(draft));
+        } catch {
+          setVendorForm(blankVendorForm());
+        }
+      } else {
+        setVendorForm(blankVendorForm());
+      }
+    }
+    // DO NOT set blankVendorForm on dialog close here!
+  }, [isAddVendorOpen, editingVendor]);
+
+  // When dialog closes (and not editing), clear the form (optional, or just rely on restore above)
+  useEffect(() => {
+    if (!isAddVendorOpen && !editingVendor) {
+      setVendorForm(blankVendorForm());
+    }
+  }, [isAddVendorOpen, editingVendor]);
 
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
@@ -355,13 +503,13 @@ export default function VendorManagement() {
     setFilteredVendors(filtered);
   }, [searchTerm, typeFilter, statusFilter, vendors]);
 
-  const handleVendorFormChange = (field: string, value: any) => {
-    setVendorForm((prev) => ({ ...prev, [field]: value }));
+  const handleVendorFormChange = (field: keyof VendorFormType, value: any) => {
+    setVendorForm((prev: VendorFormType) => ({ ...prev, [field]: value }));
   };
 
   // ---- PIC Section Handlers ----
   const addNewPIC = () => {
-    setVendorForm((prev) => ({
+    setVendorForm((prev: VendorFormType) => ({
       ...prev,
       pics: [
         ...(prev.pics || []),
@@ -384,7 +532,7 @@ export default function VendorManagement() {
     }));
   };
   const updatePIC = (index: number, field: keyof VendorPIC, value: any) => {
-    setVendorForm((prev) => {
+    setVendorForm((prev: VendorFormType) => {
       const updatedPics = [...(prev.pics || [])];
       updatedPics[index] = {
         ...updatedPics[index],
@@ -394,13 +542,13 @@ export default function VendorManagement() {
     });
   };
   const removePIC = (index: number) => {
-    setVendorForm((prev) => ({
+    setVendorForm((prev: VendorFormType) => ({
       ...prev,
       pics: (prev.pics || []).filter((_, i) => i !== index),
     }));
   };
   const addPICContactNumber = (picIndex: number) => {
-    setVendorForm((prev) => {
+    setVendorForm((prev: VendorFormType) => {
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].contactNumbers = [
         ...updatedPics[picIndex].contactNumbers,
@@ -418,7 +566,7 @@ export default function VendorManagement() {
     contactIndex: number,
     value: string
   ) => {
-    setVendorForm((prev) => {
+    setVendorForm((prev: VendorFormType) => {
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].contactNumbers[contactIndex] = value;
       return { ...prev, pics: updatedPics };
@@ -429,7 +577,7 @@ export default function VendorManagement() {
     contactIndex: number,
     value: string
   ) => {
-    setVendorForm((prev) => {
+    setVendorForm((prev: VendorFormType) => {
       const updatedPics = [...(prev.pics || [])];
       if (!updatedPics[picIndex].contactTypes) {
         updatedPics[picIndex].contactTypes = [];
@@ -439,7 +587,7 @@ export default function VendorManagement() {
     });
   };
   const removePICContactNumber = (picIndex: number, contactIndex: number) => {
-    setVendorForm((prev) => {
+    setVendorForm((prev: VendorFormType) => {
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].contactNumbers = updatedPics[
         picIndex
@@ -453,7 +601,7 @@ export default function VendorManagement() {
     });
   };
   const addPICEmail = (picIndex: number) => {
-    setVendorForm((prev) => {
+    setVendorForm((prev: VendorFormType) => {
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails = [...updatedPics[picIndex].emails, ""];
       updatedPics[picIndex].emailTypes = [
@@ -468,7 +616,7 @@ export default function VendorManagement() {
     emailIndex: number,
     value: string
   ) => {
-    setVendorForm((prev) => {
+    setVendorForm((prev: VendorFormType) => {
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails[emailIndex] = value;
       return { ...prev, pics: updatedPics };
@@ -479,7 +627,7 @@ export default function VendorManagement() {
     emailIndex: number,
     value: string
   ) => {
-    setVendorForm((prev) => {
+    setVendorForm((prev: VendorFormType) => {
       const updatedPics = [...(prev.pics || [])];
       if (!updatedPics[picIndex].emailTypes) {
         updatedPics[picIndex].emailTypes = [];
@@ -489,7 +637,7 @@ export default function VendorManagement() {
     });
   };
   const removePICEmail = (picIndex: number, emailIndex: number) => {
-    setVendorForm((prev) => {
+    setVendorForm((prev: VendorFormType) => {
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails = updatedPics[picIndex].emails.filter(
         (_, i) => i !== emailIndex
@@ -536,7 +684,6 @@ export default function VendorManagement() {
         remark: vendorForm.remark.trim(),
         services: vendorForm.services,
         status: { status: vendorForm.status.status },
-        // Send only the first PIC as "pic" object, with API keys matching backend requirements
         pic:
           vendorForm.pics && vendorForm.pics.length > 0
             ? {
@@ -549,7 +696,6 @@ export default function VendorManagement() {
               }
             : undefined,
       };
-      console.log("Backend payload:", backendData);
       const VENDOR_API = `${API_BASE_URL}/vendor`;
       let response;
       if (editingVendor) {
@@ -566,34 +712,8 @@ export default function VendorManagement() {
       await loadVendors();
       setIsAddVendorOpen(false);
       setEditingVendor(null);
-      setVendorForm({
-        name: "",
-        address: "",
-        phoneCountryCode: "+94",
-        phoneNumber: "",
-        company_type: "",
-        email: "",
-        remark: "",
-        services: [],
-        status: { status: true },
-        pics: [
-          {
-            id: `${Date.now()}`,
-            type: "Primary",
-            title: "Mr.",
-            firstName: "",
-            lastName: "",
-            name: "",
-            department: "",
-            birthday: "",
-            contactNumbers: [""],
-            contactTypes: ["Direct Line"],
-            emails: [""],
-            emailTypes: ["Personal"],
-            remark: "",
-          },
-        ],
-      });
+      setVendorForm(blankVendorForm());
+      localStorage.removeItem("vendorFormDraft");
       toast({
         title: "Success",
         description: editingVendor
@@ -615,7 +735,6 @@ export default function VendorManagement() {
   const editVendor = (vendor: Vendor) => {
     setEditingVendor(vendor);
 
-    // Split vendor.phone_number into country code and number for the form
     let phoneCountryCode = "+94";
     let phoneNumber = "";
     if (vendor.phone_number) {
@@ -628,7 +747,6 @@ export default function VendorManagement() {
       }
     }
 
-    // Normalize PICs for the form!
     const picArray = getVendorPICArray(vendor);
 
     setVendorForm({
@@ -694,6 +812,7 @@ export default function VendorManagement() {
     });
     setIsAddVendorOpen(true);
   };
+
   const getKycStatusColor = (status: string) => {
     switch (status) {
       case "Approved":
@@ -711,8 +830,10 @@ export default function VendorManagement() {
     try {
       setLoading(true);
       await apiCall(`${API_ENDPOINTS.VENDORS}/${id}`, { method: "DELETE" });
-      setVendors((prev) => prev.filter((vendor) => vendor.vendor_id !== id));
-      setFilteredVendors((prev) =>
+      setVendors((prev: Vendor[]) =>
+        prev.filter((vendor) => vendor.vendor_id !== id)
+      );
+      setFilteredVendors((prev: Vendor[]) =>
         prev.filter((vendor) => vendor.vendor_id !== id)
       );
       toast({
@@ -891,6 +1012,48 @@ export default function VendorManagement() {
                 </div>
               </CardContent>
             </Card>
+            <Card className="professional-card">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Cake className="h-5 w-5" />
+                  <span>Vendor PIC Birthdays</span>
+                </CardTitle>
+                <CardDescription>Upcoming vendor PIC birthdays</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {vendorBirthdayAlerts.length > 0 ? (
+                  <div className="space-y-3">
+                    {vendorBirthdayAlerts.map((alert, index) => (
+                      <div key={index} className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-medium text-sm">{alert.name}</p>
+                          <Badge
+                            variant={
+                              alert.daysUntil <= 3 ? "destructive" : "secondary"
+                            }
+                            className="text-xs"
+                          >
+                            {alert.daysUntil === 0
+                              ? "Today"
+                              : `${alert.daysUntil}d`}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {alert.company}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateDMY(alert.birthday)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No upcoming birthdays
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </div>
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
@@ -1052,6 +1215,14 @@ export default function VendorManagement() {
                               >
                                 Go to Service Management to add services
                               </Link>
+                              <Input
+                                placeholder="Search services..."
+                                value={serviceSearchTerm}
+                                onChange={(e) =>
+                                  setServiceSearchTerm(e.target.value)
+                                }
+                                className="form-input mt-2 mb-2"
+                              />
                               {loadingServices ? (
                                 <div className="flex items-center space-x-2 py-2">
                                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -1059,9 +1230,9 @@ export default function VendorManagement() {
                                     Loading services...
                                   </span>
                                 </div>
-                              ) : serviceCategories.length > 0 ? (
+                              ) : filteredServiceCategories.length > 0 ? (
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 max-h-60 overflow-y-auto p-2 border rounded-lg">
-                                  {serviceCategories.map((category) => (
+                                  {filteredServiceCategories.map((category) => (
                                     <div
                                       key={category}
                                       className="flex items-center space-x-2"
@@ -1598,7 +1769,10 @@ export default function VendorManagement() {
                         <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
                           <Button
                             variant="outline"
-                            onClick={() => setIsAddVendorOpen(false)}
+                            onClick={() => {
+                              setIsAddVendorOpen(false);
+                              localStorage.removeItem("vendorFormDraft");
+                            }}
                             disabled={loading}
                             className="w-full sm:w-auto"
                           >

@@ -42,6 +42,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import DatePicker from "@/components/ui/date-picker";
+import TimePicker from "@/components/ui/TimePicker";
+import { format, parseISO } from "date-fns";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/servicetask";
 
@@ -543,7 +546,14 @@ export default function PCSTasksPage() {
                     <TableCell>
                       {isTaskCompleted(task) ? (
                         <>
-                          <div>{task.compleated_date}</div>
+                          <div>
+                            {task.compleated_date
+                              ? format(
+                                  parseISO(task.compleated_date),
+                                  "MM.dd.yyyy"
+                                )
+                              : "-"}
+                          </div>
                           <div className="text-xs text-muted-foreground">
                             {task.compleated_time}
                           </div>
@@ -642,22 +652,26 @@ export default function PCSTasksPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCompleteTask} className="space-y-4">
-            <div>
-              <Label>Date</Label>
-              <Input
-                type="date"
+            {/* Date Field */}
+            <div className="space-y-2">
+              <Label htmlFor="complete-date">Date</Label> <br></br>
+              <DatePicker
+                id="complete-date"
                 value={completeDate}
-                onChange={(e) => setCompleteDate(e.target.value)}
-                required
+                onChange={setCompleteDate}
+                placeholder="Select date"
+                className="w-full"
               />
             </div>
-            <div>
-              <Label>Time</Label>
-              <Input
-                type="time"
+            {/* Time Field */}
+            <div className="space-y-2">
+              <Label htmlFor="complete-time">Time</Label>
+              <TimePicker
+                id="complete-time"
                 value={completeTime}
-                onChange={(e) => setCompleteTime(e.target.value)}
-                required
+                onChange={setCompleteTime}
+                placeholder="Select time"
+                className="w-full"
               />
             </div>
             <DialogFooter>

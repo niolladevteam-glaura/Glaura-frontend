@@ -23,7 +23,6 @@ import {
   Calendar,
   Clock,
   Search,
-  Building2,
 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -58,6 +57,7 @@ interface Service {
   vendor: string;
   createdAt: string;
   updatedAt: string;
+  vesselName?: string; // <-- Make sure backend sends this
 }
 
 function getServiceCategory(serviceName: string): "crew" | "spares" | "other" {
@@ -84,6 +84,7 @@ export default function ActiveServicesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [vendorFilter, setVendorFilter] = useState("all");
   const [selectedTab, setSelectedTab] = useState("all");
+  const [vesselFilter, setVesselFilter] = useState("all"); // Vessel filter for dropdown
   const [loading, setLoading] = useState(true);
 
   const router = useRouter();
@@ -134,6 +135,11 @@ export default function ActiveServicesPage() {
     new Set(services.map((svc) => svc.vendor))
   ).filter(Boolean);
 
+  // Unique vessel names for filter
+  const vesselOptions = Array.from(
+    new Set(services.map((svc) => svc.vesselName || ""))
+  ).filter(Boolean);
+
   // Filter/search logic
   useEffect(() => {
     let filtered = services;
@@ -146,6 +152,11 @@ export default function ActiveServicesPage() {
     }
     if (vendorFilter !== "all") {
       filtered = filtered.filter((svc) => svc.vendor === vendorFilter);
+    }
+    if (vesselFilter !== "all") {
+      filtered = filtered.filter(
+        (svc) => svc.vesselName && svc.vesselName === vesselFilter
+      );
     }
     // Tab logic:
     if (selectedTab === "crew") {
@@ -160,10 +171,14 @@ export default function ActiveServicesPage() {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       filtered = filtered.filter((svc) => new Date(svc.createdAt) > weekAgo);
+    } else if (selectedTab === "other") {
+      filtered = filtered.filter(
+        (svc) => getServiceCategory(svc.serviceName) === "other"
+      );
     }
     // "all" tab shows everything
     setFilteredServices(filtered);
-  }, [searchTerm, vendorFilter, selectedTab, services]);
+  }, [searchTerm, vendorFilter, vesselFilter, selectedTab, services]);
 
   // Counts for tabs
   const crewCount = services.filter(
@@ -171,6 +186,9 @@ export default function ActiveServicesPage() {
   ).length;
   const sparesCount = services.filter(
     (svc) => getServiceCategory(svc.serviceName) === "spares"
+  ).length;
+  const otherCount = services.filter(
+    (svc) => getServiceCategory(svc.serviceName) === "other"
   ).length;
   const recentCount = services.filter((svc) => {
     const weekAgo = new Date();
@@ -301,8 +319,23 @@ export default function ActiveServicesPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {/* Vessel Name Filter Dropdown */}
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Select value={vesselFilter} onValueChange={setVesselFilter}>
+                  <SelectTrigger className="w-full sm:w-56">
+                    <SelectValue placeholder="Vessel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Vessels</SelectItem>
+                    {vesselOptions.map((vessel) => (
+                      <SelectItem key={vessel} value={vessel}>
+                        {vessel}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-
             {/* Tabs: match Active Port Calls styling */}
             <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <Tabs
@@ -330,6 +363,12 @@ export default function ActiveServicesPage() {
                     Spares ({sparesCount})
                   </TabsTrigger>
                   <TabsTrigger
+                    value="other"
+                    className="flex-1 min-w-[120px] text-center px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition sm:min-w-[150px] sm:flex-none"
+                  >
+                    Other Services ({otherCount})
+                  </TabsTrigger>
+                  <TabsTrigger
                     value="recent"
                     className="flex-1 min-w-[120px] text-center px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition sm:min-w-[150px] sm:flex-none"
                   >
@@ -351,7 +390,9 @@ export default function ActiveServicesPage() {
                   No active services found
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  {searchTerm || vendorFilter !== "all"
+                  {searchTerm ||
+                  vendorFilter !== "all" ||
+                  vesselFilter !== "all"
                     ? "Try adjusting your search criteria"
                     : "There are currently no active services."}
                 </p>
@@ -375,6 +416,9 @@ export default function ActiveServicesPage() {
                           <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                             {svc.job_id}
                           </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                            {svc.vesselName ? `Vessel: ${svc.vesselName}` : ""}
+                          </p>
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
@@ -384,7 +428,6 @@ export default function ActiveServicesPage() {
                       </div>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4 text-gray-400" />
