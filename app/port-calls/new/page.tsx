@@ -1575,7 +1575,7 @@ export default function NewPortCall() {
                   </div>
                   <div>
                     <Label htmlFor="agencyName" className="form-label">
-                      Agency Name
+                      Client PIC
                     </Label>
                     <Input
                       id="agencyName"
@@ -1583,7 +1583,7 @@ export default function NewPortCall() {
                       onChange={(e) =>
                         handleInputChange("agencyName", e.target.value)
                       }
-                      placeholder="Enter agency name"
+                      placeholder="Enter client PIC"
                       className="form-input"
                     />
                   </div>
@@ -1922,14 +1922,14 @@ export default function NewPortCall() {
                   </div>
                   <div>
                     <Label htmlFor="assignedPIC" className="form-label">
-                      Assigned PIC
+                      Section Head
                     </Label>
                     <Select
                       value={formData.pic.pic_id}
                       onValueChange={(pic_id) => handlePicChange(pic_id)}
                     >
                       <SelectTrigger className="form-input" id="assignedPIC">
-                        <SelectValue placeholder="Select PIC's" />
+                        <SelectValue placeholder="Select Section Head" />
                       </SelectTrigger>
                       <SelectContent>
                         {customerPICOptions.map((pic) => (
@@ -1993,7 +1993,7 @@ export default function NewPortCall() {
                       open={isAddServiceOpen}
                       onOpenChange={setIsAddServiceOpen}
                     >
-                      <Link href="/services" passHref>
+                      <Link href="/port-calls/add-services" passHref>
                         <Button variant="outline" size="sm" disabled={loading}>
                           <Plus className="h-4 w-4 mr-2" />
                           Add Service

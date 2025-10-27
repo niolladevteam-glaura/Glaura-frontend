@@ -24,6 +24,9 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus, Trash2, Anchor, LogOut } from "lucide-react";
 
+// IMPORT Textarea
+import { Textarea } from "@/components/ui/textarea";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type Vessel = {
@@ -568,7 +571,8 @@ export default function PdaGeneratePage() {
                                 />
                               </div>
                               <div className="col-span-12 xs:col-span-3">
-                                <Input
+                                {/* Use Textarea for Remarks */}
+                                <Textarea
                                   placeholder="Remarks"
                                   value={row.remarks}
                                   onChange={(e) =>
@@ -580,6 +584,7 @@ export default function PdaGeneratePage() {
                                     )
                                   }
                                   className="w-full"
+                                  rows={2}
                                 />
                               </div>
                               <div className="col-span-12 xs:col-span-1">

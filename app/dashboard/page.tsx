@@ -302,34 +302,72 @@ export default function Dashboard() {
     );
   };
 
-  if (!mounted || !currentUser) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="loading-skeleton w-8 h-8 rounded-full"></div>
-      </div>
-    );
-  }
-
-  const navigationItems = [
-    { href: "/dashboard", icon: BarChart3, label: "Dashboard", active: true },
-    ...(canCreatePortCall()
-      ? [{ href: "/port-calls/new", icon: Plus, label: "New Port Call" }]
-      : []),
-    { href: "/port-calls", icon: Ship, label: "Active Port Calls" },
-    { href: "/all-services", icon: ListChecks, label: "Active Services" },
-    { href: "/emails", icon: Mails, label: "Emails" },
-    { href: "/customers", icon: Building2, label: "Customer Companies" },
-    { href: "/vendors", icon: Handshake, label: "Vendor Management" },
-    { href: "/services", icon: ClipboardList, label: "Services Management" },
-    { href: "/documents", icon: FileText, label: "Documents" },
-    ...(currentUser.accessLevel === "A"
-      ? [{ href: "/users", icon: Users, label: "User Management" }]
-      : []),
-    { href: "/vessels", icon: Ship, label: "Vessel Management" },
-    { href: "/pic-management", icon: UserCog, label: "PIC Management" },
-    { href: "/tasks", icon: ListTodo, label: "Task Management" },
-    { href: "/feedback", icon: MessageSquareQuote, label: "Feedback" },
-    //{ href: "/glChat", icon: MessageCircle, label: "GL Chat" },
+  // Grouped navigation items with headings
+  const navigationGroups = [
+    {
+      heading: "Management",
+      items: [
+        { href: "/dashboard", icon: BarChart3, label: "Reports", active: true },
+        ...(currentUser?.accessLevel === "A"
+          ? [{ href: "/users", icon: Users, label: "User Management" }]
+          : []),
+        { href: "/pic-management", icon: UserCog, label: "PIC Management" },
+        { href: "/vendors", icon: Handshake, label: "Vendor Management" },
+      ],
+    },
+    {
+      heading: "Operations Department",
+      items: [
+        { href: "/port-calls", icon: Ship, label: "Active Port Calls" },
+        { href: "/all-services", icon: ListChecks, label: "Active Services" },
+        {
+          href: "/husbandry-services",
+          icon: ClipboardList,
+          label: "Husbandry Services",
+        },
+        { href: "/tanker-operations", icon: Ship, label: "Tanker Operations" },
+        {
+          href: "/bunkering-operations",
+          icon: Ship,
+          label: "Bunkering Operations",
+        },
+        { href: "/documents", icon: FileText, label: "Document Management" },
+      ],
+    },
+    {
+      heading: "Disbursement Department",
+      items: [
+        ...(canCreatePortCall()
+          ? [{ href: "/port-calls/new", icon: Plus, label: "New Port Call" }]
+          : []),
+        { href: "/customers", icon: Building2, label: "Customers" },
+        { href: "/vessels", icon: Ship, label: "Vessel Management" },
+        { href: "/tasks", icon: ListTodo, label: "Task Management" },
+        { href: "/documents", icon: FileText, label: "Document Management" },
+      ],
+    },
+    {
+      heading: "Accounts Department",
+      items: [
+        // Add links if needed
+      ],
+    },
+    {
+      heading: "HR Department",
+      items: [
+        // Add links if needed
+      ],
+    },
+    {
+      heading: "Admin Department",
+      items: [],
+    },
+    {
+      heading: "IT & Social Media Department",
+      items: [
+        // Add links if needed
+      ],
+    },
   ];
 
   const WelcomeCard = ({ user }: { user: UserType }) => (
@@ -338,10 +376,10 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <Badge className="bg-white/20 text-white border-white/30 mb-4">
-              Access Level: {currentUser.accessLevel}
+              Access Level: {user?.accessLevel ?? ""}
             </Badge>
             <h1 className="text-3xl font-bold mb-2">
-              Welcome back, {currentUser.name}
+              Welcome back, {currentUser?.name ?? ""}
             </h1>
             <p className="text-white/90 text-lg mb-6 max-w-2xl">
               The Aura of Excellence in Port Services
@@ -397,6 +435,14 @@ export default function Dashboard() {
     </Card>
   );
 
+  if (!mounted || !currentUser) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="loading-skeleton w-8 h-8 rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Enhanced Mobile Header */}
@@ -413,17 +459,28 @@ export default function Dashboard() {
                 side="left"
                 className="w-[300px] max-h-[90vh] overflow-y-auto"
               >
-                <nav className="space-y-2 pt-6">
-                  {navigationItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`nav-item ${item.active ? "active" : ""}`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span className="font-medium">{item.label}</span>
-                    </Link>
+                <nav className="space-y-6 pt-6">
+                  {navigationGroups.map((group, idx) => (
+                    <div key={group.heading || idx}>
+                      <h3 className="text-xs font-bold text-muted-foreground mb-2 uppercase">
+                        {group.heading}
+                      </h3>
+                      <div className="space-y-1">
+                        {group.items.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`nav-item ${
+                              item.active ? "active" : ""
+                            }`}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            <item.icon className="h-5 w-5" />
+                            <span className="font-medium">{item.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </nav>
               </SheetContent>
@@ -515,19 +572,28 @@ export default function Dashboard() {
       <div className="flex">
         {/* Enhanced Desktop Sidebar */}
         <aside className="hidden lg:block w-72 border-r bg-background min-h-screen sticky top-[73px] overflow-y-auto">
-          <nav className="p-4 space-y-2">
-            {navigationItems.map((item, index) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`nav-item animate-fade-in-left ${
-                  item.active ? "active" : ""
-                }`}
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="font-medium">{item.label}</span>
-              </Link>
+          <nav className="p-4 space-y-6">
+            {navigationGroups.map((group, idx) => (
+              <div key={group.heading || idx}>
+                <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase">
+                  {group.heading}
+                </h3>
+                <div className="space-y-2">
+                  {group.items.map((item, index) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`nav-item animate-fade-in-left ${
+                        item.active ? "active" : ""
+                      }`}
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span className="font-medium">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
         </aside>
