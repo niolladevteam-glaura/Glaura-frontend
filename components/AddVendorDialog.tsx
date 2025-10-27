@@ -1,0 +1,1031 @@
+"use client";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Users, Plus, X, FileText } from "lucide-react";
+import ShadCountryPhoneInput from "@/components/ui/ShadCountryPhoneInput";
+import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
+
+// Vendor PIC and VendorFormType definitions
+interface VendorPIC {
+  id: string;
+  type?: "Primary" | "Secondary";
+  title?: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  department: string;
+  birthday: string;
+  contactNumbers: string[];
+  contactTypes?: string[];
+  emails: string[];
+  emailTypes?: string[];
+  remark: string;
+}
+
+type VendorFormType = {
+  name: string;
+  address: string;
+  phoneCountryCode: string;
+  phoneNumber: string;
+  company_type: string;
+  email: string;
+  remark: string;
+  services: string[];
+  status: { status: boolean };
+  pics: VendorPIC[];
+  attachments: AttachmentFormType[];
+};
+
+type AttachmentFormType = {
+  type: string;
+  file: File | null;
+  fileSize: number;
+  expiryDate: string;
+  remarks: string;
+};
+
+type AddVendorDialogProps = {
+  open: boolean;
+  onOpenChange: (val: boolean) => void;
+  serviceCategories: string[];
+  loadingServices: boolean;
+  onSaveVendor: (formData: VendorFormType) => Promise<void>;
+};
+
+// Key for localStorage draft persistence
+const VENDOR_FORM_DRAFT_KEY = "addVendorFormDraft";
+
+// List of required attachment types
+const ATTACHMENT_FIELDS = [
+  "Company Profile",
+  "Business Registration Certificate",
+  "Tax Registration Certificate (e.g., VAT/TRN)",
+  "List of Directors/Owners",
+  "Bank Details (on official letterhead)",
+  "Relevant ISO or Industry Certifications",
+  "Insurance Certificates (if applicable)",
+  "Health, Safety, and Quality Policy Documents",
+  "List of Key Contact Persons",
+];
+
+const blankVendorForm = (): VendorFormType => ({
+  name: "",
+  address: "",
+  phoneCountryCode: "+94",
+  phoneNumber: "",
+  company_type: "",
+  email: "",
+  remark: "",
+  services: [],
+  status: { status: true },
+  pics: [
+    {
+      id: `${Date.now()}`,
+      type: "Primary",
+      title: "Mr.",
+      firstName: "",
+      lastName: "",
+      name: "",
+      department: "",
+      birthday: "",
+      contactNumbers: [""],
+      contactTypes: ["Direct Line"],
+      emails: [""],
+      emailTypes: ["Personal"],
+      remark: "",
+    },
+  ],
+  attachments: ATTACHMENT_FIELDS.map((type) => ({
+    type,
+    file: null,
+    fileSize: 0,
+    expiryDate: "",
+    remarks: "",
+  })),
+});
+
+export default function AddVendorDialog({
+  open,
+  onOpenChange,
+  serviceCategories,
+  loadingServices,
+  onSaveVendor,
+}: AddVendorDialogProps) {
+  // Internal state
+  const [vendorForm, setVendorForm] = useState<VendorFormType>(
+    blankVendorForm()
+  );
+  const [loading, setLoading] = useState(false);
+  const [serviceSearchTerm, setServiceSearchTerm] = useState("");
+  const [attachmentErrors, setAttachmentErrors] = useState<boolean[]>([]);
+  const hasLoadedDraft = useRef(false);
+
+  // Load draft if available when dialog opens (only once per open)
+  useEffect(() => {
+    if (open && !hasLoadedDraft.current) {
+      hasLoadedDraft.current = true;
+      const draft = localStorage.getItem(VENDOR_FORM_DRAFT_KEY);
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          setVendorForm(parsed);
+        } catch {
+          setVendorForm(blankVendorForm());
+        }
+      } else {
+        setVendorForm(blankVendorForm());
+      }
+    }
+  }, [open]);
+
+  // Reset draft flag when dialog closes
+  useEffect(() => {
+    if (!open) {
+      hasLoadedDraft.current = false;
+      localStorage.removeItem(VENDOR_FORM_DRAFT_KEY);
+    }
+  }, [open]);
+
+  // Persist vendorForm draft to localStorage on every change while dialog is open
+  useEffect(() => {
+    if (open && vendorForm) {
+      localStorage.setItem(VENDOR_FORM_DRAFT_KEY, JSON.stringify(vendorForm));
+    }
+  }, [open, vendorForm]);
+
+  // Handler functions for PIC section
+  const addNewPIC = () => {
+    setVendorForm((prev: VendorFormType) => ({
+      ...prev,
+      pics: [
+        ...(prev.pics || []),
+        {
+          id: Date.now().toString(),
+          type: "Secondary",
+          title: "Mr.",
+          firstName: "",
+          lastName: "",
+          name: "",
+          department: "",
+          birthday: "",
+          contactNumbers: [""],
+          contactTypes: ["Direct Line"],
+          emails: [""],
+          emailTypes: ["Personal"],
+          remark: "",
+        },
+      ],
+    }));
+  };
+
+  const updatePIC = (index: number, field: keyof VendorPIC, value: any) => {
+    setVendorForm((prev: VendorFormType) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[index] = {
+        ...updatedPics[index],
+        [field]: value,
+      };
+      return { ...prev, pics: updatedPics };
+    });
+  };
+
+  const removePIC = (index: number) => {
+    setVendorForm((prev: VendorFormType) => ({
+      ...prev,
+      pics: (prev.pics || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const addPICContactNumber = (picIndex: number) => {
+    setVendorForm((prev: VendorFormType) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].contactNumbers = [
+        ...updatedPics[picIndex].contactNumbers,
+        "",
+      ];
+      updatedPics[picIndex].contactTypes = [
+        ...(updatedPics[picIndex].contactTypes || []),
+        "Direct Line",
+      ];
+      return { ...prev, pics: updatedPics };
+    });
+  };
+
+  const updatePICContactNumber = (
+    picIndex: number,
+    contactIndex: number,
+    value: string
+  ) => {
+    setVendorForm((prev: VendorFormType) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].contactNumbers[contactIndex] = value;
+      return { ...prev, pics: updatedPics };
+    });
+  };
+
+  const removePICContactNumber = (picIndex: number, contactIndex: number) => {
+    setVendorForm((prev: VendorFormType) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].contactNumbers = updatedPics[
+        picIndex
+      ].contactNumbers.filter((_, i) => i !== contactIndex);
+      updatedPics[picIndex].contactTypes = updatedPics[picIndex].contactTypes
+        ? updatedPics[picIndex].contactTypes!.filter(
+            (_, i) => i !== contactIndex
+          )
+        : [];
+      return { ...prev, pics: updatedPics };
+    });
+  };
+
+  const addPICEmail = (picIndex: number) => {
+    setVendorForm((prev: VendorFormType) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].emails = [...updatedPics[picIndex].emails, ""];
+      updatedPics[picIndex].emailTypes = [
+        ...(updatedPics[picIndex].emailTypes || []),
+        "Personal",
+      ];
+      return { ...prev, pics: updatedPics };
+    });
+  };
+
+  const updatePICEmail = (
+    picIndex: number,
+    emailIndex: number,
+    value: string
+  ) => {
+    setVendorForm((prev: VendorFormType) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].emails[emailIndex] = value;
+      return { ...prev, pics: updatedPics };
+    });
+  };
+
+  const removePICEmail = (picIndex: number, emailIndex: number) => {
+    setVendorForm((prev: VendorFormType) => {
+      const updatedPics = [...(prev.pics || [])];
+      updatedPics[picIndex].emails = updatedPics[picIndex].emails.filter(
+        (_, i) => i !== emailIndex
+      );
+      updatedPics[picIndex].emailTypes = updatedPics[picIndex].emailTypes
+        ? updatedPics[picIndex].emailTypes!.filter((_, i) => i !== emailIndex)
+        : [];
+      return { ...prev, pics: updatedPics };
+    });
+  };
+
+  // Attachment Handlers
+  const handleAttachmentFile = (idx: number, file: File | null) => {
+    setVendorForm((prev) => {
+      const newAttachments = [...prev.attachments];
+      newAttachments[idx].file = file;
+      newAttachments[idx].fileSize = file ? file.size : 0;
+      return { ...prev, attachments: newAttachments };
+    });
+  };
+
+  const handleAttachmentExpiry = (idx: number, value: string) => {
+    setVendorForm((prev) => {
+      const newAttachments = [...prev.attachments];
+      newAttachments[idx].expiryDate = value;
+      return { ...prev, attachments: newAttachments };
+    });
+  };
+
+  const handleAttachmentRemarks = (idx: number, value: string) => {
+    setVendorForm((prev) => {
+      const newAttachments = [...prev.attachments];
+      newAttachments[idx].remarks = value;
+      return { ...prev, attachments: newAttachments };
+    });
+  };
+
+  // Service filter
+  const filteredServiceCategories = serviceCategories.filter((cat) =>
+    cat.toLowerCase().includes(serviceSearchTerm.toLowerCase())
+  );
+
+  // Validation for attachments
+  useEffect(() => {
+    setAttachmentErrors(
+      vendorForm.attachments.map((att, idx) => {
+        // Insurance Certificates (if applicable) only required if user uploads something (optional)
+        if (att.type === "Insurance Certificates (if applicable)") {
+          // Still, require expiry, remarks if file is filled
+          return att.file
+            ? !(att.file && att.expiryDate && att.remarks)
+            : false;
+        }
+        return !(att.file && att.expiryDate && att.remarks);
+      })
+    );
+  }, [vendorForm.attachments]);
+
+  // Save vendor handler
+  const handleSaveVendor = async () => {
+    // Check attachment validation
+    if (attachmentErrors.some((err) => err)) {
+      alert(
+        "Please fill all required attachment fields, including file, expiry date, and remarks."
+      );
+      return;
+    }
+    setLoading(true);
+    try {
+      await onSaveVendor(vendorForm);
+      onOpenChange(false);
+      setVendorForm(blankVendorForm());
+      localStorage.removeItem(VENDOR_FORM_DRAFT_KEY); // Clear draft after save
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handler for "Go to Service Management" link to persist draft before navigation
+  const handleGoToServiceManagement = (e: React.MouseEvent) => {
+    localStorage.setItem(VENDOR_FORM_DRAFT_KEY, JSON.stringify(vendorForm));
+    // let navigation happen
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[98vw] sm:max-w-4xl max-h-[95vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Vendor</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Company Information</h3>
+            {/* Company fields */}
+            <div>
+              <Label htmlFor="name" className="form-label">
+                Company Name *
+              </Label>
+              <Input
+                id="name"
+                value={vendorForm.name}
+                onChange={(e) =>
+                  setVendorForm((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
+                }
+                placeholder="Enter company name"
+                className="form-input"
+              />
+            </div>
+            <div>
+              <Label htmlFor="companyType" className="form-label">
+                Company Type
+              </Label>
+              <Input
+                id="companyType"
+                value={vendorForm.company_type}
+                onChange={(e) =>
+                  setVendorForm((prev) => ({
+                    ...prev,
+                    company_type: e.target.value,
+                  }))
+                }
+                placeholder="e.g., Launch Boat Operator"
+                className="form-input"
+              />
+            </div>
+            <div>
+              <Label htmlFor="address" className="form-label">
+                Address
+              </Label>
+              <Textarea
+                id="address"
+                value={vendorForm.address}
+                onChange={(e) =>
+                  setVendorForm((prev) => ({
+                    ...prev,
+                    address: e.target.value,
+                  }))
+                }
+                placeholder="Enter company address"
+                className="form-input"
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phoneNumber" className="form-label">
+                Phone Number
+              </Label>
+              <div className="flex gap-2">
+                <div className="w-36">
+                  <ShadCountryPhoneInput
+                    country="lk"
+                    value={vendorForm.phoneCountryCode || "+94"}
+                    onChange={(_, data) => {
+                      const dial =
+                        "+" +
+                        (typeof data === "object" && data && "dialCode" in data
+                          ? (data as any).dialCode
+                          : "");
+                      setVendorForm((prev) => ({
+                        ...prev,
+                        phoneCountryCode: dial,
+                      }));
+                    }}
+                  />
+                </div>
+                <Input
+                  id="phoneNumber"
+                  value={vendorForm.phoneNumber}
+                  onChange={(e) =>
+                    setVendorForm((prev) => ({
+                      ...prev,
+                      phoneNumber: e.target.value,
+                    }))
+                  }
+                  placeholder="112223344"
+                  className="form-input flex-1"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="email" className="form-label">
+                Email
+              </Label>
+              <Input
+                id="email"
+                value={vendorForm.email}
+                onChange={(e) =>
+                  setVendorForm((prev) => ({
+                    ...prev,
+                    email: e.target.value,
+                  }))
+                }
+                placeholder="email@company.com"
+                className="form-input"
+              />
+            </div>
+            {/* Service categories */}
+            <div>
+              <Label className="form-label">Service Categories</Label>
+              <br />
+              <Link
+                href="/vendors/add-services"
+                className="text-primary text-sm mt-1 inline-block hover:underline"
+                onClick={handleGoToServiceManagement}
+              >
+                Go to Service Management to add services
+              </Link>
+              <Input
+                placeholder="Search services..."
+                value={serviceSearchTerm}
+                onChange={(e) => setServiceSearchTerm(e.target.value)}
+                className="form-input mt-2 mb-2"
+              />
+              {loadingServices ? (
+                <div className="flex items-center space-x-2 py-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  <span className="text-sm text-muted-foreground">
+                    Loading services...
+                  </span>
+                </div>
+              ) : filteredServiceCategories.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 max-h-60 overflow-y-auto p-2 border rounded-lg">
+                  {filteredServiceCategories.map((category) => (
+                    <div key={category} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`service-${category}`}
+                        checked={vendorForm.services.includes(category)}
+                        onChange={() =>
+                          setVendorForm((prev) => ({
+                            ...prev,
+                            services: vendorForm.services.includes(category)
+                              ? vendorForm.services.filter(
+                                  (c) => c !== category
+                                )
+                              : [...vendorForm.services, category],
+                          }))
+                        }
+                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                      />
+                      <Label
+                        htmlFor={`service-${category}`}
+                        className="text-sm cursor-pointer truncate"
+                        title={category}
+                      >
+                        {category}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mt-2">
+                  <p className="text-yellow-800 text-sm">
+                    No service categories found.
+                  </p>
+                </div>
+              )}
+            </div>
+            {/* KYC Status */}
+            <div>
+              <Label htmlFor="kycStatus" className="form-label">
+                KYC Status
+              </Label>
+              <Select
+                value={vendorForm.status.status ? "Approved" : "Pending"}
+                onValueChange={(value) =>
+                  setVendorForm((prev) => ({
+                    ...prev,
+                    status: { status: value === "Approved" },
+                  }))
+                }
+              >
+                <SelectTrigger className="form-input">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Approved">Approved</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* --- Attachment Section --- */}
+            <Separator className="my-6" />
+            <div>
+              <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Required Attachments
+              </h3>
+              <div className="space-y-6">
+                {vendorForm.attachments.map((att, idx) => (
+                  <div
+                    key={att.type}
+                    className="border p-4 rounded-xl bg-muted/40"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center gap-4">
+                      <div className="flex-1">
+                        <Label className="font-semibold mb-2 block">
+                          {idx + 1}. {att.type}
+                          <span className="text-red-600 ml-1">*</span>
+                        </Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="file"
+                            required={
+                              att.type !==
+                              "Insurance Certificates (if applicable)"
+                            }
+                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                            onChange={(e) =>
+                              handleAttachmentFile(
+                                idx,
+                                e.target.files?.[0] || null
+                              )
+                            }
+                          />
+                          {att.file && (
+                            <Badge variant="secondary" className="text-xs">
+                              {(att.file.size / 1024).toFixed(2)} KB
+                            </Badge>
+                          )}
+                        </div>
+                        {attachmentErrors[idx] && (
+                          <p className="text-xs text-red-600 mt-2">
+                            Attachment, expiry date, and remarks required.
+                          </p>
+                        )}
+                      </div>
+                      <div className="w-full md:w-40">
+                        <Label className="mb-1 block">Expiry Date</Label>
+                        <Input
+                          type="date"
+                          required={att.file != null}
+                          value={att.expiryDate}
+                          onChange={(e) =>
+                            handleAttachmentExpiry(idx, e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="w-full md:w-52">
+                        <Label className="mb-1 block">Remarks</Label>
+                        <Input
+                          type="text"
+                          required={att.file != null}
+                          maxLength={60}
+                          placeholder="Enter remarks"
+                          value={att.remarks}
+                          onChange={(e) =>
+                            handleAttachmentRemarks(idx, e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* --- End Attachment Section --- */}
+            <Separator className="my-6" />
+            {/* PIC Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Primary Contacts (PICs)
+                  <span className="text-xs rounded-full bg-muted-foreground/10 text-muted-foreground px-2 py-0.5">
+                    {vendorForm.pics.length}
+                  </span>
+                </h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addNewPIC}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add PIC
+                </Button>
+              </div>
+              <Accordion type="single" collapsible className="space-y-3">
+                {vendorForm.pics.map((pic, picIdx) => {
+                  const displayName =
+                    [pic.title, pic.firstName, pic.lastName]
+                      .filter(Boolean)
+                      .join(" ") || "Untitled";
+                  return (
+                    <AccordionItem
+                      key={pic.id || picIdx}
+                      value={`pic-${pic.id || picIdx}`}
+                      className="rounded-xl border bg-muted/60"
+                    >
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                        <div className="flex w-full items-center justify-between gap-3">
+                          <div className="min-w-0 flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="text-xs">
+                                  {(pic.firstName?.[0] || "?") +
+                                    (pic.lastName?.[0] || "")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <div className="truncate font-medium">
+                                  {displayName}
+                                </div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {pic.department || "No department"}
+                                </div>
+                              </div>
+                            </div>
+                            <Badge
+                              variant={
+                                pic.type === "Primary" ? "default" : "secondary"
+                              }
+                            >
+                              {pic.type || "Secondary"}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removePIC(picIdx);
+                              }}
+                              aria-label="Remove PIC"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4 pt-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          <div>
+                            <Label className="mb-1 block">PIC Type</Label>
+                            <Select
+                              value={pic.type || "Secondary"}
+                              onValueChange={(val) =>
+                                updatePIC(
+                                  picIdx,
+                                  "type",
+                                  val as "Primary" | "Secondary"
+                                )
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select PIC Type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Primary">Primary</SelectItem>
+                                <SelectItem value="Secondary">
+                                  Secondary
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="mb-1 block">Title</Label>
+                            <Select
+                              value={pic.title || "Mr"}
+                              onValueChange={(val) =>
+                                updatePIC(picIdx, "title", val)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Title" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Mr.">Mr.</SelectItem>
+                                <SelectItem value="Ms.">Ms.</SelectItem>
+                                <SelectItem value="Mrs.">Mrs.</SelectItem>
+                                <SelectItem value="Dr.">Dr.</SelectItem>
+                                <SelectItem value="Capt.">Capt.</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="mb-1 block">First Name</Label>
+                            <Input
+                              value={pic.firstName || ""}
+                              onChange={(e) =>
+                                updatePIC(picIdx, "firstName", e.target.value)
+                              }
+                              placeholder="First name"
+                              autoCapitalize="words"
+                            />
+                          </div>
+                          <div>
+                            <Label className="mb-1 block">Last Name</Label>
+                            <Input
+                              value={pic.lastName || ""}
+                              onChange={(e) =>
+                                updatePIC(picIdx, "lastName", e.target.value)
+                              }
+                              placeholder="Last name"
+                              autoCapitalize="words"
+                            />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <Label className="mb-1 block">Department</Label>
+                            <Input
+                              value={pic.department || ""}
+                              onChange={(e) =>
+                                updatePIC(picIdx, "department", e.target.value)
+                              }
+                              placeholder="Department"
+                            />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <Label className="mb-1 block">Birthday</Label>
+                            <DatePicker
+                              value={pic.birthday}
+                              onChange={(val) =>
+                                updatePIC(picIdx, "birthday", val)
+                              }
+                              placeholder="dd.mm.yyyy"
+                            />
+                          </div>
+                        </div>
+                        <Separator className="my-4" />
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label>Contact Numbers</Label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => addPICContactNumber(picIdx)}
+                              className="gap-1"
+                            >
+                              <Plus className="h-4 w-4" /> Add Number
+                            </Button>
+                          </div>
+                          {pic.contactNumbers.map((num, numIdx) => (
+                            <div
+                              className="grid grid-cols-1 sm:grid-cols-12 gap-2"
+                              key={numIdx}
+                            >
+                              <div className="sm:col-span-4">
+                                <ShadCountryPhoneInput
+                                  country="lk"
+                                  value={
+                                    num.startsWith("+")
+                                      ? num.split(" ")[0]
+                                      : "+94"
+                                  }
+                                  onChange={(val, data) => {
+                                    const rest = num.replace(
+                                      /^(\+\d+)?\s?/,
+                                      ""
+                                    );
+                                    const dial =
+                                      "+" +
+                                      (typeof data === "object" &&
+                                      data &&
+                                      "dialCode" in data
+                                        ? (data as any).dialCode
+                                        : "");
+                                    const updatedNumber = dial + " " + rest;
+                                    updatePICContactNumber(
+                                      picIdx,
+                                      numIdx,
+                                      updatedNumber.trim()
+                                    );
+                                  }}
+                                />
+                              </div>
+                              <div className="sm:col-span-7">
+                                <Input
+                                  value={
+                                    num.startsWith("+")
+                                      ? num.replace(/^(\+\d+)\s?/, "")
+                                      : num
+                                  }
+                                  onChange={(e) =>
+                                    updatePICContactNumber(
+                                      picIdx,
+                                      numIdx,
+                                      (num.startsWith("+")
+                                        ? num.split(" ")[0] + " "
+                                        : "+94 ") + e.target.value
+                                    )
+                                  }
+                                  placeholder="77 123 4567"
+                                />
+                              </div>
+                              <div className="sm:col-span-1 flex sm:justify-end">
+                                {pic.contactNumbers.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      removePICContactNumber(picIdx, numIdx)
+                                    }
+                                    aria-label="Remove number"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <Separator className="my-4" />
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label>Emails</Label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => addPICEmail(picIdx)}
+                              className="gap-1"
+                            >
+                              <Plus className="h-4 w-4" /> Add Email
+                            </Button>
+                          </div>
+                          {pic.emails.map((email, emailIdx) => (
+                            <div
+                              className="grid grid-cols-1 sm:grid-cols-12 gap-2"
+                              key={emailIdx}
+                            >
+                              <div className="sm:col-span-11">
+                                <Input
+                                  value={email}
+                                  onChange={(e) =>
+                                    updatePICEmail(
+                                      picIdx,
+                                      emailIdx,
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="email@company.com"
+                                  inputMode="email"
+                                />
+                              </div>
+                              <div className="sm:col-span-1 flex sm:justify-end">
+                                {pic.emails.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      removePICEmail(picIdx, emailIdx)
+                                    }
+                                    aria-label="Remove email"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <Separator className="my-4" />
+                        <div>
+                          <Label className="mb-1 block">Remarks</Label>
+                          <Textarea
+                            value={pic.remark}
+                            onChange={(e) =>
+                              updatePIC(picIdx, "remark", e.target.value)
+                            }
+                            placeholder="Additional notes about this PIC"
+                            rows={3}
+                          />
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+                {vendorForm.pics.length === 0 && (
+                  <div className="rounded-xl border bg-muted/40 p-6 text-center">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      No Primary Contacts yet.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addNewPIC}
+                      className="gap-1"
+                    >
+                      <Plus className="h-4 w-4" /> Add New PIC
+                    </Button>
+                  </div>
+                )}
+              </Accordion>
+            </div>
+            <div>
+              <Label htmlFor="remark" className="form-label">
+                Company Remarks
+              </Label>
+              <Textarea
+                id="remark"
+                value={vendorForm.remark}
+                onChange={(e) =>
+                  setVendorForm((prev) => ({
+                    ...prev,
+                    remark: e.target.value,
+                  }))
+                }
+                placeholder="Additional notes about the vendor"
+                className="form-input"
+                rows={3}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+            className="w-full sm:w-auto"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveVendor}
+            className="professional-button-primary w-full sm:w-auto"
+            disabled={
+              loading ||
+              !vendorForm.name.trim() ||
+              attachmentErrors.some((err) => err)
+            }
+          >
+            {loading ? "Saving..." : "Add Vendor"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

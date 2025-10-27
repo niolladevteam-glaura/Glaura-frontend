@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -48,6 +49,7 @@ import {
   X,
   Loader2,
   ArrowLeft,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -385,10 +387,15 @@ export default function CustomerCompanies() {
       return await response.json();
     } catch (error: any) {
       console.error("API Error:", error);
-      toast({
-        title: "API Error",
+      toast.error("API Error", {
         description: error.message || "Failed to complete request",
-        variant: "destructive",
+        icon: <AlertTriangle />,
+        action: {
+          label: "Retry",
+          onClick: () => {
+            toast.info("Retrying request...");
+          },
+        },
       });
       throw error;
     }
@@ -712,6 +719,14 @@ export default function CustomerCompanies() {
 
       // Refresh customer list from server
       await loadCustomers();
+
+      // Show success toast
+      toast.success("Customer saved!", {
+        icon: <Building />,
+        description: editingCustomer
+          ? "Customer company updated successfully."
+          : "The Customer Company Registration has been successfully completed",
+      });
 
       // Reset form and close modal
       setCustomerForm({
@@ -1325,9 +1340,7 @@ export default function CustomerCompanies() {
                                   <SelectItem value="Ms.">Ms.</SelectItem>
                                   <SelectItem value="Mrs.">Mrs.</SelectItem>
                                   <SelectItem value="Dr.">Dr.</SelectItem>
-                                  <SelectItem value="Captain.">
-                                    Captain.
-                                  </SelectItem>
+                                  <SelectItem value="Capt.">Capt.</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -2215,7 +2228,4 @@ export default function CustomerCompanies() {
       </div>
     </div>
   );
-}
-function toast(arg0: { title: string; description: any; variant: string }) {
-  throw new Error("Function not implemented.");
 }

@@ -31,7 +31,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import {
   Ship,
   Search,
@@ -97,7 +97,6 @@ export default function VesselManagement() {
   const [vesselToEdit, setVesselToEdit] = useState<Vessel | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [vesselToDelete, setVesselToDelete] = useState<Vessel | null>(null);
-
   // New Vessel initial state
   const [newVessel, setNewVessel] = useState<{
     name: string;
@@ -147,10 +146,24 @@ export default function VesselManagement() {
 
   function formatSSCECExpiry(expiry: string) {
     if (!expiry) return "";
+
     // If already in DD.MM.YYYY format
     if (/^\d{2}\.\d{2}\.\d{4}$/.test(expiry)) return expiry;
 
-    // If ISO string or date string with time, use JS Date
+    // If ISO string or contains T/time info
+    const onlyDate = expiry.split("T")[0]; // "2026-03-02"
+    if (/^\d{4}-\d{2}-\d{2}$/.test(onlyDate)) {
+      const [yyyy, mm, dd] = onlyDate.split("-");
+      return `${dd}.${mm}.${yyyy}`;
+    }
+
+    // If string like "02.03.2026" (already DD.MM.YYYY)
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(expiry)) return expiry;
+
+    // If string like "03.2026" (missing day)
+    if (/^\d{2}\.\d{4}$/.test(expiry)) return "??." + expiry;
+
+    // If string like "2026-03-02T18:30:00.000Z"
     const date = new Date(expiry);
     if (!isNaN(date.getTime())) {
       const dd = String(date.getDate()).padStart(2, "0");
@@ -159,13 +172,14 @@ export default function VesselManagement() {
       return `${dd}.${mm}.${yyyy}`;
     }
 
-    // Try to fallback to manual split (handles "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM:SS.sssZ")
-    const onlyDate = expiry.split("T")[0]; // "2026-12-02"
-    const [yyyy, mm, dd] = onlyDate.split("-");
-    if (dd && mm && yyyy) {
+    // Fallback: try to extract numbers
+    const nums = expiry.match(/\d{4}|\d{2}/g);
+    if (nums && nums.length >= 3) {
+      const [yyyy, mm, dd] = nums.slice(-3);
       return `${dd}.${mm}.${yyyy}`;
     }
-    return expiry;
+
+    return expiry; // fallback: show as is
   }
 
   function calcSSCECExpiry(issued: string): string {
@@ -338,10 +352,13 @@ export default function VesselManagement() {
         setFilteredVessels(data);
       } catch (error) {
         console.error("Failed to load vessels:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load vessel data",
-          variant: "destructive",
+        toast.error("Failed to load vessel data", {
+          description:
+            "Please check your internet connection or try again later.",
+          action: {
+            label: "Retry",
+            onClick: loadVessels,
+          },
         });
       }
     };
@@ -371,19 +388,16 @@ export default function VesselManagement() {
   const handleAddVessel = async () => {
     try {
       if (!newVessel.sscecIssued) {
-        toast({
-          title: "Validation Error",
-          description: "Please enter the SSCEC Issued Date",
-          variant: "destructive",
+        toast.error("Validation Error", {
+          description: "Please enter the SSCEC Issued Date.",
         });
         return;
       }
       const imoExists = vessels.some((v) => v.imo === newVessel.imo);
       if (imoExists) {
-        toast({
-          title: "Duplicate IMO",
-          description: "A vessel with this IMO number already exists",
-          variant: "destructive",
+        toast.error("Duplicate IMO", {
+          description: "A vessel with this IMO number already exists.",
+          icon: <AlertTriangle />,
         });
         return;
       }
@@ -437,9 +451,9 @@ export default function VesselManagement() {
         piClub: "",
       });
       setIsDialogOpen(false);
-      toast({
-        title: "Success",
-        description: "Vessel added successfully",
+      toast.success("Vessel created successfully", {
+        icon: <Ship />,
+        description: "The Vessel creation has been successfully completed.",
       });
       setSearchTerm("");
       setTypeFilter("all");
@@ -449,16 +463,14 @@ export default function VesselManagement() {
         error.message.includes("IMO") ||
         error.message.includes("duplicate")
       ) {
-        toast({
-          title: "Duplicate IMO",
-          description: "A vessel with this IMO number already exists",
-          variant: "destructive",
+        toast.error("Duplicate IMO", {
+          description: "A vessel with this IMO number already exists.",
+          icon: <AlertTriangle />,
         });
       } else {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description: error.message || "Failed to add vessel",
-          variant: "destructive",
+          icon: <AlertTriangle />,
         });
       }
     }
@@ -989,7 +1001,7 @@ export default function VesselManagement() {
                       </div>
                     </div>
                     {/* Activity Section */}
-                    <div className="space-y-4">
+                    {/* <div className="space-y-4">
                       <h3 className="text-lg font-medium">Activity</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -1009,7 +1021,7 @@ export default function VesselManagement() {
                           />
                         </div>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                   <div className="flex justify-end mt-6">
                     <Button
@@ -1310,9 +1322,10 @@ export default function VesselManagement() {
                               )
                             );
                             setEditDialogOpen(false);
-                            toast({
-                              title: "Success",
-                              description: "Vessel updated successfully",
+                            toast.success("Vessel updated successfully", {
+                              icon: <Ship />,
+                              description:
+                                "The vessel details have been updated.",
                             });
                           }
                         } catch (error) {
@@ -1369,9 +1382,10 @@ export default function VesselManagement() {
                           )
                         );
                         setDeleteDialogOpen(false);
-                        toast({
-                          title: "Success",
-                          description: "Vessel deleted successfully",
+                        toast.success("Vessel deleted successfully", {
+                          icon: <Trash2 />,
+                          description:
+                            "The vessel has been removed from your database.",
                         });
                       }
                     } catch (error) {

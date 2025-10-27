@@ -30,7 +30,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <AuthProvider>
-          <Toaster position="top-center" richColors />
+          {" "}
+          <Toaster richColors position="top-center" />
           <ThemeProvider
             attribute="class"
             defaultTheme="light"

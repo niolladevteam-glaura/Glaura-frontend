@@ -56,9 +56,12 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+
+// IMPORT YOUR DIALOG COMPONENTS
+import AddVendorDialog from "@/components/AddVendorDialog";
+import EditVendorDialog from "@/components/EditVendorDialog";
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -114,6 +117,11 @@ interface Vendor {
   rating?: number;
   totalJobs?: number;
   completedJobs?: number;
+  // For edit dialog convenience:
+  phoneCountryCode?: string;
+  phoneNumber?: string;
+  services?: string[];
+  pics?: VendorPIC[];
 }
 
 function formatDateDMY(dateStr?: string) {
@@ -182,38 +190,6 @@ const blankVendorForm = (): VendorFormType => ({
   ],
 });
 
-function isVendorFormBlank(form: VendorFormType) {
-  return (
-    !form.name &&
-    !form.address &&
-    !form.phoneNumber &&
-    !form.company_type &&
-    !form.email &&
-    !form.remark &&
-    form.services.length === 0 &&
-    form.pics.length === 1 &&
-    !form.pics[0].firstName &&
-    !form.pics[0].lastName &&
-    !form.pics[0].department &&
-    !form.pics[0].birthday &&
-    (!form.pics[0].contactNumbers[0] ||
-      form.pics[0].contactNumbers.length === 0) &&
-    (!form.pics[0].emails[0] || form.pics[0].emails.length === 0)
-  );
-}
-
-function getInitialVendorForm(): VendorFormType {
-  if (typeof window !== "undefined") {
-    const draft = localStorage.getItem("vendorFormDraft");
-    if (draft) {
-      try {
-        return JSON.parse(draft);
-      } catch {}
-    }
-  }
-  return blankVendorForm();
-}
-
 export default function VendorManagement() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -234,18 +210,21 @@ export default function VendorManagement() {
   } | null>(null);
 
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
+  const [isEditVendorOpen, setIsEditVendorOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
 
-  const [vendorForm, setVendorForm] = useState<VendorFormType>(
-    getInitialVendorForm()
-  );
-
-  const [serviceSearchTerm, setServiceSearchTerm] = useState("");
-  const filteredServiceCategories = serviceCategories.filter((cat) =>
-    cat.toLowerCase().includes(serviceSearchTerm.toLowerCase())
-  );
-
   const router = useRouter();
+
+  // --- AUTO-OPEN ADD VENDOR DIALOG IF A DRAFT EXISTS ---
+  useEffect(() => {
+    // Will run once after mount
+    if (!isAddVendorOpen) {
+      const draft = localStorage.getItem("addVendorFormDraft");
+      if (draft) {
+        setIsAddVendorOpen(true);
+      }
+    }
+  }, []);
 
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     try {
@@ -375,6 +354,7 @@ export default function VendorManagement() {
       });
       setVendors(formattedVendors);
       setFilteredVendors(formattedVendors);
+      calcVendorBirthdayAlerts(formattedVendors);
     } catch (error) {
       toast({
         title: "API Error",
@@ -388,42 +368,6 @@ export default function VendorManagement() {
       setLoading(false);
     }
   };
-
-  // Only save to localStorage if form is not blank, dialog is open, and not editing
-  useEffect(() => {
-    if (isAddVendorOpen && !editingVendor && !isVendorFormBlank(vendorForm)) {
-      localStorage.setItem("vendorFormDraft", JSON.stringify(vendorForm));
-    }
-  }, [vendorForm, isAddVendorOpen, editingVendor]);
-
-  useEffect(() => {
-    if (!isAddVendorOpen) setServiceSearchTerm("");
-  }, [isAddVendorOpen]);
-
-  // Restore vendor form from localStorage draft when opening dialog for new vendor
-  // When dialog opens (and not editing), restore draft or blank
-  useEffect(() => {
-    if (isAddVendorOpen && !editingVendor) {
-      const draft = localStorage.getItem("vendorFormDraft");
-      if (draft) {
-        try {
-          setVendorForm(JSON.parse(draft));
-        } catch {
-          setVendorForm(blankVendorForm());
-        }
-      } else {
-        setVendorForm(blankVendorForm());
-      }
-    }
-    // DO NOT set blankVendorForm on dialog close here!
-  }, [isAddVendorOpen, editingVendor]);
-
-  // When dialog closes (and not editing), clear the form (optional, or just rely on restore above)
-  useEffect(() => {
-    if (!isAddVendorOpen && !editingVendor) {
-      setVendorForm(blankVendorForm());
-    }
-  }, [isAddVendorOpen, editingVendor]);
 
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
@@ -503,222 +447,43 @@ export default function VendorManagement() {
     setFilteredVendors(filtered);
   }, [searchTerm, typeFilter, statusFilter, vendors]);
 
-  const handleVendorFormChange = (field: keyof VendorFormType, value: any) => {
-    setVendorForm((prev: VendorFormType) => ({ ...prev, [field]: value }));
-  };
-
-  // ---- PIC Section Handlers ----
-  const addNewPIC = () => {
-    setVendorForm((prev: VendorFormType) => ({
-      ...prev,
-      pics: [
-        ...(prev.pics || []),
-        {
-          id: Date.now().toString(),
-          type: "Secondary",
-          title: "Mr.",
-          firstName: "",
-          lastName: "",
-          name: "",
-          department: "",
-          birthday: "",
-          contactNumbers: [""],
-          contactTypes: ["Direct Line"],
-          emails: [""],
-          emailTypes: ["Personal"],
-          remark: "",
-        },
-      ],
-    }));
-  };
-  const updatePIC = (index: number, field: keyof VendorPIC, value: any) => {
-    setVendorForm((prev: VendorFormType) => {
-      const updatedPics = [...(prev.pics || [])];
-      updatedPics[index] = {
-        ...updatedPics[index],
-        [field]: value,
-      };
-      return { ...prev, pics: updatedPics };
-    });
-  };
-  const removePIC = (index: number) => {
-    setVendorForm((prev: VendorFormType) => ({
-      ...prev,
-      pics: (prev.pics || []).filter((_, i) => i !== index),
-    }));
-  };
-  const addPICContactNumber = (picIndex: number) => {
-    setVendorForm((prev: VendorFormType) => {
-      const updatedPics = [...(prev.pics || [])];
-      updatedPics[picIndex].contactNumbers = [
-        ...updatedPics[picIndex].contactNumbers,
-        "",
-      ];
-      updatedPics[picIndex].contactTypes = [
-        ...(updatedPics[picIndex].contactTypes || []),
-        "Direct Line",
-      ];
-      return { ...prev, pics: updatedPics };
-    });
-  };
-  const updatePICContactNumber = (
-    picIndex: number,
-    contactIndex: number,
-    value: string
-  ) => {
-    setVendorForm((prev: VendorFormType) => {
-      const updatedPics = [...(prev.pics || [])];
-      updatedPics[picIndex].contactNumbers[contactIndex] = value;
-      return { ...prev, pics: updatedPics };
-    });
-  };
-  const updatePICContactType = (
-    picIndex: number,
-    contactIndex: number,
-    value: string
-  ) => {
-    setVendorForm((prev: VendorFormType) => {
-      const updatedPics = [...(prev.pics || [])];
-      if (!updatedPics[picIndex].contactTypes) {
-        updatedPics[picIndex].contactTypes = [];
-      }
-      updatedPics[picIndex].contactTypes[contactIndex] = value;
-      return { ...prev, pics: updatedPics };
-    });
-  };
-  const removePICContactNumber = (picIndex: number, contactIndex: number) => {
-    setVendorForm((prev: VendorFormType) => {
-      const updatedPics = [...(prev.pics || [])];
-      updatedPics[picIndex].contactNumbers = updatedPics[
-        picIndex
-      ].contactNumbers.filter((_, i) => i !== contactIndex);
-      updatedPics[picIndex].contactTypes = updatedPics[picIndex].contactTypes
-        ? updatedPics[picIndex].contactTypes!.filter(
-            (_, i) => i !== contactIndex
-          )
-        : [];
-      return { ...prev, pics: updatedPics };
-    });
-  };
-  const addPICEmail = (picIndex: number) => {
-    setVendorForm((prev: VendorFormType) => {
-      const updatedPics = [...(prev.pics || [])];
-      updatedPics[picIndex].emails = [...updatedPics[picIndex].emails, ""];
-      updatedPics[picIndex].emailTypes = [
-        ...(updatedPics[picIndex].emailTypes || []),
-        "Personal",
-      ];
-      return { ...prev, pics: updatedPics };
-    });
-  };
-  const updatePICEmail = (
-    picIndex: number,
-    emailIndex: number,
-    value: string
-  ) => {
-    setVendorForm((prev: VendorFormType) => {
-      const updatedPics = [...(prev.pics || [])];
-      updatedPics[picIndex].emails[emailIndex] = value;
-      return { ...prev, pics: updatedPics };
-    });
-  };
-  const updatePICEmailType = (
-    picIndex: number,
-    emailIndex: number,
-    value: string
-  ) => {
-    setVendorForm((prev: VendorFormType) => {
-      const updatedPics = [...(prev.pics || [])];
-      if (!updatedPics[picIndex].emailTypes) {
-        updatedPics[picIndex].emailTypes = [];
-      }
-      updatedPics[picIndex].emailTypes[emailIndex] = value;
-      return { ...prev, pics: updatedPics };
-    });
-  };
-  const removePICEmail = (picIndex: number, emailIndex: number) => {
-    setVendorForm((prev: VendorFormType) => {
-      const updatedPics = [...(prev.pics || [])];
-      updatedPics[picIndex].emails = updatedPics[picIndex].emails.filter(
-        (_, i) => i !== emailIndex
-      );
-      updatedPics[picIndex].emailTypes = updatedPics[picIndex].emailTypes
-        ? updatedPics[picIndex].emailTypes!.filter((_, i) => i !== emailIndex)
-        : [];
-      return { ...prev, pics: updatedPics };
-    });
-  };
-
-  const saveVendor = async () => {
-    if (!vendorForm.name?.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter a company name",
-        variant: "destructive",
-      });
-      return;
-    }
-    const atLeastOnePic =
-      Array.isArray(vendorForm.pics) &&
-      vendorForm.pics.some(
-        (pic) => (pic.firstName?.trim() || "") && (pic.lastName?.trim() || "")
-      );
-    if (!atLeastOnePic) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter at least one PIC with name",
-        variant: "destructive",
-      });
-      return;
-    }
+  // ---- Add Vendor Dialog Handler ----
+  const handleSaveVendor = async (formData: VendorFormType) => {
     try {
       setLoading(true);
       const backendData = {
-        name: vendorForm.name.trim(),
-        address: vendorForm.address.trim(),
-        phone_number: `${vendorForm.phoneCountryCode || "+94"} ${
-          vendorForm.phoneNumber || ""
+        name: formData.name.trim(),
+        address: formData.address.trim(),
+        phone_number: `${formData.phoneCountryCode || "+94"} ${
+          formData.phoneNumber || ""
         }`.trim(),
-        company_type: vendorForm.company_type.trim(),
-        email: vendorForm.email.trim(),
-        remark: vendorForm.remark.trim(),
-        services: vendorForm.services,
-        status: { status: vendorForm.status.status },
+        company_type: formData.company_type.trim(),
+        email: formData.email.trim(),
+        remark: formData.remark.trim(),
+        services: formData.services,
+        status: { status: formData.status.status },
         pic:
-          vendorForm.pics && vendorForm.pics.length > 0
+          formData.pics && formData.pics.length > 0
             ? {
-                firstName: vendorForm.pics[0].firstName || "",
-                lastName: vendorForm.pics[0].lastName || "",
-                phone_number: vendorForm.pics[0].contactNumbers?.[0] || "",
-                picType: vendorForm.pics[0].type || "Primary",
-                email: vendorForm.pics[0].emails?.[0] || "",
-                remark: vendorForm.pics[0].remark?.trim() || "",
+                firstName: formData.pics[0].firstName || "",
+                lastName: formData.pics[0].lastName || "",
+                phone_number: formData.pics[0].contactNumbers?.[0] || "",
+                picType: formData.pics[0].type || "Primary",
+                email: formData.pics[0].emails?.[0] || "",
+                remark: formData.pics[0].remark?.trim() || "",
               }
             : undefined,
       };
-      const VENDOR_API = `${API_BASE_URL}/vendor`;
-      let response;
-      if (editingVendor) {
-        response = await apiCall(`${VENDOR_API}/${editingVendor.vendor_id}`, {
-          method: "PUT",
-          body: JSON.stringify(backendData),
-        });
-      } else {
-        response = await apiCall(VENDOR_API, {
-          method: "POST",
-          body: JSON.stringify(backendData),
-        });
-      }
+
+      await apiCall(`${API_BASE_URL}/vendor`, {
+        method: "POST",
+        body: JSON.stringify(backendData),
+      });
       await loadVendors();
-      setIsAddVendorOpen(false);
-      setEditingVendor(null);
-      setVendorForm(blankVendorForm());
       localStorage.removeItem("vendorFormDraft");
       toast({
         title: "Success",
-        description: editingVendor
-          ? "Vendor updated successfully!"
-          : "Vendor created successfully!",
+        description: "Vendor created successfully!",
       });
     } catch (error: any) {
       toast({
@@ -732,7 +497,60 @@ export default function VendorManagement() {
     }
   };
 
-  const editVendor = (vendor: Vendor) => {
+  // ---- Edit Vendor Dialog Handler ----
+  const handleUpdateVendor = async (formData: VendorFormType) => {
+    try {
+      setLoading(true);
+      const backendData = {
+        name: formData.name.trim(),
+        address: formData.address.trim(),
+        phone_number: `${formData.phoneCountryCode || "+94"} ${
+          formData.phoneNumber || ""
+        }`.trim(),
+        company_type: formData.company_type.trim(),
+        email: formData.email.trim(),
+        remark: formData.remark.trim(),
+        services: formData.services,
+        status: { status: formData.status.status },
+        pic:
+          formData.pics && formData.pics.length > 0
+            ? {
+                firstName: formData.pics[0].firstName || "",
+                lastName: formData.pics[0].lastName || "",
+                phone_number: formData.pics[0].contactNumbers?.[0] || "",
+                picType: formData.pics[0].type || "Primary",
+                email: formData.pics[0].emails?.[0] || "",
+                remark: formData.pics[0].remark?.trim() || "",
+              }
+            : undefined,
+      };
+
+      if (!editingVendor) return;
+      await apiCall(`${API_BASE_URL}/vendor/${editingVendor.vendor_id}`, {
+        method: "PUT",
+        body: JSON.stringify(backendData),
+      });
+      await loadVendors();
+      setEditingVendor(null);
+      toast({
+        title: "Success",
+        description: "Vendor updated successfully!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description:
+          error.message || "Failed to update vendor. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setIsEditVendorOpen(false);
+    }
+  };
+
+  // ---- Edit Vendor Dialog Open Handler ----
+  const startEditVendor = (vendor: Vendor) => {
     setEditingVendor(vendor);
 
     let phoneCountryCode = "+94";
@@ -746,17 +564,12 @@ export default function VendorManagement() {
         phoneNumber = vendor.phone_number;
       }
     }
-
     const picArray = getVendorPICArray(vendor);
 
-    setVendorForm({
-      name: vendor.name,
-      address: vendor.address,
+    setEditingVendor({
+      ...vendor,
       phoneCountryCode,
       phoneNumber,
-      company_type: vendor.company_type,
-      email: vendor.email,
-      remark: vendor.remark,
       services: vendor.vendorServices.map((service) => service.service_name),
       status: { status: vendor.vendorStatus?.status || false },
       pics:
@@ -809,8 +622,8 @@ export default function VendorManagement() {
                 remark: "",
               },
             ],
-    });
-    setIsAddVendorOpen(true);
+    } as Vendor);
+    setIsEditVendorOpen(true);
   };
 
   const getKycStatusColor = (status: string) => {
@@ -1063,736 +876,48 @@ export default function VendorManagement() {
                 <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <span>Vendor Management</span>
                   <div className="flex gap-2 flex-wrap">
-                    <Dialog
+                    <Button
+                      className="professional-button-primary"
+                      disabled={loading}
+                      onClick={() => setIsAddVendorOpen(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Vendor
+                    </Button>
+                    {/* ---- AddVendorDialog ---- */}
+                    <AddVendorDialog
                       open={isAddVendorOpen}
                       onOpenChange={setIsAddVendorOpen}
-                    >
-                      <DialogTrigger asChild>
-                        <Button
-                          className="professional-button-primary"
-                          disabled={loading}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Vendor
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-[98vw] sm:max-w-4xl max-h-[95vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>
-                            {editingVendor ? "Edit Vendor" : "Add New Vendor"}
-                          </DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-6">
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-medium">
-                              Company Information
-                            </h3>
-                            {/* Company fields */}
-                            <div>
-                              <Label htmlFor="name" className="form-label">
-                                Company Name *
-                              </Label>
-                              <Input
-                                id="name"
-                                value={vendorForm.name}
-                                onChange={(e) =>
-                                  setVendorForm((prev) => ({
-                                    ...prev,
-                                    name: e.target.value,
-                                  }))
-                                }
-                                placeholder="Enter company name"
-                                className="form-input"
-                              />
-                            </div>
-                            <div>
-                              <Label
-                                htmlFor="companyType"
-                                className="form-label"
-                              >
-                                Company Type
-                              </Label>
-                              <Input
-                                id="companyType"
-                                value={vendorForm.company_type}
-                                onChange={(e) =>
-                                  setVendorForm((prev) => ({
-                                    ...prev,
-                                    company_type: e.target.value,
-                                  }))
-                                }
-                                placeholder="e.g., Launch Boat Operator"
-                                className="form-input"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="address" className="form-label">
-                                Address
-                              </Label>
-                              <Textarea
-                                id="address"
-                                value={vendorForm.address}
-                                onChange={(e) =>
-                                  setVendorForm((prev) => ({
-                                    ...prev,
-                                    address: e.target.value,
-                                  }))
-                                }
-                                placeholder="Enter company address"
-                                className="form-input"
-                                rows={3}
-                              />
-                            </div>
-                            <div>
-                              <Label
-                                htmlFor="phoneNumber"
-                                className="form-label"
-                              >
-                                Phone Number
-                              </Label>
-                              <div className="flex gap-2">
-                                <div className="w-36">
-                                  {" "}
-                                  {/* Makes the country code selector longer */}
-                                  <ShadCountryPhoneInput
-                                    country="lk"
-                                    value={vendorForm.phoneCountryCode || "+94"}
-                                    onChange={(_, data) => {
-                                      const dial =
-                                        "+" +
-                                        (typeof data === "object" &&
-                                        data &&
-                                        "dialCode" in data
-                                          ? (data as any).dialCode
-                                          : "");
-                                      setVendorForm((prev) => ({
-                                        ...prev,
-                                        phoneCountryCode: dial,
-                                      }));
-                                    }}
-                                  />
-                                </div>
-                                <Input
-                                  id="phoneNumber"
-                                  value={vendorForm.phoneNumber}
-                                  onChange={(e) =>
-                                    setVendorForm((prev) => ({
-                                      ...prev,
-                                      phoneNumber: e.target.value,
-                                    }))
-                                  }
-                                  placeholder="112223344"
-                                  className="form-input flex-1"
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <Label htmlFor="email" className="form-label">
-                                Email
-                              </Label>
-                              <Input
-                                id="email"
-                                value={vendorForm.email}
-                                onChange={(e) =>
-                                  setVendorForm((prev) => ({
-                                    ...prev,
-                                    email: e.target.value,
-                                  }))
-                                }
-                                placeholder="email@company.com"
-                                className="form-input"
-                              />
-                            </div>
-                            {/* Service categories */}
-                            <div>
-                              <Label className="form-label">
-                                Service Categories
-                              </Label>
-                              <br />
-                              <Link
-                                href="/services"
-                                className="text-primary text-sm mt-1 inline-block hover:underline"
-                              >
-                                Go to Service Management to add services
-                              </Link>
-                              <Input
-                                placeholder="Search services..."
-                                value={serviceSearchTerm}
-                                onChange={(e) =>
-                                  setServiceSearchTerm(e.target.value)
-                                }
-                                className="form-input mt-2 mb-2"
-                              />
-                              {loadingServices ? (
-                                <div className="flex items-center space-x-2 py-2">
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                                  <span className="text-sm text-muted-foreground">
-                                    Loading services...
-                                  </span>
-                                </div>
-                              ) : filteredServiceCategories.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 max-h-60 overflow-y-auto p-2 border rounded-lg">
-                                  {filteredServiceCategories.map((category) => (
-                                    <div
-                                      key={category}
-                                      className="flex items-center space-x-2"
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        id={`service-${category}`}
-                                        checked={vendorForm.services.includes(
-                                          category
-                                        )}
-                                        onChange={() =>
-                                          handleVendorFormChange(
-                                            "services",
-                                            vendorForm.services.includes(
-                                              category
-                                            )
-                                              ? vendorForm.services.filter(
-                                                  (c) => c !== category
-                                                )
-                                              : [
-                                                  ...vendorForm.services,
-                                                  category,
-                                                ]
-                                          )
-                                        }
-                                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
-                                      />
-                                      <Label
-                                        htmlFor={`service-${category}`}
-                                        className="text-sm cursor-pointer truncate"
-                                        title={category}
-                                      >
-                                        {category}
-                                      </Label>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mt-2">
-                                  <p className="text-yellow-800 text-sm">
-                                    No service categories found.
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                            {/* KYC Status */}
-                            <div>
-                              <Label htmlFor="kycStatus" className="form-label">
-                                KYC Status
-                              </Label>
-                              <Select
-                                value={
-                                  vendorForm.status.status
-                                    ? "Approved"
-                                    : "Pending"
-                                }
-                                onValueChange={(value) =>
-                                  handleVendorFormChange("status", {
-                                    status: value === "Approved",
-                                  })
-                                }
-                              >
-                                <SelectTrigger className="form-input">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Approved">
-                                    Approved
-                                  </SelectItem>
-                                  <SelectItem value="Pending">
-                                    Pending
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            {/* PIC Section */}
-                            {/* Primary Contacts (PICs) */}
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-medium flex items-center gap-2">
-                                  <Users className="h-4 w-4" />
-                                  Primary Contacts (PICs)
-                                  <span className="text-xs rounded-full bg-muted-foreground/10 text-muted-foreground px-2 py-0.5">
-                                    {vendorForm.pics.length}
-                                  </span>
-                                </h3>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={addNewPIC}
-                                  className="gap-1"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  Add PIC
-                                </Button>
-                              </div>
-
-                              {/* PIC list */}
-                              <Accordion
-                                type="single"
-                                collapsible
-                                className="space-y-3"
-                              >
-                                {vendorForm.pics.map((pic, picIdx) => {
-                                  const displayName =
-                                    [pic.title, pic.firstName, pic.lastName]
-                                      .filter(Boolean)
-                                      .join(" ") || "Untitled";
-
-                                  return (
-                                    <AccordionItem
-                                      key={pic.id || picIdx}
-                                      value={`pic-${pic.id || picIdx}`}
-                                      className="rounded-xl border bg-muted/60"
-                                    >
-                                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                                        <div className="flex w-full items-center justify-between gap-3">
-                                          <div className="min-w-0 flex items-center gap-3">
-                                            <div className="flex items-center gap-2">
-                                              <Avatar className="h-8 w-8">
-                                                <AvatarFallback className="text-xs">
-                                                  {(pic.firstName?.[0] || "?") +
-                                                    (pic.lastName?.[0] || "")}
-                                                </AvatarFallback>
-                                              </Avatar>
-                                              <div className="min-w-0">
-                                                <div className="truncate font-medium">
-                                                  {displayName}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground truncate">
-                                                  {pic.department ||
-                                                    "No department"}
-                                                </div>
-                                              </div>
-                                            </div>
-                                            <Badge
-                                              variant={
-                                                pic.type === "Primary"
-                                                  ? "default"
-                                                  : "secondary"
-                                              }
-                                            >
-                                              {pic.type || "Secondary"}
-                                            </Badge>
-                                          </div>
-
-                                          <div className="flex items-center gap-1">
-                                            <Button
-                                              type="button"
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                removePIC(picIdx);
-                                              }}
-                                              aria-label="Remove PIC"
-                                            >
-                                              <X className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      </AccordionTrigger>
-
-                                      <AccordionContent className="px-4 pb-4 pt-1">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                                          {/* PIC Type */}
-                                          <div>
-                                            <Label className="mb-1 block">
-                                              PIC Type
-                                            </Label>
-                                            <Select
-                                              value={pic.type || "Secondary"}
-                                              onValueChange={(val) =>
-                                                updatePIC(
-                                                  picIdx,
-                                                  "type",
-                                                  val as "Primary" | "Secondary"
-                                                )
-                                              }
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue placeholder="Select PIC Type" />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                <SelectItem value="Primary">
-                                                  Primary
-                                                </SelectItem>
-                                                <SelectItem value="Secondary">
-                                                  Secondary
-                                                </SelectItem>
-                                              </SelectContent>
-                                            </Select>
-                                          </div>
-
-                                          {/* Title */}
-                                          <div>
-                                            <Label className="mb-1 block">
-                                              Title
-                                            </Label>
-                                            <Select
-                                              value={pic.title || "Mr"}
-                                              onValueChange={(val) =>
-                                                updatePIC(picIdx, "title", val)
-                                              }
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue placeholder="Title" />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                <SelectItem value="Mr.">
-                                                  Mr.
-                                                </SelectItem>
-                                                <SelectItem value="Ms.">
-                                                  Ms.
-                                                </SelectItem>
-                                                <SelectItem value="Mrs.">
-                                                  Mrs.
-                                                </SelectItem>
-                                                <SelectItem value="Dr.">
-                                                  Dr.
-                                                </SelectItem>
-                                                <SelectItem value="Captain.">
-                                                  Captain.
-                                                </SelectItem>
-                                              </SelectContent>
-                                            </Select>
-                                          </div>
-
-                                          {/* First / Last Name */}
-                                          <div>
-                                            <Label className="mb-1 block">
-                                              First Name
-                                            </Label>
-                                            <Input
-                                              value={pic.firstName || ""}
-                                              onChange={(e) =>
-                                                updatePIC(
-                                                  picIdx,
-                                                  "firstName",
-                                                  e.target.value
-                                                )
-                                              }
-                                              placeholder="First name"
-                                              autoCapitalize="words"
-                                            />
-                                          </div>
-                                          <div>
-                                            <Label className="mb-1 block">
-                                              Last Name
-                                            </Label>
-                                            <Input
-                                              value={pic.lastName || ""}
-                                              onChange={(e) =>
-                                                updatePIC(
-                                                  picIdx,
-                                                  "lastName",
-                                                  e.target.value
-                                                )
-                                              }
-                                              placeholder="Last name"
-                                              autoCapitalize="words"
-                                            />
-                                          </div>
-
-                                          {/* Department */}
-                                          <div className="sm:col-span-2">
-                                            <Label className="mb-1 block">
-                                              Department
-                                            </Label>
-                                            <Input
-                                              value={pic.department || ""}
-                                              onChange={(e) =>
-                                                updatePIC(
-                                                  picIdx,
-                                                  "department",
-                                                  e.target.value
-                                                )
-                                              }
-                                              placeholder="Department"
-                                            />
-                                          </div>
-
-                                          {/* Birthday */}
-                                          <div className="sm:col-span-2">
-                                            <Label className="mb-1 block">
-                                              Birthday
-                                            </Label>
-                                            <DatePicker
-                                              value={pic.birthday}
-                                              onChange={(val) =>
-                                                updatePIC(
-                                                  picIdx,
-                                                  "birthday",
-                                                  val
-                                                )
-                                              }
-                                              placeholder="dd.mm.yyyy"
-                                            />
-                                          </div>
-                                        </div>
-
-                                        <Separator className="my-4" />
-
-                                        {/* Contact Numbers */}
-                                        <div className="space-y-2">
-                                          <div className="flex items-center justify-between">
-                                            <Label>Contact Numbers</Label>
-                                            <Button
-                                              type="button"
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() =>
-                                                addPICContactNumber(picIdx)
-                                              }
-                                              className="gap-1"
-                                            >
-                                              <Plus className="h-4 w-4" /> Add
-                                              Number
-                                            </Button>
-                                          </div>
-
-                                          {pic.contactNumbers.map(
-                                            (num, numIdx) => (
-                                              <div
-                                                className="grid grid-cols-1 sm:grid-cols-12 gap-2"
-                                                key={numIdx}
-                                              >
-                                                <div className="sm:col-span-4">
-                                                  <ShadCountryPhoneInput
-                                                    country="lk"
-                                                    value={
-                                                      num.startsWith("+")
-                                                        ? num.split(" ")[0]
-                                                        : "+94"
-                                                    }
-                                                    onChange={(val, data) => {
-                                                      const rest = num.replace(
-                                                        /^(\+\d+)?\s?/,
-                                                        ""
-                                                      );
-                                                      const dial =
-                                                        "+" +
-                                                        (typeof data ===
-                                                          "object" &&
-                                                        data &&
-                                                        "dialCode" in data
-                                                          ? (data as any)
-                                                              .dialCode
-                                                          : "");
-                                                      const updatedNumber =
-                                                        dial + " " + rest;
-                                                      updatePICContactNumber(
-                                                        picIdx,
-                                                        numIdx,
-                                                        updatedNumber.trim()
-                                                      );
-                                                    }}
-                                                  />
-                                                </div>
-                                                <div className="sm:col-span-7">
-                                                  <Input
-                                                    value={
-                                                      num.startsWith("+")
-                                                        ? num.replace(
-                                                            /^(\+\d+)\s?/,
-                                                            ""
-                                                          )
-                                                        : num
-                                                    }
-                                                    onChange={(e) =>
-                                                      updatePICContactNumber(
-                                                        picIdx,
-                                                        numIdx,
-                                                        (num.startsWith("+")
-                                                          ? num.split(" ")[0] +
-                                                            " "
-                                                          : "+94 ") +
-                                                          e.target.value
-                                                      )
-                                                    }
-                                                    placeholder="77 123 4567"
-                                                  />
-                                                </div>
-                                                <div className="sm:col-span-1 flex sm:justify-end">
-                                                  {pic.contactNumbers.length >
-                                                    1 && (
-                                                    <Button
-                                                      type="button"
-                                                      variant="ghost"
-                                                      size="icon"
-                                                      onClick={() =>
-                                                        removePICContactNumber(
-                                                          picIdx,
-                                                          numIdx
-                                                        )
-                                                      }
-                                                      aria-label="Remove number"
-                                                    >
-                                                      <X className="h-4 w-4" />
-                                                    </Button>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            )
-                                          )}
-                                        </div>
-
-                                        <Separator className="my-4" />
-
-                                        {/* Emails */}
-                                        <div className="space-y-2">
-                                          <div className="flex items-center justify-between">
-                                            <Label>Emails</Label>
-                                            <Button
-                                              type="button"
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() =>
-                                                addPICEmail(picIdx)
-                                              }
-                                              className="gap-1"
-                                            >
-                                              <Plus className="h-4 w-4" /> Add
-                                              Email
-                                            </Button>
-                                          </div>
-
-                                          {pic.emails.map((email, emailIdx) => (
-                                            <div
-                                              className="grid grid-cols-1 sm:grid-cols-12 gap-2"
-                                              key={emailIdx}
-                                            >
-                                              <div className="sm:col-span-11">
-                                                <Input
-                                                  value={email}
-                                                  onChange={(e) =>
-                                                    updatePICEmail(
-                                                      picIdx,
-                                                      emailIdx,
-                                                      e.target.value
-                                                    )
-                                                  }
-                                                  placeholder="email@company.com"
-                                                  inputMode="email"
-                                                />
-                                              </div>
-                                              <div className="sm:col-span-1 flex sm:justify-end">
-                                                {pic.emails.length > 1 && (
-                                                  <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() =>
-                                                      removePICEmail(
-                                                        picIdx,
-                                                        emailIdx
-                                                      )
-                                                    }
-                                                    aria-label="Remove email"
-                                                  >
-                                                    <X className="h-4 w-4" />
-                                                  </Button>
-                                                )}
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-
-                                        <Separator className="my-4" />
-
-                                        {/* Remarks */}
-                                        <div>
-                                          <Label className="mb-1 block">
-                                            Remarks
-                                          </Label>
-                                          <Textarea
-                                            value={pic.remark}
-                                            onChange={(e) =>
-                                              updatePIC(
-                                                picIdx,
-                                                "remark",
-                                                e.target.value
-                                              )
-                                            }
-                                            placeholder="Additional notes about this PIC"
-                                            rows={3}
-                                          />
-                                        </div>
-                                      </AccordionContent>
-                                    </AccordionItem>
-                                  );
-                                })}
-
-                                {vendorForm.pics.length === 0 && (
-                                  <div className="rounded-xl border bg-muted/40 p-6 text-center">
-                                    <p className="text-sm text-muted-foreground mb-3">
-                                      No Primary Contacts yet.
-                                    </p>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      onClick={addNewPIC}
-                                      className="gap-1"
-                                    >
-                                      <Plus className="h-4 w-4" /> Add New PIC
-                                    </Button>
-                                  </div>
-                                )}
-                              </Accordion>
-                            </div>
-
-                            {/* Company Remarks */}
-                            <div>
-                              <Label htmlFor="remark" className="form-label">
-                                Company Remarks
-                              </Label>
-                              <Textarea
-                                id="remark"
-                                value={vendorForm.remark}
-                                onChange={(e) =>
-                                  setVendorForm((prev) => ({
-                                    ...prev,
-                                    remark: e.target.value,
-                                  }))
-                                }
-                                placeholder="Additional notes about the vendor"
-                                className="form-input"
-                                rows={3}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setIsAddVendorOpen(false);
-                              localStorage.removeItem("vendorFormDraft");
-                            }}
-                            disabled={loading}
-                            className="w-full sm:w-auto"
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            onClick={saveVendor}
-                            className="professional-button-primary w-full sm:w-auto"
-                            disabled={loading || !vendorForm.name.trim()}
-                          >
-                            {loading
-                              ? "Saving..."
-                              : editingVendor
-                              ? "Update Vendor"
-                              : "Add Vendor"}
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                    {/* Delete Confirmation Dialog */}
+                      serviceCategories={serviceCategories}
+                      loadingServices={loadingServices}
+                      onSaveVendor={handleSaveVendor}
+                    />
+                    {/* ---- EditVendorDialog ---- */}
+                    <EditVendorDialog
+                      open={isEditVendorOpen}
+                      onOpenChange={setIsEditVendorOpen}
+                      serviceCategories={serviceCategories}
+                      loadingServices={loadingServices}
+                      initialVendorForm={
+                        editingVendor
+                          ? {
+                              name: editingVendor.name,
+                              address: editingVendor.address,
+                              phoneCountryCode:
+                                editingVendor.phoneCountryCode || "+94",
+                              phoneNumber: editingVendor.phoneNumber || "",
+                              company_type: editingVendor.company_type,
+                              email: editingVendor.email,
+                              remark: editingVendor.remark,
+                              services: editingVendor.services || [],
+                              status: editingVendor.status || { status: true },
+                              pics: editingVendor.pics || [],
+                            }
+                          : null
+                      }
+                      onUpdateVendor={handleUpdateVendor}
+                    />
+                    {/* ---- Delete Confirmation Dialog ---- */}
                     <Dialog
                       open={deleteDialogOpen}
                       onOpenChange={setDeleteDialogOpen}
@@ -1934,7 +1059,7 @@ export default function VendorManagement() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => editVendor(vendor)}
+                            onClick={() => startEditVendor(vendor)}
                             className="flex-1 sm:flex-none min-w-[90px]"
                           >
                             <Edit className="h-4 w-4 mr-2" />
