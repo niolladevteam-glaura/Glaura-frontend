@@ -39,6 +39,8 @@ import {
   ListTodo,
   Mails,
   ListChecks,
+  Fuel,
+  Amphora,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -302,8 +304,20 @@ export default function Dashboard() {
     );
   };
 
+  // Navigation item type with optional 'disabled' property
+  type NavigationItem = {
+    href: string;
+    icon: any;
+    label: string;
+    active?: boolean;
+    disabled?: boolean;
+  };
+
   // Grouped navigation items with headings
-  const navigationGroups = [
+  const navigationGroups: {
+    heading: string;
+    items: NavigationItem[];
+  }[] = [
     {
       heading: "Management",
       items: [
@@ -312,24 +326,30 @@ export default function Dashboard() {
           ? [{ href: "/users", icon: Users, label: "User Management" }]
           : []),
         { href: "/pic-management", icon: UserCog, label: "PIC Management" },
-        { href: "/vendors", icon: Handshake, label: "Vendor Management" },
       ],
     },
     {
       heading: "Operations Department",
       items: [
-        { href: "/port-calls", icon: Ship, label: "Active Port Calls" },
+        { href: "/port-calls", icon: Anchor, label: "Active Port Calls" },
         { href: "/all-services", icon: ListChecks, label: "Active Services" },
         {
           href: "/husbandry-services",
           icon: ClipboardList,
           label: "Husbandry Services",
+          disabled: true,
         },
-        { href: "/tanker-operations", icon: Ship, label: "Tanker Operations" },
+        {
+          href: "/tanker-operations",
+          icon: Amphora,
+          label: "Tanker Operations",
+          disabled: true,
+        },
         {
           href: "/bunkering-operations",
-          icon: Ship,
+          icon: Fuel,
           label: "Bunkering Operations",
+          disabled: true,
         },
         { href: "/documents", icon: FileText, label: "Document Management" },
       ],
@@ -360,7 +380,7 @@ export default function Dashboard() {
     },
     {
       heading: "Admin Department",
-      items: [],
+      items: [{ href: "/vendors", icon: Handshake, label: "Vendors" }],
     },
     {
       heading: "IT & Social Media Department",
@@ -466,19 +486,31 @@ export default function Dashboard() {
                         {group.heading}
                       </h3>
                       <div className="space-y-1">
-                        {group.items.map((item) => (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`nav-item ${
-                              item.active ? "active" : ""
-                            }`}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            <item.icon className="h-5 w-5" />
-                            <span className="font-medium">{item.label}</span>
-                          </Link>
-                        ))}
+                        {group.items.map((item, index) =>
+                          item.disabled ? (
+                            <div
+                              key={item.href}
+                              className="nav-item nav-item--disabled animate-fade-in-left"
+                              style={{ animationDelay: `${index * 0.05}s` }}
+                            >
+                              <item.icon className="h-5 w-5" />
+                              <span className="font-medium">{item.label}</span>
+                            </div>
+                          ) : (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className={`nav-item animate-fade-in-left ${
+                                (item as any).active ? "active" : ""
+                              }`}
+                              style={{ animationDelay: `${index * 0.05}s` }}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <item.icon className="h-5 w-5" />
+                              <span className="font-medium">{item.label}</span>
+                            </Link>
+                          )
+                        )}
                       </div>
                     </div>
                   ))}
@@ -580,19 +612,30 @@ export default function Dashboard() {
                     {group.heading}
                   </h3>
                   <div className="space-y-2">
-                    {group.items.map((item, index) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`nav-item animate-fade-in-left ${
-                          item.active ? "active" : ""
-                        }`}
-                        style={{ animationDelay: `${index * 0.05}s` }}
-                      >
-                        <item.icon className="h-5 w-5" />
-                        <span className="font-medium">{item.label}</span>
-                      </Link>
-                    ))}
+                    {group.items.map((item, index) =>
+                      item.disabled ? (
+                        <div
+                          key={item.href}
+                          className="nav-item nav-item--disabled animate-fade-in-left"
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+                      ) : (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`nav-item animate-fade-in-left ${
+                            (item as any)?.active ? "active" : ""
+                          }`}
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span className="font-medium">{item.label}</span>
+                        </Link>
+                      )
+                    )}
                   </div>
                 </div>
               ))}

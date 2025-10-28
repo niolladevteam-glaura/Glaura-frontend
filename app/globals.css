@@ -337,3 +337,10 @@
 .text-gray-800 {
   color: #1f2937 !important;
 }
+
+.nav-item--disabled {
+  color: #888 !important;
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
