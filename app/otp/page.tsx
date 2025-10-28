@@ -147,7 +147,7 @@ export default function OTPPage() {
               timeLeft <= 30 ? "text-red-600" : "text-blue-600"
             }`}
           >
-            OTP expires in: {formatTime(timeLeft)}
+            OTP is valid for: {formatTime(timeLeft)}
           </span>
           {timeLeft === 0 && (
             <Button

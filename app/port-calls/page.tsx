@@ -33,24 +33,35 @@ import {
   ArrowLeft,
   Table2,
   LayoutGrid,
+  Edit3,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import DatePicker from "@/components/ui/date-picker";
+import TimePicker from "@/components/ui/TimePicker";
 
-// Utility functions for date/time formatting
+// Utility functions for date/time formatting -- USE UTC!
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return "-";
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const year = date.getUTCFullYear();
   return `${day}.${month}.${year}`;
 }
 
 function formatTime(dateString: string): string {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return "-";
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
   return `${hours}:${minutes}`;
 }
 
@@ -74,10 +85,10 @@ interface PortCall {
   priority: "High" | "Medium" | "Low" | "high" | "medium" | "low";
   created: string;
   updatedAt: string;
-  call_type?: string; // optional, for table column
-  portkey?: string; // optional, for table column
-  draft?: string; // optional, for table column
-  tags?: string[]; // optional, for table column
+  call_type?: string;
+  portkey?: string;
+  draft?: string;
+  tags?: string[];
 }
 
 export default function ActivePortCalls() {
@@ -98,8 +109,14 @@ export default function ActivePortCalls() {
     {}
   );
 
-  // View toggle state
   const [viewType, setViewType] = useState<"card" | "table">("card");
+
+  // Edit ETA Dialog State
+  const [editEtaDialogOpen, setEditEtaDialogOpen] = useState(false);
+  const [editingPortCall, setEditingPortCall] = useState<PortCall | null>(null);
+  const [editEtaDate, setEditEtaDate] = useState("");
+  const [editEtaTime, setEditEtaTime] = useState("");
+  const [editEtaLoading, setEditEtaLoading] = useState(false);
 
   useEffect(() => {
     const fetchPortCalls = async () => {
@@ -332,22 +349,6 @@ export default function ActivePortCalls() {
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin" />
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin" />
-      </div>
-    );
-  }
-
   // -------------------- TABLE VIEW COMPONENT ------------------------
   const TableView = () => (
     <div className="overflow-x-auto rounded-lg shadow bg-white dark:bg-gray-900 border">
@@ -399,6 +400,30 @@ export default function ActivePortCalls() {
                 {/* ETA */}
                 <td className="px-2 py-2">
                   {formatDate(portCall.eta)} {formatTime(portCall.eta)}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="ml-2 p-1 h-8 w-8"
+                    title="Edit ETA"
+                    onClick={() => {
+                      setEditingPortCall(portCall);
+                      // Set default values to current ETA (DB time!)
+                      const etaDateObj = new Date(portCall.eta);
+                      setEditEtaDate(etaDateObj.toISOString().slice(0, 10));
+                      const hours = etaDateObj
+                        .getUTCHours()
+                        .toString()
+                        .padStart(2, "0");
+                      const minutes = etaDateObj
+                        .getUTCMinutes()
+                        .toString()
+                        .padStart(2, "0");
+                      setEditEtaTime(`${hours}:${minutes}`);
+                      setEditEtaDialogOpen(true);
+                    }}
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </Button>
                 </td>
                 {/* Port */}
                 <td className="px-2 py-2">{portCall.port}</td>
@@ -455,6 +480,22 @@ export default function ActivePortCalls() {
     </div>
   );
 
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
   // -------------------- MAIN RENDER ------------------------
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -474,7 +515,6 @@ export default function ActivePortCalls() {
                 <span className="hidden xs:inline">Back to Dashboard</span>
               </Button>
             </Link>
-
             {/* Page Title & Icon */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="bg-primary p-2 rounded-xl flex-shrink-0">
@@ -490,7 +530,6 @@ export default function ActivePortCalls() {
               </div>
             </div>
           </div>
-
           {/* Right Section */}
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
@@ -592,7 +631,7 @@ export default function ActivePortCalls() {
                   Card View
                 </Button>
               </div>
-              {/* Tabs: Responsive row/scroll on mobile, row on desktop */}
+              {/* Tabs */}
               <Tabs
                 value={selectedTab}
                 onValueChange={setSelectedTab}
@@ -712,6 +751,30 @@ export default function ActivePortCalls() {
                             <span className="text-xs sm:text-sm">Services</span>
                           </Button>
                         </Link>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          title="Edit ETA"
+                          onClick={() => {
+                            setEditingPortCall(portCall);
+                            const etaDateObj = new Date(portCall.eta);
+                            setEditEtaDate(
+                              etaDateObj.toISOString().slice(0, 10)
+                            );
+                            const hours = etaDateObj
+                              .getUTCHours()
+                              .toString()
+                              .padStart(2, "0");
+                            const minutes = etaDateObj
+                              .getUTCMinutes()
+                              .toString()
+                              .padStart(2, "0");
+                            setEditEtaTime(`${hours}:${minutes}`);
+                            setEditEtaDialogOpen(true);
+                          }}
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -825,6 +888,110 @@ export default function ActivePortCalls() {
           )}
         </div>
       </div>
+
+      {/* Edit ETA Dialog */}
+      <Dialog open={editEtaDialogOpen} onOpenChange={setEditEtaDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit ETA</DialogTitle>
+            <DialogDescription>
+              Update ETA for <b>{editingPortCall?.vessel_name}</b> (
+              {editingPortCall?.job_id})
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!editingPortCall || !editEtaDate || !editEtaTime) return;
+              setEditEtaLoading(true);
+              try {
+                const token = localStorage.getItem("token");
+                if (!token) throw new Error("No authentication token found");
+                // Build ISO string
+                // editEtaDate: "YYYY-MM-DD", editEtaTime: "HH:MM"
+                const isoEta = new Date(
+                  `${editEtaDate}T${editEtaTime}:00Z`
+                ).toISOString();
+                const response = await fetch(
+                  `${process.env.NEXT_PUBLIC_API_URL}/portcall/${editingPortCall.job_id}`,
+                  {
+                    method: "PUT",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ eta: isoEta }),
+                  }
+                );
+                const data = await response.json();
+                if (response.ok || data.success) {
+                  // Update portCalls state
+                  setPortCalls((prev) =>
+                    prev.map((pc) =>
+                      pc.job_id === editingPortCall.job_id
+                        ? { ...pc, eta: isoEta }
+                        : pc
+                    )
+                  );
+                  setFilteredPortCalls((prev) =>
+                    prev.map((pc) =>
+                      pc.job_id === editingPortCall.job_id
+                        ? { ...pc, eta: isoEta }
+                        : pc
+                    )
+                  );
+                  setEditEtaDialogOpen(false);
+                  setEditingPortCall(null);
+                } else {
+                  alert(data.message || "Failed to update ETA");
+                }
+              } catch (err) {
+                alert("Failed to update ETA.");
+              } finally {
+                setEditEtaLoading(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="block text-sm font-medium mb-2">Date</label>
+              <DatePicker
+                value={editEtaDate}
+                onChange={setEditEtaDate}
+                placeholder="YYYY-MM-DD"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Time</label>
+              <TimePicker
+                value={editEtaTime}
+                onChange={setEditEtaTime}
+                placeholder="HH:MM"
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditEtaDialogOpen(false)}
+                disabled={editEtaLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={editEtaLoading || !editEtaDate || !editEtaTime}
+              >
+                {editEtaLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Update ETA"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

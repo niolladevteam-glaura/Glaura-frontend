@@ -29,6 +29,7 @@ import {
   Plus,
   Check,
   X,
+  Edit3,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -59,6 +60,7 @@ interface ServiceTask {
   compleated_date?: string;
   compleated_time?: string;
   createdAt?: string;
+  created_time?: string; // If you have a separate created_time
   updatedAt?: string;
 }
 
@@ -81,8 +83,31 @@ function isTaskCompleted(task: ServiceTask) {
   return task.status === true || task.status === "true";
 }
 
+// --- UTILITY SORTING ---
+function compareCompletedTasks(a: ServiceTask, b: ServiceTask) {
+  // Sort by compleated_date + compleated_time DESC
+  const dateA = a.compleated_date
+    ? new Date(a.compleated_date + "T" + (a.compleated_time || "00:00:00"))
+    : new Date(0);
+  const dateB = b.compleated_date
+    ? new Date(b.compleated_date + "T" + (b.compleated_time || "00:00:00"))
+    : new Date(0);
+  return dateB.getTime() - dateA.getTime();
+}
+function comparePendingTasks(a: ServiceTask, b: ServiceTask) {
+  // Sort by createdAt + created_time DESC
+  const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+  const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+  // If you have created_time, you can add it as well:
+  // const timeA = a.created_time || "00:00:00";
+  // const timeB = b.created_time || "00:00:00";
+  // const dateAFull = new Date(a.createdAt?.slice(0,10) + "T" + timeA);
+  // const dateBFull = new Date(b.createdAt?.slice(0,10) + "T" + timeB);
+  // return dateBFull.getTime() - dateAFull.getTime();
+  return dateB.getTime() - dateA.getTime();
+}
+
 export default function PCSTasksPage() {
-  // Get all params, including pcs_id for correct back navigation
   const { job_id, pcs_id, header_id } = useParams();
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -104,6 +129,12 @@ export default function PCSTasksPage() {
   // Add Task Dialog State
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [adding, setAdding] = useState(false);
+
+  // Edit Task State
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<ServiceTask | null>(null);
+  const [editTaskName, setEditTaskName] = useState("");
+  const [editing, setEditing] = useState(false);
 
   // PATCH header status in DB if all tasks are completed
   async function patchHeaderIfAllTasksCompleted(tasksList: ServiceTask[]) {
@@ -194,7 +225,16 @@ export default function PCSTasksPage() {
           }))
         : [];
 
-      setTasks(tasksList);
+      // -- SORTING LOGIC HERE --
+      const completedTasks = tasksList
+        .filter(isTaskCompleted)
+        .sort(compareCompletedTasks);
+      const pendingTasks = tasksList
+        .filter((t: ServiceTask) => !isTaskCompleted(t))
+        .sort(comparePendingTasks);
+      const sortedTasks = [...completedTasks, ...pendingTasks];
+
+      setTasks(sortedTasks);
 
       // PATCH header if needed (if all tasks are completed)
       await patchHeaderIfAllTasksCompleted(tasksList);
@@ -311,8 +351,6 @@ export default function PCSTasksPage() {
         status: 0, // <-- backend expects 0, not false
       };
 
-      console.log("Add Task payload:", body); // Debugging line
-
       const response = await fetch(`${API_BASE_URL}/tasks`, {
         method: "POST",
         headers: {
@@ -360,7 +398,6 @@ export default function PCSTasksPage() {
   // Mark as complete dialog logic
   const openCompleteDialog = (task: ServiceTask) => {
     setCompletingTask(task);
-    // Default to now
     const now = new Date();
     setCompleteDate(now.toISOString().slice(0, 10));
     setCompleteTime(now.toTimeString().slice(0, 8));
@@ -389,7 +426,7 @@ export default function PCSTasksPage() {
       });
       const data = await response.json();
       if (response.ok || data.success) {
-        await fetchTasks(); // Will also patch header if needed
+        await fetchTasks();
         toast({
           title: "Task completed",
           description: "Task marked as completed.",
@@ -412,6 +449,59 @@ export default function PCSTasksPage() {
       });
     } finally {
       setCompleting(false);
+    }
+  };
+
+  // Edit Task logic
+  const openEditDialog = (task: ServiceTask) => {
+    setEditingTask(task);
+    setEditTaskName(task.task_name);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTask) return;
+    setEditing(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No authentication token found");
+      const response = await fetch(
+        `${API_BASE_URL}/tasks/${editingTask.id || editingTask.task_id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ task_name: editTaskName }),
+        }
+      );
+      const data = await response.json();
+      if (response.ok || data.success) {
+        await fetchTasks();
+        toast({
+          title: "Updated",
+          description: "Task name updated successfully.",
+          variant: "default",
+        });
+        setEditDialogOpen(false);
+        setEditingTask(null);
+      } else {
+        toast({
+          title: "Error",
+          description: data.message || "Failed to update task",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update task",
+        variant: "destructive",
+      });
+    } finally {
+      setEditing(false);
     }
   };
 
@@ -575,6 +665,14 @@ export default function PCSTasksPage() {
                           </Button>
                         )}
                         <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openEditDialog(task)}
+                          title="Edit task"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <Button
                           variant="destructive"
                           size="icon"
                           onClick={() => openDeleteDialog(task)}
@@ -687,6 +785,49 @@ export default function PCSTasksPage() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   "Mark Complete"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+            <DialogDescription>
+              Change the name for <b>{editingTask?.task_name}</b>
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditTask} className="space-y-4">
+            <div>
+              <Label>Task Name</Label>
+              <Input
+                value={editTaskName}
+                onChange={(e) => setEditTaskName(e.target.value)}
+                placeholder="Enter new task name"
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditDialogOpen(false);
+                  setEditingTask(null);
+                }}
+                disabled={editing}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editing || !editTaskName.trim()}>
+                {editing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Update"
                 )}
               </Button>
             </DialogFooter>

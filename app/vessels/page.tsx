@@ -64,8 +64,7 @@ interface Vessel {
   loa: number;
   builtYear: number;
   callSign: string;
-  sscecExpiry: string; // Now always DD.MM.YYYY
-  sscecIssued?: string; // YYYY-MM-DD (for state only)
+  sscecExpiry: string; // Always DD.MM.YYYY for display
   sscecStatus:
     | "valid"
     | "expiring"
@@ -109,14 +108,14 @@ export default function VesselManagement() {
     loa: number;
     builtYear: number;
     callSign: string;
-    sscecIssued: string; // YYYY-MM-DD
+    sscecIssued: string; // YYYY-MM-DD, only for UI
     owner: string;
     piClub: string;
   }>({
     name: "",
     imo: "",
     flag: "",
-    vesselType: "Container Ship",
+    vesselType: "CONTAINER SHIP",
     grt: 0,
     nrt: 0,
     dwt: 0,
@@ -134,7 +133,9 @@ export default function VesselManagement() {
   function toDateObj(val: string) {
     if (!val) return null;
     const [yyyy, mm, dd] = val.split("-");
-    return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    if (!yyyy || !mm || !dd) return null;
+    const date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    return isNaN(date.getTime()) ? null : date;
   }
   function fromDateObj(date: Date | null) {
     if (!date) return "";
@@ -146,24 +147,16 @@ export default function VesselManagement() {
 
   function formatSSCECExpiry(expiry: string) {
     if (!expiry) return "";
-
     // If already in DD.MM.YYYY format
     if (/^\d{2}\.\d{2}\.\d{4}$/.test(expiry)) return expiry;
-
     // If ISO string or contains T/time info
-    const onlyDate = expiry.split("T")[0]; // "2026-03-02"
+    const onlyDate = expiry.split("T")[0];
     if (/^\d{4}-\d{2}-\d{2}$/.test(onlyDate)) {
       const [yyyy, mm, dd] = onlyDate.split("-");
       return `${dd}.${mm}.${yyyy}`;
     }
-
-    // If string like "02.03.2026" (already DD.MM.YYYY)
     if (/^\d{2}\.\d{2}\.\d{4}$/.test(expiry)) return expiry;
-
-    // If string like "03.2026" (missing day)
     if (/^\d{2}\.\d{4}$/.test(expiry)) return "??." + expiry;
-
-    // If string like "2026-03-02T18:30:00.000Z"
     const date = new Date(expiry);
     if (!isNaN(date.getTime())) {
       const dd = String(date.getDate()).padStart(2, "0");
@@ -171,34 +164,30 @@ export default function VesselManagement() {
       const yyyy = date.getFullYear();
       return `${dd}.${mm}.${yyyy}`;
     }
-
-    // Fallback: try to extract numbers
     const nums = expiry.match(/\d{4}|\d{2}/g);
     if (nums && nums.length >= 3) {
       const [yyyy, mm, dd] = nums.slice(-3);
       return `${dd}.${mm}.${yyyy}`;
     }
-
-    return expiry; // fallback: show as is
+    return expiry;
   }
 
+  // Issue Date (user input) --> Expiry Date (for API)
   function calcSSCECExpiry(issued: string): string {
-    // For DISPLAY: returns DD.MM.YYYY
     if (!issued) return "";
     const [yyyy, mm, dd] = issued.split("-");
+    if (!yyyy || !mm || !dd) return "";
     const issuedDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     issuedDate.setMonth(issuedDate.getMonth() + 6);
-    // Handle month overflow
     const expDD = String(issuedDate.getDate()).padStart(2, "0");
     const expMM = String(issuedDate.getMonth() + 1).padStart(2, "0");
     const expYYYY = issuedDate.getFullYear();
     return `${expDD}.${expMM}.${expYYYY}`;
   }
-
   function calcSSCECExpiryISO(issued: string): string {
-    // For API: returns YYYY-MM-DD
     if (!issued) return "";
     const [yyyy, mm, dd] = issued.split("-");
+    if (!yyyy || !mm || !dd) return "";
     const issuedDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     issuedDate.setMonth(issuedDate.getMonth() + 6);
     const expYYYY = issuedDate.getFullYear();
@@ -207,8 +196,10 @@ export default function VesselManagement() {
     return `${expYYYY}-${expMM}-${expDD}`;
   }
 
+  // Expiry Date (from DB) --> Issue Date (for UI)
   function getIssuedFromExpiry(expiry: string): string {
     if (!expiry) return "";
+    // expiry should be DD.MM.YYYY
     const [dd, mm, yyyy] = expiry.split(".");
     if (!dd || !mm || !yyyy) return "";
     const expDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
@@ -224,11 +215,9 @@ export default function VesselManagement() {
     try {
       const token = localStorage.getItem("token");
       const currentUser = localStorage.getItem("currentUser");
-
       if (!token || !currentUser) {
         throw new Error("Authentication required");
       }
-
       const response = await fetch(endpoint, {
         headers: {
           "Content-Type": "application/json",
@@ -237,14 +226,12 @@ export default function VesselManagement() {
         },
         ...options,
       });
-
       if (response.status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("currentUser");
         window.location.href = "/";
         throw new Error("Session expired. Please login again.");
       }
-
       if (!response.ok) {
         let errorData;
         try {
@@ -266,36 +253,35 @@ export default function VesselManagement() {
     }
   };
 
+  // Fetch vessels: sscecExpiry only, reconstruct issue date for UI
   const fetchVessels = async (): Promise<Vessel[]> => {
     const response = await apiCall(`${API_BASE_URL}/vessel`);
     if (response && response.success && Array.isArray(response.data)) {
       return response.data.map((vessel: any) => {
         let sscecExpiry: string =
           vessel.SSCEC_expires || vessel.sscecExpiry || "";
-        let sscecIssued: string =
-          vessel.SSCEC_issued ||
-          vessel.sscecIssued ||
-          (sscecExpiry ? getIssuedFromExpiry(sscecExpiry) : "");
         // Ensure expiry is always DD.MM.YYYY for display
         if (sscecExpiry.includes("-")) {
-          // If it's in YYYY-MM-DD, convert
           const [yyyy, mm, dd] = sscecExpiry.split("-");
           sscecExpiry = `${dd}.${mm}.${yyyy}`;
         }
         return {
           id: vessel.vessel_id || vessel.id,
-          name: vessel.vessel_name || vessel.name,
+          name: (vessel.vessel_name || vessel.name || "").toUpperCase(),
           imo: vessel.imo_number || vessel.imo,
-          flag: vessel.flag,
-          vesselType: vessel.vessel_type || vessel.vesselType,
+          flag: (vessel.flag || "").toUpperCase(),
+          vesselType: (
+            vessel.vessel_type ||
+            vessel.vesselType ||
+            ""
+          ).toUpperCase(),
           grt: vessel.grt || 0,
           nrt: vessel.nrt || 0,
           dwt: vessel.dwt || 0,
           loa: vessel.loa || 0,
           builtYear: vessel.build_year || vessel.builtYear,
-          callSign: vessel.call_sign || vessel.callSign,
+          callSign: (vessel.call_sign || vessel.callSign || "").toUpperCase(),
           sscecExpiry,
-          sscecIssued,
           sscecStatus: vessel.sscec_status || calculateSSCECStatus(sscecExpiry),
           owner: vessel.company || vessel.owner,
           manager: vessel.manager || vessel.company || vessel.owner,
@@ -370,7 +356,6 @@ export default function VesselManagement() {
   const calculateSSCECStatus = (
     expiryDate: string
   ): "Valid" | "Expiring" | "Expired" => {
-    // Parse DD.MM.YYYY
     let [dd, mm, yyyy] = expiryDate.split(".");
     if (!dd || !mm || !yyyy) return "Expired";
     const expiry = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
@@ -385,6 +370,7 @@ export default function VesselManagement() {
       : "Valid";
   };
 
+  // On Add: save only Expiry Date
   const handleAddVessel = async () => {
     try {
       if (!newVessel.sscecIssued) {
@@ -401,18 +387,18 @@ export default function VesselManagement() {
         });
         return;
       }
-      const expiryISO = calcSSCECExpiryISO(newVessel.sscecIssued); // <-- ISO for backend
-      const expiryDisplay = calcSSCECExpiry(newVessel.sscecIssued); // <-- For display
+      const expiryISO = calcSSCECExpiryISO(newVessel.sscecIssued);
+      const expiryDisplay = calcSSCECExpiry(newVessel.sscecIssued);
 
+      // Save only expiry!
       const vesselData = {
-        vessel_name: newVessel.name,
+        vessel_name: newVessel.name.toUpperCase(),
         imo_number: newVessel.imo,
-        SSCEC_issued: newVessel.sscecIssued,
         SSCEC_expires: expiryISO,
         company: newVessel.owner,
-        vessel_type: newVessel.vesselType,
-        flag: newVessel.flag,
-        call_sign: newVessel.callSign,
+        vessel_type: newVessel.vesselType.toUpperCase(),
+        flag: newVessel.flag.toUpperCase(),
+        call_sign: newVessel.callSign.toUpperCase(),
         build_year: newVessel.builtYear,
         grt: newVessel.grt,
         dwt: newVessel.dwt,
@@ -425,8 +411,11 @@ export default function VesselManagement() {
       const vesselWithId: Vessel = {
         ...newVessel,
         id: response.vessel_id,
+        name: newVessel.name.toUpperCase(),
+        vesselType: newVessel.vesselType.toUpperCase(),
+        flag: newVessel.flag.toUpperCase(),
+        callSign: newVessel.callSign.toUpperCase(),
         sscecExpiry: expiryDisplay,
-        sscecIssued: newVessel.sscecIssued,
         sscecStatus: calculateSSCECStatus(expiryDisplay),
         createdAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
@@ -439,7 +428,7 @@ export default function VesselManagement() {
         name: "",
         imo: "",
         flag: "",
-        vesselType: "Container Ship",
+        vesselType: "CONTAINER SHIP",
         grt: 0,
         nrt: 0,
         dwt: 0,
@@ -559,9 +548,6 @@ export default function VesselManagement() {
   function handleEditClick(vessel: Vessel): void {
     setVesselToEdit({
       ...vessel,
-      // For edit dialog, always provide sscecIssued for the input
-      sscecIssued:
-        vessel.sscecIssued || getIssuedFromExpiry(vessel.sscecExpiry),
     });
     setEditDialogOpen(true);
   }
@@ -652,7 +638,10 @@ export default function VesselManagement() {
                           placeholder="e.g. Ever Given"
                           value={newVessel.name}
                           onChange={(e) =>
-                            setNewVessel({ ...newVessel, name: e.target.value })
+                            setNewVessel({
+                              ...newVessel,
+                              name: e.target.value.toUpperCase(),
+                            })
                           }
                           required
                           className="w-full"
@@ -677,32 +666,35 @@ export default function VesselManagement() {
                         <Select
                           value={newVessel.vesselType}
                           onValueChange={(value) =>
-                            setNewVessel({ ...newVessel, vesselType: value })
+                            setNewVessel({
+                              ...newVessel,
+                              vesselType: value.toUpperCase(),
+                            })
                           }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select vessel type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Container Ship">
+                            <SelectItem value="CONTAINER SHIP">
                               Container Ship
                             </SelectItem>
-                            <SelectItem value="Bulk Carrier">
+                            <SelectItem value="BULK CARRIER">
                               Bulk Carrier
                             </SelectItem>
-                            <SelectItem value="Tanker">Tanker</SelectItem>
-                            <SelectItem value="General Cargo">
+                            <SelectItem value="TANKER">Tanker</SelectItem>
+                            <SelectItem value="GENERAL CARGO">
                               General Cargo
                             </SelectItem>
-                            <SelectItem value="RoRo">RoRo</SelectItem>
-                            <SelectItem value="Cruise Ship">
+                            <SelectItem value="RORO">RoRo</SelectItem>
+                            <SelectItem value="CRUISE SHIP">
                               Cruise Ship
                             </SelectItem>
-                            <SelectItem value="Ferry">Ferry</SelectItem>
-                            <SelectItem value="Offshore Vessel">
+                            <SelectItem value="FERRY">Ferry</SelectItem>
+                            <SelectItem value="OFFSHORE VESSEL">
                               Offshore Vessel
                             </SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
+                            <SelectItem value="OTHER">Other</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -728,7 +720,10 @@ export default function VesselManagement() {
                           placeholder="Vessel flag state"
                           value={newVessel.flag}
                           onChange={(e) =>
-                            setNewVessel({ ...newVessel, flag: e.target.value })
+                            setNewVessel({
+                              ...newVessel,
+                              flag: e.target.value.toUpperCase(),
+                            })
                           }
                           required
                         />
@@ -747,7 +742,7 @@ export default function VesselManagement() {
                           onChange={(e) =>
                             setNewVessel({
                               ...newVessel,
-                              callSign: e.target.value,
+                              callSign: e.target.value.toUpperCase(),
                             })
                           }
                           className="w-full"
@@ -862,7 +857,6 @@ export default function VesselManagement() {
                           </div>
                         )}
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="piClub">P&I Club</Label>
                         <Input
@@ -906,7 +900,9 @@ export default function VesselManagement() {
               {selectedVessel && (
                 <>
                   <DialogHeader>
-                    <DialogTitle>{selectedVessel.name} Details</DialogTitle>
+                    <DialogTitle>
+                      {selectedVessel.name.toUpperCase()} Details
+                    </DialogTitle>
                   </DialogHeader>
                   <div className="space-y-6">
                     {/* Basic Information Section */}
@@ -919,15 +915,24 @@ export default function VesselManagement() {
                         </div>
                         <div>
                           <Label>Vessel Type</Label>
-                          <Input value={selectedVessel.vesselType} readOnly />
+                          <Input
+                            value={selectedVessel.vesselType.toUpperCase()}
+                            readOnly
+                          />
                         </div>
                         <div>
                           <Label>Flag</Label>
-                          <Input value={selectedVessel.flag} readOnly />
+                          <Input
+                            value={selectedVessel.flag.toUpperCase()}
+                            readOnly
+                          />
                         </div>
                         <div>
                           <Label>Call Sign</Label>
-                          <Input value={selectedVessel.callSign} readOnly />
+                          <Input
+                            value={selectedVessel.callSign.toUpperCase()}
+                            readOnly
+                          />
                         </div>
                         <div>
                           <Label>Built Year</Label>
@@ -1000,28 +1005,6 @@ export default function VesselManagement() {
                         </div>
                       </div>
                     </div>
-                    {/* Activity Section */}
-                    {/* <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Activity</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label>Last Port Call</Label>
-                          <Input
-                            value={new Date(
-                              selectedVessel.lastPortCall
-                            ).toLocaleDateString()}
-                            readOnly
-                          />
-                        </div>
-                        <div>
-                          <Label>Total Port Calls</Label>
-                          <Input
-                            value={selectedVessel.totalPortCalls}
-                            readOnly
-                          />
-                        </div>
-                      </div>
-                    </div> */}
                   </div>
                   <div className="flex justify-end mt-6">
                     <Button
@@ -1042,7 +1025,9 @@ export default function VesselManagement() {
               {vesselToEdit && (
                 <>
                   <DialogHeader>
-                    <DialogTitle>Edit Vessel: {vesselToEdit.name}</DialogTitle>
+                    <DialogTitle>
+                      Edit Vessel: {vesselToEdit.name.toUpperCase()}
+                    </DialogTitle>
                     <DialogDescription>
                       IMO: {vesselToEdit.imo} | Last updated:{" "}
                       {new Date(vesselToEdit.lastUpdated).toLocaleDateString()}
@@ -1060,7 +1045,7 @@ export default function VesselManagement() {
                             onChange={(e) =>
                               setVesselToEdit({
                                 ...vesselToEdit,
-                                name: e.target.value,
+                                name: e.target.value.toUpperCase(),
                               })
                             }
                           />
@@ -1084,7 +1069,7 @@ export default function VesselManagement() {
                             onValueChange={(value) =>
                               setVesselToEdit({
                                 ...vesselToEdit,
-                                vesselType: value,
+                                vesselType: value.toUpperCase(),
                               })
                             }
                           >
@@ -1092,25 +1077,25 @@ export default function VesselManagement() {
                               <SelectValue placeholder="Select vessel type" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Container Ship">
+                              <SelectItem value="CONTAINER SHIP">
                                 Container Ship
                               </SelectItem>
-                              <SelectItem value="Bulk Carrier">
+                              <SelectItem value="BULK CARRIER">
                                 Bulk Carrier
                               </SelectItem>
-                              <SelectItem value="Tanker">Tanker</SelectItem>
-                              <SelectItem value="General Cargo">
+                              <SelectItem value="TANKER">Tanker</SelectItem>
+                              <SelectItem value="GENERAL CARGO">
                                 General Cargo
                               </SelectItem>
-                              <SelectItem value="RoRo">RoRo</SelectItem>
-                              <SelectItem value="Cruise Ship">
+                              <SelectItem value="RORO">RoRo</SelectItem>
+                              <SelectItem value="CRUISE SHIP">
                                 Cruise Ship
                               </SelectItem>
-                              <SelectItem value="Ferry">Ferry</SelectItem>
-                              <SelectItem value="Offshore Vessel">
+                              <SelectItem value="FERRY">Ferry</SelectItem>
+                              <SelectItem value="OFFSHORE VESSEL">
                                 Offshore Vessel
                               </SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
+                              <SelectItem value="OTHER">Other</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1121,7 +1106,7 @@ export default function VesselManagement() {
                             onChange={(e) =>
                               setVesselToEdit({
                                 ...vesselToEdit,
-                                flag: e.target.value,
+                                flag: e.target.value.toUpperCase(),
                               })
                             }
                           />
@@ -1133,7 +1118,7 @@ export default function VesselManagement() {
                             onChange={(e) =>
                               setVesselToEdit({
                                 ...vesselToEdit,
-                                callSign: e.target.value,
+                                callSign: e.target.value.toUpperCase(),
                               })
                             }
                           />
@@ -1233,17 +1218,17 @@ export default function VesselManagement() {
                         <div>
                           <Label>SSCEC Issued Date *</Label>
                           <DatePicker
-                            selected={toDateObj(
-                              vesselToEdit.sscecIssued ??
+                            selected={
+                              toDateObj(
                                 getIssuedFromExpiry(vesselToEdit.sscecExpiry)
-                            )}
+                              ) || null
+                            }
                             dateFormat="dd.MM.yyyy"
                             onChange={(date) => {
                               const issued = fromDateObj(date);
                               const expiry = calcSSCECExpiry(issued);
                               setVesselToEdit({
                                 ...vesselToEdit,
-                                sscecIssued: issued,
                                 sscecExpiry: expiry,
                                 sscecStatus: calculateSSCECStatus(expiry),
                                 lastUpdated: new Date().toISOString(),
@@ -1254,11 +1239,11 @@ export default function VesselManagement() {
                             showPopperArrow={false}
                             wrapperClassName="w-full"
                           />
-                          {vesselToEdit.sscecIssued && (
+                          {vesselToEdit.sscecExpiry && (
                             <div className="text-xs text-muted-foreground mt-1">
                               SSCEC will expire on{" "}
                               <span className="font-semibold">
-                                {calcSSCECExpiry(vesselToEdit.sscecIssued)}
+                                {vesselToEdit.sscecExpiry}
                               </span>
                             </div>
                           )}
@@ -1291,14 +1276,14 @@ export default function VesselManagement() {
                         try {
                           if (vesselToEdit) {
                             const vesselData = {
-                              vessel_name: vesselToEdit.name,
+                              vessel_name: vesselToEdit.name.toUpperCase(),
                               imo_number: vesselToEdit.imo,
-                              SSCEC_issued: vesselToEdit.sscecIssued,
                               SSCEC_expires: vesselToEdit.sscecExpiry,
                               company: vesselToEdit.owner,
-                              vessel_type: vesselToEdit.vesselType,
-                              flag: vesselToEdit.flag,
-                              call_sign: vesselToEdit.callSign,
+                              vessel_type:
+                                vesselToEdit.vesselType.toUpperCase(),
+                              flag: vesselToEdit.flag.toUpperCase(),
+                              call_sign: vesselToEdit.callSign.toUpperCase(),
                               build_year: vesselToEdit.builtYear,
                               grt: vesselToEdit.grt,
                               dwt: vesselToEdit.dwt,
@@ -1313,10 +1298,15 @@ export default function VesselManagement() {
                                   ? {
                                       ...vesselToEdit,
                                       sscecExpiry: vesselToEdit.sscecExpiry,
-                                      sscecIssued: vesselToEdit.sscecIssued,
                                       sscecStatus: calculateSSCECStatus(
                                         vesselToEdit.sscecExpiry
                                       ),
+                                      name: vesselToEdit.name.toUpperCase(),
+                                      vesselType:
+                                        vesselToEdit.vesselType.toUpperCase(),
+                                      flag: vesselToEdit.flag.toUpperCase(),
+                                      callSign:
+                                        vesselToEdit.callSign.toUpperCase(),
                                     }
                                   : v
                               )
@@ -1471,13 +1461,15 @@ export default function VesselManagement() {
                         </div>
                         <div className="min-w-0">
                           <h3 className="font-semibold text-base sm:text-lg truncate">
-                            {vessel.name}
+                            {vessel.name.toUpperCase()}
                           </h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             IMO: {vessel.imo}
                           </p>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <Badge variant="outline">{vessel.vesselType}</Badge>
+                            <Badge variant="outline">
+                              {vessel.vesselType.toUpperCase()}
+                            </Badge>
                             <Badge
                               className={getSSCECStatusColor(
                                 vessel.sscecStatus
@@ -1529,7 +1521,9 @@ export default function VesselManagement() {
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             Flag
                           </p>
-                          <p className="font-medium">{vessel.flag}</p>
+                          <p className="font-medium">
+                            {vessel.flag.toUpperCase()}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -1545,7 +1539,9 @@ export default function VesselManagement() {
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           Call Sign
                         </p>
-                        <p className="font-medium">{vessel.callSign}</p>
+                        <p className="font-medium">
+                          {vessel.callSign.toUpperCase()}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">

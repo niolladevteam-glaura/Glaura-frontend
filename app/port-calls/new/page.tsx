@@ -33,7 +33,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Ship, X, Plus, Users, Anchor, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Ship,
+  X,
+  Plus,
+  Users,
+  Anchor,
+  Loader2,
+  Building,
+} from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { format } from "date-fns";
@@ -417,6 +426,7 @@ export default function NewPortCall() {
   ]);
   const [isAddingPort, setIsAddingPort] = useState(false);
   const [isAddingFormalityStatus, setIsAddingFormalityStatus] = useState(false);
+  const [location, setLocation] = useState("");
 
   // Modal states
   const [newServiceName, setNewServiceName] = useState("");
@@ -1000,7 +1010,11 @@ export default function NewPortCall() {
   }, [router, restoredFromStorage]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === "location") {
+      setLocation(value);
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const handlePicChange = (pic_id: string) => {
@@ -1161,37 +1175,75 @@ export default function NewPortCall() {
 
   // Submit port call function - API ready
   const handleSubmit = async () => {
+    console.log("handleSubmit called", { formData, selectedServices });
+
     try {
       setLoading(true);
+      console.log("Step 1: Loading set to true");
 
       // Required fields check
       if (!formData.vesselName || !formData.clientCompany || !formData.port) {
+        console.error("Step 2: Required fields missing", {
+          vesselName: formData.vesselName,
+          clientCompany: formData.clientCompany,
+          port: formData.port,
+        });
         throw new Error("Vessel name, client company, and port are required");
       }
+      console.log("Step 3: Required fields present");
 
       // ETA validation
+      console.log("Step 4: ETA validation", {
+        etaDate: formData.etaDate,
+        etaTime: formData.etaTime,
+      });
+
+      // Accept YYYY-MM-DD or DD-MM-YYYY
+      const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      const dmyDateRegex = /^\d{2}-\d{2}-\d{4}$/;
       if (
         !formData.etaDate ||
         !formData.etaTime ||
-        !formData.etaDate.match(/^\d{2}-\d{2}-\d{4}$/) ||
+        (!isoDateRegex.test(formData.etaDate) &&
+          !dmyDateRegex.test(formData.etaDate)) ||
         !formData.etaTime.match(/^([01]\d|2[0-3]):([0-5]\d)$/)
       ) {
+        console.error("Step 5: ETA validation failed", {
+          etaDate: formData.etaDate,
+          etaTime: formData.etaTime,
+        });
         throw new Error(
-          "ETA Date (DD-MM-YYYY) and Time (HH:mm, 24hr) are required and must be correctly formatted."
+          "ETA Date (YYYY-MM-DD or DD-MM-YYYY) and Time (HH:mm, 24hr) are required and must be correctly formatted."
         );
       }
+      console.log("Step 6: ETA validation passed");
 
       // Convert ETA to ISO format
-      const [dd, mm, yyyy] = formData.etaDate.split("-");
-      const etaIsoString = new Date(
-        `${yyyy}-${mm}-${dd}T${formData.etaTime}:00`
-      ).toISOString();
+      let etaIsoString = "";
+      if (isoDateRegex.test(formData.etaDate)) {
+        etaIsoString = new Date(
+          `${formData.etaDate}T${formData.etaTime}:00`
+        ).toISOString();
+      } else if (dmyDateRegex.test(formData.etaDate)) {
+        const [dd, mm, yyyy] = formData.etaDate.split("-");
+        etaIsoString = new Date(
+          `${yyyy}-${mm}-${dd}T${formData.etaTime}:00`
+        ).toISOString();
+      }
+      console.log("Step 7: ETA ISO String", etaIsoString);
 
       // Find port and client names
       const portLabel =
         ports.find((p) => p.value === formData.port)?.label || "";
       const clientLabel =
         clients.find((c) => c.value === formData.clientCompany)?.label || "";
+      console.log("Step 8: Port Label", portLabel, "Client Label", clientLabel);
+
+      // Combine Port & Country with Location (for backend)
+      const portCombined = location
+        ? `${portLabel} ${location}`.trim()
+        : portLabel;
+      console.log("Step 9: Port Combined", portCombined);
 
       // Prepare mail object
       const mail = {
@@ -1214,7 +1266,7 @@ export default function NewPortCall() {
         vessel_id: formData.vesselId || `VES-${Date.now()}`,
         vessel_name: formData.vesselName,
         imo: formData.imo,
-        port: portLabel,
+        port: portCombined,
         client_company: clientLabel,
         agency_name: formData.agencyName,
         status_of_formalities: formData.formalityStatus || "Pending",
@@ -1238,19 +1290,33 @@ export default function NewPortCall() {
         built_year: formData.builtYear ? parseInt(formData.builtYear) : null,
       };
 
+      console.log("Step 10: Payload to send", payload);
+
+      // Debug: Check API endpoint and token
+      console.log("Step 11: Endpoint", API_ENDPOINTS.PORT_CALLS);
+      const token = localStorage.getItem("token");
+      console.log("Step 12: Token", token);
+
+      // Do the fetch!
       const response = await fetch(API_ENDPOINTS.PORT_CALLS, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
 
+      console.log("Step 13: Fetch response object", response);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Step 14: Response not ok", errorData);
         throw new Error(errorData.error || "Failed to create port call");
       }
+
+      const result = await response.json();
+      console.log("Step 15: Success result", result);
 
       toast({
         title: "Success",
@@ -1261,6 +1327,7 @@ export default function NewPortCall() {
       localStorage.removeItem("portCallSelectedServices");
       router.push("/dashboard");
     } catch (error) {
+      console.error("Step 16: Caught error", error);
       toast({
         title: "Error",
         description:
@@ -1269,6 +1336,7 @@ export default function NewPortCall() {
         duration: 8000,
       });
     } finally {
+      console.log("Step 17: Loading set to false");
       setLoading(false);
     }
   };
@@ -1540,19 +1608,26 @@ export default function NewPortCall() {
 
             {/* Client & Operations */}
             <Card
-              className="professional-card animate-fade-in-up"
+              className="professional-card animate-fade-in-up border-l-4 border-l-blue-600"
               style={{ animationDelay: "0.1s" }}
             >
-              <CardHeader>
-                <CardTitle>Client & Operations</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Building className="h-5 w-5 " />
+                  Client & Operations
+                </CardTitle>
                 <CardDescription>
                   Client information and operational details
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="clientCompany" className="form-label">
+              <CardContent className="space-y-6">
+                {/* Row 1: Client Company & Section Head */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="clientCompany"
+                      className="form-label font-medium"
+                    >
                       Client Company *
                     </Label>
                     <Select
@@ -1561,7 +1636,7 @@ export default function NewPortCall() {
                         handleInputChange("clientCompany", value)
                       }
                     >
-                      <SelectTrigger className="form-input">
+                      <SelectTrigger className="form-input h-11">
                         <SelectValue placeholder="Select client" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1573,9 +1648,12 @@ export default function NewPortCall() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="agencyName" className="form-label">
-                      Client PIC
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="agencyName"
+                      className="form-label font-medium"
+                    >
+                      Section Head
                     </Label>
                     <Input
                       id="agencyName"
@@ -1583,16 +1661,17 @@ export default function NewPortCall() {
                       onChange={(e) =>
                         handleInputChange("agencyName", e.target.value)
                       }
-                      placeholder="Enter client PIC"
-                      className="form-input"
+                      placeholder="Enter Section Head"
+                      className="form-input h-11"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor="port" className="form-label">
+                {/* Row 2: Port & Country | Location */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="port" className="form-label font-medium">
                         Port & Country
                       </Label>
                       <Dialog
@@ -1604,12 +1683,9 @@ export default function NewPortCall() {
                             variant="outline"
                             size="sm"
                             disabled={loading}
-                            onClick={() => {
-                              console.log("Add Port button clicked");
-                              setIsAddPortOpen(true);
-                            }}
+                            className="h-8 text-xs"
                           >
-                            <Plus className="h-4 w-4 mr-2" />
+                            <Plus className="h-3 w-3 mr-1" />
                             Add Port
                           </Button>
                         </DialogTrigger>
@@ -1633,7 +1709,6 @@ export default function NewPortCall() {
                                 className="w-full"
                               />
                             </div>
-
                             <div className="flex justify-end space-x-3">
                               <Button
                                 variant="outline"
@@ -1655,14 +1730,11 @@ export default function NewPortCall() {
                                     });
                                     return;
                                   }
-
                                   setIsAddingPort(true);
                                   try {
                                     const newPort = await addPortToDatabase(
                                       newPortName.trim()
                                     );
-
-                                    // Update the local state immediately
                                     setPorts((prevPorts) => [
                                       ...prevPorts,
                                       {
@@ -1670,16 +1742,12 @@ export default function NewPortCall() {
                                         label: newPort.port_name,
                                       },
                                     ]);
-
-                                    // Optionally select the newly added port
                                     setFormData((prev) => ({
                                       ...prev,
                                       port: newPort.port_id,
                                     }));
-
                                     setIsAddPortOpen(false);
                                     setNewPortName("");
-
                                     toast({
                                       title: "Success",
                                       description: "Port added successfully!",
@@ -1720,7 +1788,7 @@ export default function NewPortCall() {
                         handleInputChange("port", value)
                       }
                     >
-                      <SelectTrigger className="form-input">
+                      <SelectTrigger className="form-input h-11">
                         <SelectValue placeholder="Select port" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1732,47 +1800,72 @@ export default function NewPortCall() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="etaDate" className="form-label">
-                        ETA Date (DD-MM-YYYY)
-                      </Label>
-                      <DatePicker
-                        id="etaDate"
-                        value={formData.etaDate}
-                        onChange={(date) => handleInputChange("etaDate", date)}
-                        placeholder="DD.MM.YYYY"
-                        className="form-input"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="etaTime" className="form-label">
-                        ETA Time (24hr, HH:mm)
-                      </Label>
-                      <TimePicker
-                        value={formData.etaTime}
-                        onChange={(value) =>
-                          handleInputChange("etaTime", value)
-                        }
-                        className="" // Let it inherit from parent if needed
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="location"
+                      className="form-label font-medium"
+                    >
+                      Location
+                    </Label>
+                    <Input
+                      id="location"
+                      value={location}
+                      onChange={(e) =>
+                        handleInputChange("location", e.target.value)
+                      }
+                      placeholder="Enter location"
+                      className="form-input h-11"
+                    />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor="formalityStatus" className="form-label">
-                        Status of Formalities
+                {/* Row 3: ETA Date & ETA Time */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="etaDate" className="form-label font-medium">
+                      ETA Date
+                    </Label>
+                    <DatePicker
+                      id="etaDate"
+                      value={formData.etaDate}
+                      onChange={(date) => handleInputChange("etaDate", date)}
+                      placeholder="DD.MM.YYYY"
+                      className="form-input h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="etaTime" className="form-label font-medium">
+                      ETA Time (24hr)
+                    </Label>
+                    <TimePicker
+                      value={formData.etaTime}
+                      onChange={(value) => handleInputChange("etaTime", value)}
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 4: Status, Priority & Client PIC */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label
+                        htmlFor="formalityStatus"
+                        className="form-label font-medium"
+                      >
+                        Formalities Status
                       </Label>
                       <Dialog
                         open={isAddFormalityOpen}
                         onOpenChange={setIsAddFormalityOpen}
                       >
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
                             Add Status
                           </Button>
                         </DialogTrigger>
@@ -1817,29 +1910,22 @@ export default function NewPortCall() {
                                     });
                                     return;
                                   }
-
                                   setIsAddingFormalityStatus(true);
                                   try {
                                     const newStatus =
                                       await addFormalityStatusToDatabase(
                                         newFormalityStatus.trim()
                                       );
-
-                                    // Update local state
                                     setFormalityStatuses((prev) => [
                                       ...prev,
                                       newStatus.status_of_formalities,
                                     ]);
-
-                                    // AUTO-SELECT THE NEWLY ADDED STATUS
                                     setFormData((prev) => ({
                                       ...prev,
                                       formalityStatus: newStatus.id,
                                     }));
-
                                     setIsAddFormalityOpen(false);
                                     setNewFormalityStatus("");
-
                                     toast({
                                       title: "Success",
                                       description: "Status added and selected!",
@@ -1883,7 +1969,7 @@ export default function NewPortCall() {
                         handleInputChange("formalityStatus", value)
                       }
                     >
-                      <SelectTrigger className="form-input">
+                      <SelectTrigger className="form-input h-11">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1895,17 +1981,20 @@ export default function NewPortCall() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="Priority" className="form-label">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="Priority"
+                      className="form-label font-medium"
+                    >
                       Priority
                     </Label>
                     <Select
                       value={formData.priority}
-                      onValueChange={(priority) => {
-                        handleInputChange("priority", priority);
-                      }}
+                      onValueChange={(priority) =>
+                        handleInputChange("priority", priority)
+                      }
                     >
-                      <SelectTrigger className="form-input" id="priority">
+                      <SelectTrigger className="form-input h-11" id="priority">
                         <SelectValue placeholder="Select Priority" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1920,16 +2009,22 @@ export default function NewPortCall() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="assignedPIC" className="form-label">
-                      Section Head
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="assignedPIC"
+                      className="form-label font-medium"
+                    >
+                      Client PIC
                     </Label>
                     <Select
                       value={formData.pic.pic_id}
                       onValueChange={(pic_id) => handlePicChange(pic_id)}
                     >
-                      <SelectTrigger className="form-input" id="assignedPIC">
-                        <SelectValue placeholder="Select Section Head" />
+                      <SelectTrigger
+                        className="form-input h-11"
+                        id="assignedPIC"
+                      >
+                        <SelectValue placeholder="Select Client PIC" />
                       </SelectTrigger>
                       <SelectContent>
                         {customerPICOptions.map((pic) => (
@@ -1942,8 +2037,9 @@ export default function NewPortCall() {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="remarks" className="form-label">
+                {/* Remarks */}
+                <div className="space-y-2">
+                  <Label htmlFor="remarks" className="form-label font-medium">
                     Remarks
                   </Label>
                   <Textarea
@@ -1954,7 +2050,7 @@ export default function NewPortCall() {
                     }
                     placeholder="Enter any additional remarks or special instructions"
                     rows={3}
-                    className="form-input"
+                    className="form-input resize-vertical"
                   />
                 </div>
               </CardContent>

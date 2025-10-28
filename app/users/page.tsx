@@ -86,9 +86,10 @@ interface ApiUser {
   department: string;
   status: boolean;
   contact_number?: string;
-  created_at?: string;
-  last_login?: string;
+  createdAt?: string;
+  lastLogin?: string;
   dob?: string;
+  profile_picture?: string;
   permissions?: Record<string, boolean>;
 }
 
@@ -473,15 +474,9 @@ export default function UserManagement() {
               const permResponse = (await userApi.getUserPermissions(
                 apiUser.user_id
               )) as PermissionResponse;
-
               if (permResponse.success && permResponse.userPermissions) {
-                // Convert permissions object to array of keys
                 permissions = Object.entries(permResponse.userPermissions)
-                  .filter(
-                    ([key, value]) =>
-                      value === true && // Only include true permissions
-                      !["createdAt", "updatedAt"].includes(key) // Exclude metadata fields
-                  )
+                  .filter(([key, value]) => value === true)
                   .map(([key]) => key);
               }
             } catch (error) {
@@ -501,12 +496,13 @@ export default function UserManagement() {
               department: apiUser.department || "Other",
               accessLevel: apiUser.access_level,
               isActive: apiUser.status,
-              lastLogin: apiUser.last_login || "",
-              createdAt: apiUser.created_at || new Date().toISOString(),
-              permissions, // Use fetched permissions
+              lastLogin: apiUser.lastLogin || "",
+              createdAt: apiUser.createdAt || new Date().toISOString(),
+              permissions,
               phoneNumber: apiUser.contact_number || "",
               emergencyContact: "",
               dob: apiUser.dob || "",
+              profilePic: apiUser.profile_picture || "",
             };
           })
         );
@@ -524,7 +520,7 @@ export default function UserManagement() {
   }, [router]);
 
   useEffect(() => {
-    let filtered = [...users]; // Start with a copy of users
+    let filtered = [...users];
 
     if (searchTerm) {
       filtered = filtered.filter(
@@ -605,8 +601,8 @@ export default function UserManagement() {
         department: apiUser.department || "Other",
         accessLevel: apiUser.access_level,
         isActive: apiUser.status,
-        lastLogin: apiUser.last_login || "",
-        createdAt: apiUser.created_at || new Date().toISOString(),
+        lastLogin: apiUser.lastLogin || "",
+        createdAt: apiUser.createdAt || new Date().toISOString(),
         permissions,
         phoneNumber: apiUser.contact_number || "",
         emergencyContact: "",

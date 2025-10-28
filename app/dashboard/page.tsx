@@ -570,32 +570,34 @@ export default function Dashboard() {
       </header>
 
       <div className="flex">
-        {/* Enhanced Desktop Sidebar */}
-        <aside className="hidden lg:block w-72 border-r bg-background min-h-screen sticky top-[73px] overflow-y-auto">
-          <nav className="p-4 space-y-6">
-            {navigationGroups.map((group, idx) => (
-              <div key={group.heading || idx}>
-                <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase">
-                  {group.heading}
-                </h3>
-                <div className="space-y-2">
-                  {group.items.map((item, index) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`nav-item animate-fade-in-left ${
-                        item.active ? "active" : ""
-                      }`}
-                      style={{ animationDelay: `${index * 0.05}s` }}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span className="font-medium">{item.label}</span>
-                    </Link>
-                  ))}
+        {/* Enhanced Desktop Sidebar with own scroll */}
+        <aside className="hidden lg:block w-72 border-r bg-background min-h-screen sticky top-[73px]">
+          <div className="h-screen max-h-screen overflow-y-auto">
+            <nav className="p-4 space-y-6">
+              {navigationGroups.map((group, idx) => (
+                <div key={group.heading || idx}>
+                  <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase">
+                    {group.heading}
+                  </h3>
+                  <div className="space-y-2">
+                    {group.items.map((item, index) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`nav-item animate-fade-in-left ${
+                          item.active ? "active" : ""
+                        }`}
+                        style={{ animationDelay: `${index * 0.05}s` }}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span className="font-medium">{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </nav>
+              ))}
+            </nav>
+          </div>
         </aside>
 
         {/* Main Content */}
@@ -662,17 +664,6 @@ export default function Dashboard() {
                       <div className="bg-primary/10 p-2 rounded-lg">
                         <Ship className="h-5 w-5 text-primary" />
                       </div>
-                      {/* <Badge
-                        variant={
-                          portCall.status === "Completed"
-                            ? "default"
-                            : portCall.status === "In Progress"
-                            ? "secondary"
-                            : "outline"
-                        }
-                      >
-                        {portCall.status}
-                      </Badge> */}
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -705,7 +696,6 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Responsive chart container */}
                 <div className="w-full overflow-x-auto">
                   <ChartContainer
                     config={{
@@ -714,7 +704,7 @@ export default function Dashboard() {
                         color: "hsl(var(--primary))",
                       },
                     }}
-                    className="h-[200px] sm:h-[300px] min-w-[320px]" // Chart is shorter on mobile
+                    className="h-[200px] sm:h-[300px] min-w-[320px]"
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={vesselVolumeData}>
