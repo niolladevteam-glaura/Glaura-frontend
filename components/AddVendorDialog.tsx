@@ -82,7 +82,8 @@ type AddVendorDialogProps = {
   onOpenChange: (val: boolean) => void;
   serviceCategories: string[];
   loadingServices: boolean;
-  onVendorCreated?: () => void; // optional callback after vendor is created
+  onVendorCreated?: () => void;
+  onSaveVendor: (formData: VendorFormType) => Promise<void>;
 };
 
 const VENDOR_FORM_DRAFT_KEY = "addVendorFormDraft";
@@ -147,6 +148,7 @@ export default function AddVendorDialog({
   serviceCategories,
   loadingServices,
   onVendorCreated,
+  onSaveVendor,
 }: AddVendorDialogProps) {
   const [vendorForm, setVendorForm] = useState<VendorFormType | null>(null);
   const [loading, setLoading] = useState(false);
@@ -473,7 +475,6 @@ export default function AddVendorDialog({
         remark: vendorForm.remark,
         pic: picPayload,
         services: vendorForm.services,
-
         documents,
       };
 
@@ -841,9 +842,9 @@ export default function AddVendorDialog({
                                 <div className="truncate font-medium">
                                   {displayName}
                                 </div>
-                                <div className="text-xs text-muted-foreground truncate">
+                                {/* <div className="text-xs text-muted-foreground truncate">
                                   {pic.department || "No department"}
-                                </div>
+                                </div> */}
                               </div>
                             </div>
                             <Badge
@@ -937,7 +938,7 @@ export default function AddVendorDialog({
                               autoCapitalize="words"
                             />
                           </div>
-                          <div className="sm:col-span-2">
+                          {/* <div className="sm:col-span-2">
                             <Label className="mb-1 block">Department</Label>
                             <Input
                               value={pic.department || ""}
@@ -946,8 +947,8 @@ export default function AddVendorDialog({
                               }
                               placeholder="Department"
                             />
-                          </div>
-                          <div className="sm:col-span-2">
+                          </div> */}
+                          {/* <div className="sm:col-span-2">
                             <Label className="mb-1 block">Birthday</Label>
                             <DatePicker
                               value={pic.birthday}
@@ -956,7 +957,7 @@ export default function AddVendorDialog({
                               }
                               placeholder="dd.mm.yyyy"
                             />
-                          </div>
+                          </div> */}
                         </div>
                         <Separator className="my-4" />
                         <div className="space-y-2">

@@ -46,22 +46,15 @@ import {
   X,
   ArrowLeft,
   Cake,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
-import { DatePicker } from "@/components/ui/date-picker";
-import ShadCountryPhoneInput from "@/components/ui/ShadCountryPhoneInput";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 
-// IMPORT YOUR DIALOG COMPONENTS
+import type { DocumentType } from "../types/vendor-types";
+
 import AddVendorDialog from "@/components/AddVendorDialog";
 import EditVendorDialog from "@/components/EditVendorDialog";
+import VendorDocumentsDialog from "@/components/VendorDocumentsDialog";
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -122,6 +115,7 @@ interface Vendor {
   phoneNumber?: string;
   services?: string[];
   pics?: VendorPIC[];
+  attachments?: any[]; // Add this line to fix the error
 }
 
 function formatDateDMY(dateStr?: string) {
@@ -213,7 +207,34 @@ export default function VendorManagement() {
   const [isEditVendorOpen, setIsEditVendorOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
 
+  const [documentList, setDocumentList] = useState<DocumentType[]>([]);
+
+  const [isDocumentsDialogOpen, setIsDocumentsDialogOpen] = useState(false);
+
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_BASE_URL}/vendor/document/list`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setDocumentList(data.data as DocumentType[]);
+        } else {
+          setDocumentList([]);
+        }
+      } catch {
+        setDocumentList([]);
+      }
+    };
+    fetchDocuments();
+  }, []);
 
   // --- AUTO-OPEN ADD VENDOR DIALOG IF A DRAFT EXISTS ---
   useEffect(() => {
@@ -449,14 +470,15 @@ export default function VendorManagement() {
 
   // ---- Add Vendor Dialog Handler ----
   const handleSaveVendor = async (formData: VendorFormType) => {
+    setLoading(true);
     try {
-      setLoading(true);
+      // Prepare backend payload
       const backendData = {
         name: formData.name.trim(),
         address: formData.address.trim(),
-        phone_number: `${formData.phoneCountryCode || "+94"} ${
-          formData.phoneNumber || ""
-        }`.trim(),
+        phone_number: `${formData.phoneCountryCode || "+94"}${
+          formData.phoneNumber ? " " + formData.phoneNumber.trim() : ""
+        }`,
         company_type: formData.company_type.trim(),
         email: formData.email.trim(),
         remark: formData.remark.trim(),
@@ -475,12 +497,18 @@ export default function VendorManagement() {
             : undefined,
       };
 
-      await apiCall(`${API_BASE_URL}/vendor`, {
+      // Send create request
+      const response = await apiCall(`${API_BASE_URL}/vendor`, {
         method: "POST",
         body: JSON.stringify(backendData),
       });
+
+      // Refresh vendor list in UI
       await loadVendors();
+
+      // Clean up and notify
       localStorage.removeItem("vendorFormDraft");
+      setIsAddVendorOpen(false); // If you use this state to control the dialog
       toast({
         title: "Success",
         description: "Vendor created successfully!",
@@ -545,23 +573,31 @@ export default function VendorManagement() {
       });
     } finally {
       setLoading(false);
+      setEditingVendor(null); // << Move these AFTER loadVendors
       setIsEditVendorOpen(false);
     }
   };
 
   // ---- Edit Vendor Dialog Open Handler ----
   const startEditVendor = (vendor: Vendor) => {
-    setEditingVendor(vendor);
-
     let phoneCountryCode = "+94";
     let phoneNumber = "";
     if (vendor.phone_number) {
-      const match = vendor.phone_number.match(/^(\+\d+)\s*(.*)$/);
+      // If format is "+94112223344" (no space)
+      const match = vendor.phone_number.match(/^(\+\d{2})(\d{7,})$/);
       if (match) {
-        phoneCountryCode = match[1];
-        phoneNumber = match[2];
+        phoneCountryCode = match[1]; // "+94"
+        phoneNumber = match[2]; // "112223344" or "763721457"
       } else {
-        phoneNumber = vendor.phone_number;
+        // fallback: "+94 112223344" or "+94 763721457" (with space)
+        const altMatch = vendor.phone_number.match(/^(\+\d+)\s*(.*)$/);
+        if (altMatch) {
+          phoneCountryCode = altMatch[1];
+          phoneNumber = altMatch[2];
+        } else {
+          // fallback: just the number
+          phoneNumber = vendor.phone_number;
+        }
       }
     }
     const picArray = getVendorPICArray(vendor);
@@ -723,7 +759,7 @@ export default function VendorManagement() {
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {/* Document Expiry Alerts */}
-            <Card className="professional-card">
+            {/* <Card className="professional-card">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <AlertTriangle className="h-5 w-5" />
@@ -770,7 +806,7 @@ export default function VendorManagement() {
                   </p>
                 )}
               </CardContent>
-            </Card>
+            </Card> */}
             {/* Quick Stats */}
             <Card className="professional-card">
               <CardHeader>
@@ -799,13 +835,14 @@ export default function VendorManagement() {
                     {vendors.filter((v) => v.kycStatus === "Pending").length}
                   </span>
                 </div>
-                <div className="flex justify-between">
+
+                {/* <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
                     Document Alerts
                   </span>
                   <span className="font-medium">{expiryAlerts.length}</span>
-                </div>
-                <div className="flex justify-between">
+                </div> */}
+                {/* <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
                     Avg Rating
                   </span>
@@ -822,10 +859,30 @@ export default function VendorManagement() {
                         : "N/A"
                       : "0"}
                   </span>
-                </div>
+                </div> */}
               </CardContent>
             </Card>
-            <Card className="professional-card">
+            {/* Add Vendor Button */}
+            <Button
+              className="w-full h-12 text-base flex items-center justify-center gap-2 professional-button-primary"
+              disabled={loading}
+              onClick={() => setIsAddVendorOpen(true)}
+            >
+              <Plus className="h-5 w-5" />
+              Add Vendor
+            </Button>
+
+            {/* Vendor Documents Button */}
+            <Button
+              className="w-full h-12 text-base flex items-center justify-center gap-2 border border-primary text-primary bg-background hover:bg-primary/10 transition"
+              variant="outline"
+              disabled={loading}
+              onClick={() => setIsDocumentsDialogOpen(true)}
+            >
+              <FileText className="h-5 w-5" />
+              Vendor Documents
+            </Button>
+            {/* <Card className="professional-card">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Cake className="h-5 w-5" />
@@ -866,7 +923,7 @@ export default function VendorManagement() {
                   </p>
                 )}
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
@@ -876,14 +933,14 @@ export default function VendorManagement() {
                 <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <span>Vendor Management</span>
                   <div className="flex gap-2 flex-wrap">
-                    <Button
-                      className="professional-button-primary"
-                      disabled={loading}
-                      onClick={() => setIsAddVendorOpen(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Vendor
-                    </Button>
+                    {/* Vendor Documents Dialog */}
+                    <VendorDocumentsDialog
+                      open={isDocumentsDialogOpen}
+                      onOpenChange={setIsDocumentsDialogOpen}
+                      vendors={vendors}
+                      loading={loading}
+                    />
+
                     {/* ---- AddVendorDialog ---- */}
                     <AddVendorDialog
                       open={isAddVendorOpen}
@@ -901,6 +958,7 @@ export default function VendorManagement() {
                       initialVendorForm={
                         editingVendor
                           ? {
+                              vendor_id: editingVendor.vendor_id,
                               name: editingVendor.name,
                               address: editingVendor.address,
                               phoneCountryCode:
@@ -912,9 +970,11 @@ export default function VendorManagement() {
                               services: editingVendor.services || [],
                               status: editingVendor.status || { status: true },
                               pics: editingVendor.pics || [],
+                              attachments: editingVendor.attachments || [],
                             }
                           : null
                       }
+                      documentList={documentList}
                       onUpdateVendor={handleUpdateVendor}
                     />
                     {/* ---- Delete Confirmation Dialog ---- */}
@@ -1251,18 +1311,18 @@ export default function VendorManagement() {
                                 {pic.type || pic.picType || "Primary"}
                               </p>
                             </div>
-                            <div>
+                            {/* <div>
                               <Label>Department</Label>
                               <p className="text-sm mt-1">
                                 {pic.department || "N/A"}
                               </p>
-                            </div>
-                            <div>
+                            </div> */}
+                            {/* <div>
                               <Label>Birthday</Label>
                               <p className="text-sm mt-1">
                                 {formatDateDMY(pic.birthday) || "N/A"}
                               </p>
-                            </div>
+                            </div> */}
                             <div>
                               <Label>Contact Numbers</Label>
                               <div>

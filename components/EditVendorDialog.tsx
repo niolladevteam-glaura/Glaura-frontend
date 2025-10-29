@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Users, Plus, X } from "lucide-react";
+import { Users, Plus, X, FileText } from "lucide-react";
 import ShadCountryPhoneInput from "@/components/ui/ShadCountryPhoneInput";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -30,7 +30,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 
-// Vendor PIC and VendorFormType definitions
 interface VendorPIC {
   id: string;
   type?: "Primary" | "Secondary";
@@ -47,7 +46,18 @@ interface VendorPIC {
   remark: string;
 }
 
+type AttachmentFormType = {
+  documentID: string;
+  type: string;
+  file: File | null;
+  fileSize: number;
+  expiryDate: string;
+  remarks: string;
+  publicUrl?: string;
+};
+
 type VendorFormType = {
+  vendor_id: string;
   name: string;
   address: string;
   phoneCountryCode: string;
@@ -58,6 +68,12 @@ type VendorFormType = {
   services: string[];
   status: { status: boolean };
   pics: VendorPIC[];
+  attachments: AttachmentFormType[];
+};
+
+type DocumentType = {
+  documentID: string;
+  document_name: string;
 };
 
 type EditVendorDialogProps = {
@@ -66,11 +82,28 @@ type EditVendorDialogProps = {
   serviceCategories: string[];
   loadingServices: boolean;
   initialVendorForm: VendorFormType | null;
+  documentList: DocumentType[]; // required documents for vendor
   onUpdateVendor: (formData: VendorFormType) => Promise<void>;
 };
 
-// Key for localStorage draft persistence
 const VENDOR_FORM_EDIT_DRAFT_KEY = "editVendorFormDraft";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+async function uploadFile(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE_URL}/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  if (!res.ok) throw new Error("File upload failed");
+  const data = await res.json();
+  return data.data.public_url;
+}
 
 export default function EditVendorDialog({
   open,
@@ -78,15 +111,16 @@ export default function EditVendorDialog({
   serviceCategories,
   loadingServices,
   initialVendorForm,
+  documentList,
   onUpdateVendor,
 }: EditVendorDialogProps) {
-  // Internal state
   const [vendorForm, setVendorForm] = useState<VendorFormType | null>(null);
   const [loading, setLoading] = useState(false);
   const [serviceSearchTerm, setServiceSearchTerm] = useState("");
+  const [attachmentErrors, setAttachmentErrors] = useState<boolean[]>([]);
   const hasLoadedDraft = useRef(false);
 
-  // Load draft if available when editing opens, otherwise use initialVendorForm (only once per open)
+  // --- Load draft if available when dialog opens, otherwise use initialVendorForm
   useEffect(() => {
     if (open && !hasLoadedDraft.current) {
       hasLoadedDraft.current = true;
@@ -98,20 +132,46 @@ export default function EditVendorDialog({
           setVendorForm(initialVendorForm);
         }
       } else {
-        setVendorForm(initialVendorForm);
+        // Ensure documentList is always an array
+        const docs: DocumentType[] = Array.isArray(documentList)
+          ? documentList
+          : [];
+        if (initialVendorForm) {
+          let attachments: AttachmentFormType[] = [];
+          if (
+            Array.isArray(initialVendorForm.attachments) &&
+            initialVendorForm.attachments.length > 0
+          ) {
+            // Use existing attachments
+            attachments = initialVendorForm.attachments;
+          } else {
+            // Create blank attachments for required documents
+            attachments = docs.map((doc) => ({
+              documentID: doc.documentID,
+              type: doc.document_name,
+              file: null,
+              fileSize: 0,
+              expiryDate: "",
+              remarks: "",
+              publicUrl: "",
+            }));
+          }
+          setVendorForm({ ...initialVendorForm, attachments });
+        } else {
+          setVendorForm(null);
+        }
       }
     }
-  }, [open, initialVendorForm]);
+  }, [open, initialVendorForm, documentList]);
 
-  // Optionally clear draft and reset flag when dialog closes
   useEffect(() => {
     if (!open) {
       hasLoadedDraft.current = false;
       localStorage.removeItem(VENDOR_FORM_EDIT_DRAFT_KEY);
+      setVendorForm(null);
     }
   }, [open]);
 
-  // Persist vendorForm draft to localStorage on every change while dialog is open
   useEffect(() => {
     if (open && vendorForm) {
       localStorage.setItem(
@@ -121,9 +181,9 @@ export default function EditVendorDialog({
     }
   }, [open, vendorForm]);
 
-  // Handler functions for PIC section
+  // PIC handlers
   const addNewPIC = () => {
-    setVendorForm((prev: VendorFormType | null) =>
+    setVendorForm((prev) =>
       prev
         ? {
             ...prev,
@@ -151,7 +211,7 @@ export default function EditVendorDialog({
   };
 
   const updatePIC = (index: number, field: keyof VendorPIC, value: any) => {
-    setVendorForm((prev: VendorFormType | null) => {
+    setVendorForm((prev) => {
       if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[index] = {
@@ -163,7 +223,7 @@ export default function EditVendorDialog({
   };
 
   const removePIC = (index: number) => {
-    setVendorForm((prev: VendorFormType | null) =>
+    setVendorForm((prev) =>
       prev
         ? {
             ...prev,
@@ -174,7 +234,7 @@ export default function EditVendorDialog({
   };
 
   const addPICContactNumber = (picIndex: number) => {
-    setVendorForm((prev: VendorFormType | null) => {
+    setVendorForm((prev) => {
       if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].contactNumbers = [
@@ -194,7 +254,7 @@ export default function EditVendorDialog({
     contactIndex: number,
     value: string
   ) => {
-    setVendorForm((prev: VendorFormType | null) => {
+    setVendorForm((prev) => {
       if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].contactNumbers[contactIndex] = value;
@@ -203,7 +263,7 @@ export default function EditVendorDialog({
   };
 
   const removePICContactNumber = (picIndex: number, contactIndex: number) => {
-    setVendorForm((prev: VendorFormType | null) => {
+    setVendorForm((prev) => {
       if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].contactNumbers = updatedPics[
@@ -219,7 +279,7 @@ export default function EditVendorDialog({
   };
 
   const addPICEmail = (picIndex: number) => {
-    setVendorForm((prev: VendorFormType | null) => {
+    setVendorForm((prev) => {
       if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails = [...updatedPics[picIndex].emails, ""];
@@ -236,7 +296,7 @@ export default function EditVendorDialog({
     emailIndex: number,
     value: string
   ) => {
-    setVendorForm((prev: VendorFormType | null) => {
+    setVendorForm((prev) => {
       if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails[emailIndex] = value;
@@ -245,7 +305,7 @@ export default function EditVendorDialog({
   };
 
   const removePICEmail = (picIndex: number, emailIndex: number) => {
-    setVendorForm((prev: VendorFormType | null) => {
+    setVendorForm((prev) => {
       if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails = updatedPics[picIndex].emails.filter(
@@ -262,30 +322,98 @@ export default function EditVendorDialog({
     cat.toLowerCase().includes(serviceSearchTerm.toLowerCase())
   );
 
-  // Persist vendorForm draft to localStorage on every change while dialog is open
+  // Validation for attachments
   useEffect(() => {
-    if (open && vendorForm) {
-      localStorage.setItem(
-        VENDOR_FORM_EDIT_DRAFT_KEY,
-        JSON.stringify(vendorForm)
-      );
-    }
-  }, [open, vendorForm]);
+    if (!vendorForm) return;
+    setAttachmentErrors(
+      vendorForm.attachments.map((att, idx) => {
+        if (
+          att.type.toLowerCase().includes("insurance certificate") ||
+          att.type.toLowerCase().includes("insurance certificates")
+        ) {
+          return att.file
+            ? !(att.file && att.expiryDate && att.remarks)
+            : false;
+        }
+        return !(att.file && att.expiryDate && att.remarks);
+      })
+    );
+  }, [vendorForm?.attachments]);
 
   // Save vendor handler
   const handleUpdateVendor = async () => {
     if (!vendorForm) return;
     setLoading(true);
     try {
-      await onUpdateVendor(vendorForm);
+      // 1. Upload new files and get URLs
+      const attachmentsWithUrls = await Promise.all(
+        vendorForm.attachments.map(async (att) => {
+          if (att.file && !att.publicUrl) {
+            const publicUrl = await uploadFile(att.file);
+            return { ...att, publicUrl };
+          }
+          return att;
+        })
+      );
+
+      // 2. Prepare documents array
+      const documents = attachmentsWithUrls
+        .filter((att) => att.publicUrl)
+        .map((att) => ({
+          documentID: att.documentID,
+          url: att.publicUrl,
+          expired_at: att.expiryDate,
+          remarks: att.remarks,
+        }));
+
+      // 3. Prepare other fields
+      const mainPic = vendorForm.pics[0] || {};
+      const picPayload = {
+        phone_number: (mainPic.contactNumbers[0] || "").replace(/\s+/g, ""),
+        firstName: mainPic.firstName || "",
+        lastName: mainPic.lastName || "",
+        picType: mainPic.type || "",
+        email: mainPic.emails[0] || "",
+        remark: mainPic.remark || "",
+      };
+
+      // 4. Build final update payload
+      const vendorPayload = {
+        address: vendorForm.address.replace(/\n+/g, " "),
+        name: vendorForm.name,
+        phone_number: (
+          vendorForm.phoneCountryCode + vendorForm.phoneNumber
+        ).replace(/\s+/g, ""),
+        company_type: vendorForm.company_type,
+        email: vendorForm.email,
+        remark: vendorForm.remark,
+        pic: picPayload,
+        services: vendorForm.services,
+        documents,
+      };
+
+      // 5. Send PUT request to update vendor
+      const token = localStorage.getItem("token");
+      await fetch(`${API_BASE_URL}/vendor/${vendorForm.vendor_id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(vendorPayload),
+      });
+
       localStorage.removeItem(VENDOR_FORM_EDIT_DRAFT_KEY);
-      onOpenChange(false);
+
+      // --- Call parent callback to refresh vendors ---
+      await onUpdateVendor(vendorForm); // This will close the dialog and reload vendor list in parent
+    } catch (err: any) {
+      alert(err.message || "Error occurred while updating vendor.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Handler for "Go to Service Management" link to persist draft manually
   const handleGoToServiceManagement = () => {
     if (vendorForm) {
       localStorage.setItem(
@@ -293,7 +421,6 @@ export default function EditVendorDialog({
         JSON.stringify(vendorForm)
       );
     }
-    // Nav is handled by <Link>, so no need for router.push here
   };
 
   if (!vendorForm) return null;
@@ -306,6 +433,7 @@ export default function EditVendorDialog({
         </DialogHeader>
         <div className="space-y-6">
           <div className="space-y-4">
+            {/* --- Company Information Fields --- */}
             <h3 className="text-lg font-medium">Company Information</h3>
             <div>
               <Label htmlFor="name" className="form-label">
@@ -473,29 +601,9 @@ export default function EditVendorDialog({
                 </div>
               )}
             </div>
-            <div>
-              <Label htmlFor="kycStatus" className="form-label">
-                KYC Status
-              </Label>
-              <Select
-                value={vendorForm.status.status ? "Approved" : "Pending"}
-                onValueChange={(value) =>
-                  setVendorForm((prev) =>
-                    prev
-                      ? { ...prev, status: { status: value === "Approved" } }
-                      : prev
-                  )
-                }
-              >
-                <SelectTrigger className="form-input">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
+            <Separator className="my-6" />
+            {/* PIC Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium flex items-center gap-2">
@@ -542,9 +650,9 @@ export default function EditVendorDialog({
                                 <div className="truncate font-medium">
                                   {displayName}
                                 </div>
-                                <div className="text-xs text-muted-foreground truncate">
+                                {/* <div className="text-xs text-muted-foreground truncate">
                                   {pic.department || "No department"}
-                                </div>
+                                </div> */}
                               </div>
                             </div>
                             <Badge
@@ -638,7 +746,7 @@ export default function EditVendorDialog({
                               autoCapitalize="words"
                             />
                           </div>
-                          <div className="sm:col-span-2">
+                          {/* <div className="sm:col-span-2">
                             <Label className="mb-1 block">Department</Label>
                             <Input
                               value={pic.department || ""}
@@ -647,8 +755,8 @@ export default function EditVendorDialog({
                               }
                               placeholder="Department"
                             />
-                          </div>
-                          <div className="sm:col-span-2">
+                          </div> */}
+                          {/* <div className="sm:col-span-2">
                             <Label className="mb-1 block">Birthday</Label>
                             <DatePicker
                               value={pic.birthday}
@@ -657,7 +765,7 @@ export default function EditVendorDialog({
                               }
                               placeholder="dd.mm.yyyy"
                             />
-                          </div>
+                          </div> */}
                         </div>
                         <Separator className="my-4" />
                         <div className="space-y-2">
