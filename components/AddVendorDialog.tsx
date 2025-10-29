@@ -63,11 +63,18 @@ type VendorFormType = {
 };
 
 type AttachmentFormType = {
+  documentID: string;
   type: string;
   file: File | null;
   fileSize: number;
   expiryDate: string;
   remarks: string;
+  publicUrl?: string; // Added for storing uploaded file URL
+};
+
+type DocumentType = {
+  documentID: string;
+  document_name: string;
 };
 
 type AddVendorDialogProps = {
@@ -75,26 +82,13 @@ type AddVendorDialogProps = {
   onOpenChange: (val: boolean) => void;
   serviceCategories: string[];
   loadingServices: boolean;
-  onSaveVendor: (formData: VendorFormType) => Promise<void>;
+  onVendorCreated?: () => void; // optional callback after vendor is created
 };
 
-// Key for localStorage draft persistence
 const VENDOR_FORM_DRAFT_KEY = "addVendorFormDraft";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// List of required attachment types
-const ATTACHMENT_FIELDS = [
-  "Company Profile",
-  "Business Registration Certificate",
-  "Tax Registration Certificate (e.g., VAT/TRN)",
-  "List of Directors/Owners",
-  "Bank Details (on official letterhead)",
-  "Relevant ISO or Industry Certifications",
-  "Insurance Certificates (if applicable)",
-  "Health, Safety, and Quality Policy Documents",
-  "List of Key Contact Persons",
-];
-
-const blankVendorForm = (): VendorFormType => ({
+const blankVendorForm = (documents: DocumentType[]): VendorFormType => ({
   name: "",
   address: "",
   phoneCountryCode: "+94",
@@ -121,8 +115,9 @@ const blankVendorForm = (): VendorFormType => ({
       remark: "",
     },
   ],
-  attachments: ATTACHMENT_FIELDS.map((type) => ({
-    type,
+  attachments: documents.map((doc) => ({
+    documentID: doc.documentID,
+    type: doc.document_name,
     file: null,
     fileSize: 0,
     expiryDate: "",
@@ -130,82 +125,135 @@ const blankVendorForm = (): VendorFormType => ({
   })),
 });
 
+async function uploadFile(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_BASE_URL}/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  if (!res.ok) throw new Error("File upload failed");
+  const data = await res.json();
+  return data.data.public_url;
+}
+
 export default function AddVendorDialog({
   open,
   onOpenChange,
   serviceCategories,
   loadingServices,
-  onSaveVendor,
+  onVendorCreated,
 }: AddVendorDialogProps) {
-  // Internal state
-  const [vendorForm, setVendorForm] = useState<VendorFormType>(
-    blankVendorForm()
-  );
+  const [vendorForm, setVendorForm] = useState<VendorFormType | null>(null);
   const [loading, setLoading] = useState(false);
   const [serviceSearchTerm, setServiceSearchTerm] = useState("");
   const [attachmentErrors, setAttachmentErrors] = useState<boolean[]>([]);
+  const [documentList, setDocumentList] = useState<DocumentType[]>([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
   const hasLoadedDraft = useRef(false);
 
-  // Load draft if available when dialog opens (only once per open)
   useEffect(() => {
-    if (open && !hasLoadedDraft.current) {
+    if (open) {
+      setLoadingDocuments(true);
+      const token = localStorage.getItem("token");
+      fetch(`${API_BASE_URL}/vendor/document/list`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.data)) {
+            setDocumentList(data.data);
+          } else {
+            setDocumentList([]);
+          }
+        })
+        .catch(() => setDocumentList([]))
+        .finally(() => setLoadingDocuments(false));
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (open && documentList.length > 0 && !hasLoadedDraft.current) {
       hasLoadedDraft.current = true;
       const draft = localStorage.getItem(VENDOR_FORM_DRAFT_KEY);
       if (draft) {
         try {
           const parsed = JSON.parse(draft);
-          setVendorForm(parsed);
+          const draftAttachments =
+            Array.isArray(parsed.attachments) &&
+            parsed.attachments.length === documentList.length
+              ? parsed.attachments
+              : documentList.map((doc) => ({
+                  documentID: doc.documentID,
+                  type: doc.document_name,
+                  file: null,
+                  fileSize: 0,
+                  expiryDate: "",
+                  remarks: "",
+                }));
+          setVendorForm({ ...parsed, attachments: draftAttachments });
         } catch {
-          setVendorForm(blankVendorForm());
+          setVendorForm(blankVendorForm(documentList));
         }
       } else {
-        setVendorForm(blankVendorForm());
+        setVendorForm(blankVendorForm(documentList));
       }
     }
-  }, [open]);
+  }, [open, documentList]);
 
-  // Reset draft flag when dialog closes
   useEffect(() => {
     if (!open) {
       hasLoadedDraft.current = false;
       localStorage.removeItem(VENDOR_FORM_DRAFT_KEY);
+      setVendorForm(null);
     }
   }, [open]);
 
-  // Persist vendorForm draft to localStorage on every change while dialog is open
   useEffect(() => {
     if (open && vendorForm) {
       localStorage.setItem(VENDOR_FORM_DRAFT_KEY, JSON.stringify(vendorForm));
     }
   }, [open, vendorForm]);
 
-  // Handler functions for PIC section
+  // PIC handlers
   const addNewPIC = () => {
-    setVendorForm((prev: VendorFormType) => ({
-      ...prev,
-      pics: [
-        ...(prev.pics || []),
-        {
-          id: Date.now().toString(),
-          type: "Secondary",
-          title: "Mr.",
-          firstName: "",
-          lastName: "",
-          name: "",
-          department: "",
-          birthday: "",
-          contactNumbers: [""],
-          contactTypes: ["Direct Line"],
-          emails: [""],
-          emailTypes: ["Personal"],
-          remark: "",
-        },
-      ],
-    }));
+    setVendorForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            pics: [
+              ...(prev.pics || []),
+              {
+                id: Date.now().toString(),
+                type: "Secondary",
+                title: "Mr.",
+                firstName: "",
+                lastName: "",
+                name: "",
+                department: "",
+                birthday: "",
+                contactNumbers: [""],
+                contactTypes: ["Direct Line"],
+                emails: [""],
+                emailTypes: ["Personal"],
+                remark: "",
+              },
+            ],
+          }
+        : prev
+    );
   };
 
   const updatePIC = (index: number, field: keyof VendorPIC, value: any) => {
-    setVendorForm((prev: VendorFormType) => {
+    setVendorForm((prev) => {
+      if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[index] = {
         ...updatedPics[index],
@@ -216,14 +264,19 @@ export default function AddVendorDialog({
   };
 
   const removePIC = (index: number) => {
-    setVendorForm((prev: VendorFormType) => ({
-      ...prev,
-      pics: (prev.pics || []).filter((_, i) => i !== index),
-    }));
+    setVendorForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            pics: (prev.pics || []).filter((_, i) => i !== index),
+          }
+        : prev
+    );
   };
 
   const addPICContactNumber = (picIndex: number) => {
-    setVendorForm((prev: VendorFormType) => {
+    setVendorForm((prev) => {
+      if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].contactNumbers = [
         ...updatedPics[picIndex].contactNumbers,
@@ -242,7 +295,8 @@ export default function AddVendorDialog({
     contactIndex: number,
     value: string
   ) => {
-    setVendorForm((prev: VendorFormType) => {
+    setVendorForm((prev) => {
+      if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].contactNumbers[contactIndex] = value;
       return { ...prev, pics: updatedPics };
@@ -250,7 +304,8 @@ export default function AddVendorDialog({
   };
 
   const removePICContactNumber = (picIndex: number, contactIndex: number) => {
-    setVendorForm((prev: VendorFormType) => {
+    setVendorForm((prev) => {
+      if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].contactNumbers = updatedPics[
         picIndex
@@ -265,7 +320,8 @@ export default function AddVendorDialog({
   };
 
   const addPICEmail = (picIndex: number) => {
-    setVendorForm((prev: VendorFormType) => {
+    setVendorForm((prev) => {
+      if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails = [...updatedPics[picIndex].emails, ""];
       updatedPics[picIndex].emailTypes = [
@@ -281,7 +337,8 @@ export default function AddVendorDialog({
     emailIndex: number,
     value: string
   ) => {
-    setVendorForm((prev: VendorFormType) => {
+    setVendorForm((prev) => {
+      if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails[emailIndex] = value;
       return { ...prev, pics: updatedPics };
@@ -289,7 +346,8 @@ export default function AddVendorDialog({
   };
 
   const removePICEmail = (picIndex: number, emailIndex: number) => {
-    setVendorForm((prev: VendorFormType) => {
+    setVendorForm((prev) => {
+      if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails = updatedPics[picIndex].emails.filter(
         (_, i) => i !== emailIndex
@@ -304,15 +362,19 @@ export default function AddVendorDialog({
   // Attachment Handlers
   const handleAttachmentFile = (idx: number, file: File | null) => {
     setVendorForm((prev) => {
+      if (!prev) return prev;
       const newAttachments = [...prev.attachments];
       newAttachments[idx].file = file;
       newAttachments[idx].fileSize = file ? file.size : 0;
+      // Clear uploaded URL if file changes
+      newAttachments[idx].publicUrl = undefined;
       return { ...prev, attachments: newAttachments };
     });
   };
 
   const handleAttachmentExpiry = (idx: number, value: string) => {
     setVendorForm((prev) => {
+      if (!prev) return prev;
       const newAttachments = [...prev.attachments];
       newAttachments[idx].expiryDate = value;
       return { ...prev, attachments: newAttachments };
@@ -321,6 +383,7 @@ export default function AddVendorDialog({
 
   const handleAttachmentRemarks = (idx: number, value: string) => {
     setVendorForm((prev) => {
+      if (!prev) return prev;
       const newAttachments = [...prev.attachments];
       newAttachments[idx].remarks = value;
       return { ...prev, attachments: newAttachments };
@@ -334,11 +397,13 @@ export default function AddVendorDialog({
 
   // Validation for attachments
   useEffect(() => {
+    if (!vendorForm) return;
     setAttachmentErrors(
       vendorForm.attachments.map((att, idx) => {
-        // Insurance Certificates (if applicable) only required if user uploads something (optional)
-        if (att.type === "Insurance Certificates (if applicable)") {
-          // Still, require expiry, remarks if file is filled
+        if (
+          att.type.toLowerCase().includes("insurance certificate") ||
+          att.type.toLowerCase().includes("insurance certificates")
+        ) {
           return att.file
             ? !(att.file && att.expiryDate && att.remarks)
             : false;
@@ -346,11 +411,11 @@ export default function AddVendorDialog({
         return !(att.file && att.expiryDate && att.remarks);
       })
     );
-  }, [vendorForm.attachments]);
+  }, [vendorForm?.attachments]);
 
   // Save vendor handler
   const handleSaveVendor = async () => {
-    // Check attachment validation
+    if (!vendorForm) return;
     if (attachmentErrors.some((err) => err)) {
       alert(
         "Please fill all required attachment fields, including file, expiry date, and remarks."
@@ -359,20 +424,110 @@ export default function AddVendorDialog({
     }
     setLoading(true);
     try {
-      await onSaveVendor(vendorForm);
+      // 1. Upload files and get public URLs
+      const attachmentsWithUrls = await Promise.all(
+        vendorForm.attachments.map(async (att) => {
+          if (att.file) {
+            // Only upload if file is present and not already uploaded
+            if (!att.publicUrl) {
+              const publicUrl = await uploadFile(att.file);
+              return {
+                ...att,
+                publicUrl,
+              };
+            }
+            return att;
+          }
+          return att;
+        })
+      );
+
+      // 2. Prepare documents array for payload
+      const documents = attachmentsWithUrls
+        .filter((att) => att.file)
+        .map((att) => ({
+          documentID: att.documentID,
+          url: att.publicUrl,
+          expired_at: att.expiryDate,
+          remarks: att.remarks,
+        }));
+
+      // 3. Prepare PIC (taking the first one as main contact)
+      const mainPic = vendorForm.pics[0] || {};
+      const picPayload = {
+        phone_number: mainPic.contactNumbers[0] || "",
+        firstName: mainPic.firstName || "",
+        lastName: mainPic.lastName || "",
+        picType: mainPic.type || "",
+        email: mainPic.emails[0] || "",
+        remark: mainPic.remark || "",
+      };
+
+      // 4. Prepare final vendor payload
+      const vendorPayload = {
+        address: vendorForm.address,
+        name: vendorForm.name,
+        phone_number: vendorForm.phoneCountryCode + vendorForm.phoneNumber,
+        company_type: vendorForm.company_type,
+        email: vendorForm.email,
+        remark: vendorForm.remark,
+        pic: picPayload,
+        services: vendorForm.services,
+
+        documents,
+      };
+
+      // --- LOG THE PAYLOAD ---
+      console.log("payload:", vendorPayload);
+      console.log("documents:", documents);
+      console.log("pic:", picPayload);
+
+      // 5. Send vendor create request
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE_URL}/vendor`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(vendorPayload),
+      });
+      if (!res.ok) {
+        throw new Error("Vendor creation failed");
+      }
+
+      // Clean up
       onOpenChange(false);
-      setVendorForm(blankVendorForm());
-      localStorage.removeItem(VENDOR_FORM_DRAFT_KEY); // Clear draft after save
+      setVendorForm(blankVendorForm(documentList));
+      localStorage.removeItem(VENDOR_FORM_DRAFT_KEY);
+      if (onVendorCreated) onVendorCreated();
+    } catch (err: any) {
+      alert(err.message || "Error occurred while saving vendor.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Handler for "Go to Service Management" link to persist draft before navigation
   const handleGoToServiceManagement = (e: React.MouseEvent) => {
-    localStorage.setItem(VENDOR_FORM_DRAFT_KEY, JSON.stringify(vendorForm));
-    // let navigation happen
+    if (vendorForm)
+      localStorage.setItem(VENDOR_FORM_DRAFT_KEY, JSON.stringify(vendorForm));
   };
+
+  if (loadingDocuments) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <div className="flex items-center gap-2 py-10 justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <span className="text-lg text-muted-foreground">
+              Loading required documents...
+            </span>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+  if (!vendorForm) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -392,10 +547,9 @@ export default function AddVendorDialog({
                 id="name"
                 value={vendorForm.name}
                 onChange={(e) =>
-                  setVendorForm((prev) => ({
-                    ...prev,
-                    name: e.target.value,
-                  }))
+                  setVendorForm((prev) =>
+                    prev ? { ...prev, name: e.target.value } : prev
+                  )
                 }
                 placeholder="Enter company name"
                 className="form-input"
@@ -409,10 +563,9 @@ export default function AddVendorDialog({
                 id="companyType"
                 value={vendorForm.company_type}
                 onChange={(e) =>
-                  setVendorForm((prev) => ({
-                    ...prev,
-                    company_type: e.target.value,
-                  }))
+                  setVendorForm((prev) =>
+                    prev ? { ...prev, company_type: e.target.value } : prev
+                  )
                 }
                 placeholder="e.g., Launch Boat Operator"
                 className="form-input"
@@ -426,10 +579,9 @@ export default function AddVendorDialog({
                 id="address"
                 value={vendorForm.address}
                 onChange={(e) =>
-                  setVendorForm((prev) => ({
-                    ...prev,
-                    address: e.target.value,
-                  }))
+                  setVendorForm((prev) =>
+                    prev ? { ...prev, address: e.target.value } : prev
+                  )
                 }
                 placeholder="Enter company address"
                 className="form-input"
@@ -451,10 +603,9 @@ export default function AddVendorDialog({
                         (typeof data === "object" && data && "dialCode" in data
                           ? (data as any).dialCode
                           : "");
-                      setVendorForm((prev) => ({
-                        ...prev,
-                        phoneCountryCode: dial,
-                      }));
+                      setVendorForm((prev) =>
+                        prev ? { ...prev, phoneCountryCode: dial } : prev
+                      );
                     }}
                   />
                 </div>
@@ -462,10 +613,9 @@ export default function AddVendorDialog({
                   id="phoneNumber"
                   value={vendorForm.phoneNumber}
                   onChange={(e) =>
-                    setVendorForm((prev) => ({
-                      ...prev,
-                      phoneNumber: e.target.value,
-                    }))
+                    setVendorForm((prev) =>
+                      prev ? { ...prev, phoneNumber: e.target.value } : prev
+                    )
                   }
                   placeholder="112223344"
                   className="form-input flex-1"
@@ -480,10 +630,9 @@ export default function AddVendorDialog({
                 id="email"
                 value={vendorForm.email}
                 onChange={(e) =>
-                  setVendorForm((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }))
+                  setVendorForm((prev) =>
+                    prev ? { ...prev, email: e.target.value } : prev
+                  )
                 }
                 placeholder="email@company.com"
                 className="form-input"
@@ -522,14 +671,20 @@ export default function AddVendorDialog({
                         id={`service-${category}`}
                         checked={vendorForm.services.includes(category)}
                         onChange={() =>
-                          setVendorForm((prev) => ({
-                            ...prev,
-                            services: vendorForm.services.includes(category)
-                              ? vendorForm.services.filter(
-                                  (c) => c !== category
-                                )
-                              : [...vendorForm.services, category],
-                          }))
+                          setVendorForm((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  services: vendorForm.services.includes(
+                                    category
+                                  )
+                                    ? vendorForm.services.filter(
+                                        (c) => c !== category
+                                      )
+                                    : [...vendorForm.services, category],
+                                }
+                              : prev
+                          )
                         }
                         className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
                       />
@@ -551,29 +706,7 @@ export default function AddVendorDialog({
                 </div>
               )}
             </div>
-            {/* KYC Status */}
-            <div>
-              <Label htmlFor="kycStatus" className="form-label">
-                KYC Status
-              </Label>
-              <Select
-                value={vendorForm.status.status ? "Approved" : "Pending"}
-                onValueChange={(value) =>
-                  setVendorForm((prev) => ({
-                    ...prev,
-                    status: { status: value === "Approved" },
-                  }))
-                }
-              >
-                <SelectTrigger className="form-input">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
             {/* --- Attachment Section --- */}
             <Separator className="my-6" />
             <div>
@@ -584,7 +717,7 @@ export default function AddVendorDialog({
               <div className="space-y-6">
                 {vendorForm.attachments.map((att, idx) => (
                   <div
-                    key={att.type}
+                    key={att.documentID}
                     className="border p-4 rounded-xl bg-muted/40"
                   >
                     <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -597,8 +730,9 @@ export default function AddVendorDialog({
                           <Input
                             type="file"
                             required={
-                              att.type !==
-                              "Insurance Certificates (if applicable)"
+                              !att.type
+                                .toLowerCase()
+                                .includes("insurance certificate")
                             }
                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                             onChange={(e) =>
@@ -613,6 +747,16 @@ export default function AddVendorDialog({
                               {(att.file.size / 1024).toFixed(2)} KB
                             </Badge>
                           )}
+                          {att.publicUrl && (
+                            <a
+                              href={att.publicUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 text-xs text-blue-600 underline"
+                            >
+                              View uploaded file
+                            </a>
+                          )}
                         </div>
                         {attachmentErrors[idx] && (
                           <p className="text-xs text-red-600 mt-2">
@@ -622,13 +766,12 @@ export default function AddVendorDialog({
                       </div>
                       <div className="w-full md:w-40">
                         <Label className="mb-1 block">Expiry Date</Label>
-                        <Input
-                          type="date"
-                          required={att.file != null}
+                        <DatePicker
                           value={att.expiryDate}
-                          onChange={(e) =>
-                            handleAttachmentExpiry(idx, e.target.value)
-                          }
+                          onChange={(val) => handleAttachmentExpiry(idx, val)}
+                          placeholder="dd.mm.yyyy"
+                          required={att.file != null}
+                          minDate={new Date()}
                         />
                       </div>
                       <div className="w-full md:w-52">
@@ -992,10 +1135,9 @@ export default function AddVendorDialog({
                 id="remark"
                 value={vendorForm.remark}
                 onChange={(e) =>
-                  setVendorForm((prev) => ({
-                    ...prev,
-                    remark: e.target.value,
-                  }))
+                  setVendorForm((prev) =>
+                    prev ? { ...prev, remark: e.target.value } : prev
+                  )
                 }
                 placeholder="Additional notes about the vendor"
                 className="form-input"
