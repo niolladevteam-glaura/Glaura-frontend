@@ -20,17 +20,11 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import {
-  AlertTriangle,
-  Eye,
-  Edit,
-  ArrowLeft,
-  Anchor,
-  FileText,
-} from "lucide-react";
+import { AlertTriangle, Eye, Edit, ArrowLeft, FileText } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import EditDocumentDialog from "@/components/vendors/EditDocumentDialog";
+import { Toaster, toast } from "sonner";
 
-// Document type based on your response
 interface DocumentType {
   id: number;
   vendorID: string;
@@ -53,7 +47,12 @@ interface ExpiryAlert {
   status: "Expired" | "Expiring Soon";
 }
 
-// Utility for date formatting
+interface CurrentUser {
+  name: string;
+  email: string;
+  accessLevel: string;
+}
+
 function formatDateDMY(dateStr?: string | Date) {
   if (!dateStr) return "";
   const d = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
@@ -81,89 +80,107 @@ export default function VendorDocumentsPage() {
   const { vendor_id } = useParams();
   const router = useRouter();
 
-  const [currentUser, setCurrentUser] = useState<{
-    name: string;
-    accessLevel: string;
-  } | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [documents, setDocuments] = useState<DocumentType[]>([]);
   const [loading, setLoading] = useState(true);
   const [expiryAlerts, setExpiryAlerts] = useState<ExpiryAlert[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentType | null>(
+    null
+  );
 
   useEffect(() => {
     // Load current user
     const userData = localStorage.getItem("currentUser");
     if (userData) {
-      setCurrentUser(JSON.parse(userData));
+      const user = JSON.parse(userData);
+      // Defensive: ensure name, email, accessLevel exist
+      setCurrentUser({
+        name: user.name,
+        email: user.email,
+        accessLevel: user.accessLevel,
+      });
     } else {
       router.push("/");
     }
   }, [router]);
 
-  useEffect(() => {
-    async function fetchDocuments() {
-      setLoading(true);
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/vendor/document/${vendor_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        const data = await res.json();
-        if (data.success && Array.isArray(data.data)) {
-          setDocuments(data.data);
-
-          // Calculate expiry alerts for sidebar
-          const today = new Date();
-          const alerts: ExpiryAlert[] = data.data
-            .filter((doc: DocumentType) => doc.expired_at)
-            .map((doc: DocumentType) => {
-              const expiry = new Date(doc.expired_at);
-              const daysUntil = Math.ceil(
-                (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-              );
-              let status: ExpiryAlert["status"] = "Expiring Soon";
-              if (daysUntil < 0) status = "Expired";
-              else if (daysUntil <= 7) status = "Expiring Soon";
-              else return null;
-              return {
-                documentId: doc.documentID,
-                documentName: doc.remarks || doc.documentID || "",
-                expiryDate: expiry,
-                daysUntil,
-                status,
-              };
-            })
-            .filter(Boolean)
-            .sort((a: ExpiryAlert, b: ExpiryAlert) => a.daysUntil - b.daysUntil)
-            .slice(0, 6) as ExpiryAlert[];
-          setExpiryAlerts(alerts);
-        } else {
-          setDocuments([]);
-          setExpiryAlerts([]);
+  const fetchDocuments = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/vendor/document/${vendor_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
         }
-      } catch {
+      );
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setDocuments(data.data);
+
+        // Calculate expiry alerts for sidebar
+        const today = new Date();
+        const alerts: ExpiryAlert[] = data.data
+          .filter((doc: DocumentType) => doc.expired_at)
+          .map((doc: DocumentType) => {
+            const expiry = new Date(doc.expired_at);
+            const daysUntil = Math.ceil(
+              (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+            );
+            let status: ExpiryAlert["status"] = "Expiring Soon";
+            if (daysUntil < 0) status = "Expired";
+            else if (daysUntil <= 7) status = "Expiring Soon";
+            else return null;
+            return {
+              documentId: doc.documentID,
+              documentName: doc.remarks || doc.documentID || "",
+              expiryDate: expiry,
+              daysUntil,
+              status,
+            };
+          })
+          .filter(Boolean)
+          .sort((a: ExpiryAlert, b: ExpiryAlert) => a.daysUntil - b.daysUntil)
+          .slice(0, 6) as ExpiryAlert[];
+        setExpiryAlerts(alerts);
+      } else {
         setDocuments([]);
         setExpiryAlerts([]);
-      } finally {
-        setLoading(false);
+        if (data.success === false) {
+          toast.error(data.message || "Failed to fetch documents.");
+        }
       }
+    } catch {
+      setDocuments([]);
+      setExpiryAlerts([]);
+      toast.error("Failed to fetch documents.");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     if (vendor_id) fetchDocuments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendor_id]);
 
   // Actions handlers
   const handleView = (doc: DocumentType) => {
-    // Open PDF in new tab
     window.open(doc.url, "_blank");
   };
 
   const handleEdit = (doc: DocumentType) => {
-    // Implement edit logic (e.g., open dialog)
-    alert(`Edit document: ${doc.documentID}`);
+    setSelectedDocument(doc);
+    setEditOpen(true);
+  };
+
+  const handleEditUpdated = () => {
+    setEditOpen(false);
+    setSelectedDocument(null);
+    fetchDocuments();
   };
 
   if (!currentUser) {
@@ -176,6 +193,13 @@ export default function VendorDocumentsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <EditDocumentDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        document={selectedDocument}
+        currentUser={currentUser}
+        onUpdated={handleEditUpdated}
+      />
       {/* Header - same as VendorManagement */}
       <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">

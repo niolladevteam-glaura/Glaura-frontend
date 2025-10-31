@@ -41,6 +41,8 @@ import {
   ListChecks,
   Fuel,
   Amphora,
+  ClipboardCheck,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -326,6 +328,7 @@ export default function Dashboard() {
           ? [{ href: "/users", icon: Users, label: "User Management" }]
           : []),
         { href: "/pic-management", icon: UserCog, label: "PIC Management" },
+        { href: "/services", icon: Wrench, label: "Services Management" },
       ],
     },
     {
@@ -364,6 +367,11 @@ export default function Dashboard() {
         { href: "/vessels", icon: Ship, label: "Vessel Management" },
         { href: "/tasks", icon: ListTodo, label: "Task Management" },
         { href: "/documents", icon: FileText, label: "Document Management" },
+        {
+          href: "/pending-inquiry",
+          icon: ClipboardCheck,
+          label: "Pending Inquiry",
+        },
       ],
     },
     {
