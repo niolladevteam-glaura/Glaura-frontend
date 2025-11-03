@@ -16,11 +16,14 @@ import {
   Check,
 } from "lucide-react";
 
-const mockOfficers = [
-  { id: "officer1", name: "Udith Kalupahana", email: "udith@greeklanka.com" },
-  { id: "officer2", name: "Amal Silva", email: "amal@greeklanka.com" },
-  { id: "officer3", name: "Nuwan Jayasuriya", email: "nuwan@greeklanka.com" },
-];
+// --- User interface for API users ---
+interface User {
+  id: number;
+  first_name: string;
+  last_name: string;
+  department: string;
+  email: string;
+}
 
 export default function NominateOfficerPage() {
   const router = useRouter();
@@ -39,8 +42,32 @@ export default function NominateOfficerPage() {
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // --- USER API ---
+  const [users, setUsers] = useState<User[]>([]);
+
+  // Fetch all users from backend on mount
+  useEffect(() => {
+    async function fetchAllUsers() {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("http://localhost:3080/api/user", {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
+        const json = await response.json();
+        if (json.success && Array.isArray(json.data)) {
+          setUsers(json.data);
+        }
+      } catch (err) {
+        toast.error("Failed to load users");
+      }
+    }
+    fetchAllUsers();
+  }, []);
+
   // Dropdown - close when clicking outside
-  // (You can use a library for this, but here's a simple React way)
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -125,12 +152,16 @@ export default function NominateOfficerPage() {
                     disabled={loading}
                   >
                     {selectedOfficer ? (
-                      `${
-                        mockOfficers.find((o) => o.id === selectedOfficer)?.name
-                      } (${
-                        mockOfficers.find((o) => o.id === selectedOfficer)
-                          ?.email
-                      })`
+                      <>
+                        {(() => {
+                          const user = users.find(
+                            (u) => String(u.id) === selectedOfficer
+                          );
+                          return user
+                            ? `${user.first_name} ${user.last_name} (${user.department}) [${user.email}]`
+                            : "-- Select Officer --";
+                        })()}
+                      </>
                     ) : (
                       <span className="text-[#a3aed0]">
                         -- Select Officer --
@@ -147,33 +178,44 @@ export default function NominateOfficerPage() {
                   </button>
                   {dropdownOpen && (
                     <div className="absolute left-0 top-full z-10 w-full mt-2 bg-background border border-[#232e45] rounded shadow-lg animate-fadeIn">
-                      {mockOfficers.map((officer) => (
-                        <button
-                          type="button"
-                          key={officer.id}
-                          className={`w-full text-left px-4 py-2 flex items-center gap-2
+                      {users.length > 0 ? (
+                        users.map((user) => (
+                          <button
+                            type="button"
+                            key={user.id}
+                            className={`w-full text-left px-4 py-2 flex items-center gap-2
                             hover:bg-[#232e45] hover:text-white transition-all
                             ${
-                              selectedOfficer === officer.id
+                              selectedOfficer === String(user.id)
                                 ? "bg-[#232e45] text-blue-400"
                                 : "text-[#a3aed0]"
                             }
                           `}
-                          onClick={() => {
-                            setSelectedOfficer(officer.id);
-                            setDropdownOpen(false);
-                          }}
-                        >
-                          <UserCheck className="w-4 h-4" />
-                          <span className="font-medium">{officer.name}</span>
-                          <span className="text-xs text-[#6e7ea5]">
-                            {officer.email}
-                          </span>
-                          {selectedOfficer === officer.id && (
-                            <Check className="w-4 h-4 ml-auto text-blue-400" />
-                          )}
-                        </button>
-                      ))}
+                            onClick={() => {
+                              setSelectedOfficer(String(user.id));
+                              setDropdownOpen(false);
+                            }}
+                          >
+                            <UserCheck className="w-4 h-4" />
+                            <span className="font-medium">
+                              {user.first_name} {user.last_name}
+                            </span>
+                            <span className="text-xs text-[#6e7ea5]">
+                              {user.department}
+                            </span>
+                            <span className="text-xs text-[#888]">
+                              {user.email}
+                            </span>
+                            {selectedOfficer === String(user.id) && (
+                              <Check className="w-4 h-4 ml-auto text-blue-400" />
+                            )}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-[#a3aed0]">
+                          No users found
+                        </div>
+                      )}
                     </div>
                   )}
                   <style jsx>{`

@@ -322,6 +322,15 @@ interface Port {
   updatedAt?: string;
 }
 
+interface User {
+  id: number;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  department: string;
+  email: string;
+}
+
 interface PortsResponse {
   success: boolean;
   message: string;
@@ -356,7 +365,9 @@ export default function NewPortCall() {
     builtYear: "",
     sscecExpiry: "",
     clientCompany: "",
-    agencyName: "",
+    sectionHead: "",
+    sectionHeadName: "",
+    sectionHeadEmail: "",
     eta: "",
     etaDate: "",
     etaTime: "",
@@ -449,6 +460,10 @@ export default function NewPortCall() {
       setRestoredFromStorage(true);
     }
   }, [restoredFromStorage]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [sectionHeadOptions, setSectionHeadOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
 
   // Only persist after initial restore
   useEffect(() => {
@@ -520,7 +535,9 @@ export default function NewPortCall() {
       builtYear: "",
       sscecExpiry: "",
       clientCompany: "",
-      agencyName: "",
+      sectionHead: "",
+      sectionHeadName: "",
+      sectionHeadEmail: "",
       eta: "",
       etaDate: "",
       etaTime: "",
@@ -562,7 +579,9 @@ export default function NewPortCall() {
       builtYear: "",
       sscecExpiry: "",
       clientCompany: "",
-      agencyName: "",
+      sectionHead: "",
+      sectionHeadName: "",
+      sectionHeadEmail: "",
       eta: "",
       etaDate: "",
       etaTime: "",
@@ -624,6 +643,33 @@ export default function NewPortCall() {
         }))
       );
     });
+  }, []);
+
+  useEffect(() => {
+    async function fetchAllUsers() {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("http://localhost:3080/api/user", {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
+        const json = await response.json();
+        if (json.success && Array.isArray(json.data)) {
+          setUsers(json.data);
+          setSectionHeadOptions(
+            json.data.map((u: User) => ({
+              value: String(u.id),
+              label: `${u.first_name} ${u.last_name} (${u.department})`,
+            }))
+          );
+        }
+      } catch (err) {
+        console.log(`error ${err}`);
+      }
+    }
+    fetchAllUsers();
   }, []);
 
   // API Functions - Replace these with your actual API calls
@@ -1268,7 +1314,8 @@ export default function NewPortCall() {
         imo: formData.imo,
         port: portCombined,
         client_company: clientLabel,
-        agency_name: formData.agencyName,
+        section_head: formData.sectionHeadName,
+        section_head_email: formData.sectionHeadEmail,
         status_of_formalities: formData.formalityStatus || "Pending",
         eta: etaIsoString,
         pic: {
@@ -1650,20 +1697,41 @@ export default function NewPortCall() {
                   </div>
                   <div className="space-y-2">
                     <Label
-                      htmlFor="agencyName"
+                      htmlFor="sectionHead"
                       className="form-label font-medium"
                     >
                       Section Head
                     </Label>
-                    <Input
-                      id="agencyName"
-                      value={formData.agencyName}
-                      onChange={(e) =>
-                        handleInputChange("agencyName", e.target.value)
-                      }
-                      placeholder="Enter Section Head"
-                      className="form-input h-11"
-                    />
+                    <Select
+                      value={formData.sectionHead}
+                      onValueChange={(value) => {
+                        // Find the selected user by id
+                        const selectedUser = users.find(
+                          (u) => String(u.id) === value
+                        );
+                        setFormData((prev) => ({
+                          ...prev,
+                          sectionHead: value,
+                          sectionHeadName: selectedUser
+                            ? `${selectedUser.first_name} ${selectedUser.last_name}`
+                            : "",
+                          sectionHeadEmail: selectedUser
+                            ? selectedUser.email
+                            : "",
+                        }));
+                      }}
+                    >
+                      <SelectTrigger className="form-input h-11">
+                        <SelectValue placeholder="Select Section Head" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sectionHeadOptions.map((user) => (
+                          <SelectItem key={user.value} value={user.value}>
+                            {user.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
