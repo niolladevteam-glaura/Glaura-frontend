@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import {
   UserCheck,
-  Lock,
   KeyRound,
   CheckCircle2,
   ChevronDown,
   Check,
+  Lock,
 } from "lucide-react";
 
 // --- User interface for API users ---
@@ -33,7 +33,6 @@ export default function NominateOfficerPage() {
   const [step, setStep] = useState<"select" | "otp" | "success">("select");
   const [selectedOfficer, setSelectedOfficer] = useState<string>("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -83,38 +82,85 @@ export default function NominateOfficerPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [dropdownOpen]);
 
-  // Confirm handler (mock password check)
-  const handleConfirm = () => {
+  // Confirm handler (assign officer then go to OTP step)
+  const handleConfirm = async () => {
     if (!selectedOfficer) {
       toast.error("Please select a nominated officer.");
       return;
     }
-    if (!password) {
-      toast.error("Please enter your password.");
+    const user = users.find((u) => String(u.id) === selectedOfficer);
+    if (!user) {
+      toast.error("Selected officer not found!");
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setStep("otp");
-      toast.success(
-        "Password verified! Please enter the OTP sent to your device."
+    const reqBody = {
+      assigned_officer: `${user.first_name} ${user.last_name}`,
+      assigned_officer_email: user.email,
+    };
+
+    try {
+      const token = localStorage.getItem("token");
+      const resp = await fetch(
+        `http://localhost:3080/api/portcall/nominate-officer/${job_id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(reqBody),
+        }
       );
-    }, 1200);
+      const json = await resp.json();
+      if (resp.ok && json.success) {
+        toast.success(
+          "Officer nominated, please enter the OTP sent to your device."
+        );
+        setStep("otp");
+      } else {
+        throw new Error(json.message || "Failed to nominate officer");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Server error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // OTP handler (mock OTP check)
-  const handleOtpConfirm = () => {
+  // OTP handler (PUT to verify endpoint)
+  const handleOtpConfirm = async () => {
     if (!otp || otp.length < 4) {
       toast.error("Please enter a valid OTP.");
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem("token");
+      const resp = await fetch(
+        `http://localhost:3080/api/portcall/nominate-officer/verify/${job_id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({ otp }),
+        }
+      );
+      const json = await resp.json();
+      if (resp.ok && json.success) {
+        setStep("success");
+        setShowSuccess(true);
+        toast.success(json.message || "OTP verified, assignment complete.");
+      } else {
+        throw new Error(json.message || "OTP verification failed");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Server error occurred");
+    } finally {
       setLoading(false);
-      setStep("success");
-      setShowSuccess(true);
-    }, 1000);
+    }
   };
 
   // Success dialog ok handler
@@ -133,6 +179,7 @@ export default function NominateOfficerPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Select Officer */}
           {step === "select" && (
             <div className="space-y-6">
               <div>
@@ -152,16 +199,14 @@ export default function NominateOfficerPage() {
                     disabled={loading}
                   >
                     {selectedOfficer ? (
-                      <>
-                        {(() => {
-                          const user = users.find(
-                            (u) => String(u.id) === selectedOfficer
-                          );
-                          return user
-                            ? `${user.first_name} ${user.last_name} (${user.department}) [${user.email}]`
-                            : "-- Select Officer --";
-                        })()}
-                      </>
+                      (() => {
+                        const user = users.find(
+                          (u) => String(u.id) === selectedOfficer
+                        );
+                        return user
+                          ? `${user.first_name} ${user.last_name} (${user.department}) [${user.email}]`
+                          : "-- Select Officer --";
+                      })()
                     ) : (
                       <span className="text-[#a3aed0]">
                         -- Select Officer --
@@ -235,34 +280,19 @@ export default function NominateOfficerPage() {
                   `}</style>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-2 text-white">
-                  Your Password
-                </label>
-                <div className="relative">
-                  <Input
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading}
-                    className="max-w-full pr-10"
-                  />
-                  <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#a3aed0]" />
-                </div>
-              </div>
               <div className="flex flex-col gap-2 mt-4">
                 <Button
                   onClick={handleConfirm}
                   disabled={loading}
                   className="w-full transition-all font-semibold"
                 >
-                  Confirm
+                  {loading ? "Assigning..." : "Assign Officer"}
                 </Button>
               </div>
             </div>
           )}
 
+          {/* OTP Step */}
           {step === "otp" && (
             <div className="space-y-6">
               <div className="flex items-center gap-2 mb-2">
@@ -288,11 +318,12 @@ export default function NominateOfficerPage() {
                 disabled={loading}
                 className="w-full mt-3"
               >
-                Confirm OTP
+                {loading ? "Verifying..." : "Confirm OTP"}
               </Button>
             </div>
           )}
 
+          {/* Success Dialog */}
           {step === "success" && showSuccess && (
             <div className="flex flex-col items-center justify-center py-8 space-y-4">
               <CheckCircle2 className="text-green-500 w-14 h-14 mb-2 animate-bounce" />

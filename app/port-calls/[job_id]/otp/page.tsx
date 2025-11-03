@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -106,7 +106,8 @@ export default function OtpPage() {
   // Professional UX: pulse badge when urgent
   const urgent = secondsLeft > 0 && secondsLeft <= 30;
 
-  const handleOtpConfirm = () => {
+  // API call to verify OTP
+  const handleOtpConfirm = async () => {
     if (secondsLeft <= 0) {
       toast.error("OTP expired. Please request a new code.");
       return;
@@ -116,10 +117,31 @@ export default function OtpPage() {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem("token");
+      const resp = await fetch(
+        `http://localhost:3080/api/portcall/nominate-officer/verify/${job_id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({ otp }),
+        }
+      );
+      const json = await resp.json();
+      if (resp.ok && json.success) {
+        setShowSuccess(true);
+        toast.success(json.message || "OTP verified!");
+      } else {
+        throw new Error(json.message || "OTP verification failed");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Server error occurred");
+    } finally {
       setLoading(false);
-      setShowSuccess(true);
-    }, 1000);
+    }
   };
 
   const handleSuccessOk = () => {
@@ -190,7 +212,7 @@ export default function OtpPage() {
                   secondsLeft <= 0 ? "bg-gray-600 cursor-not-allowed" : ""
                 }`}
               >
-                Confirm OTP
+                {loading ? "Verifying..." : "Confirm OTP"}
               </Button>
             </div>
           ) : null}
