@@ -492,7 +492,8 @@ export default function InquiryManagement() {
                   Add Inquiry
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
+              {/* ------ MODAL SCROLL FIX HERE ------ */}
+              <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create New Inquiry</DialogTitle>
                   <DialogDescription>
@@ -500,13 +501,10 @@ export default function InquiryManagement() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                  {/* Vessel Name & Client Name */}
                   {[
                     { id: "vessel_name", label: "Vessel Name", required: true },
                     { id: "client_name", label: "Client Name", required: true },
-                    { id: "port_of_call", label: "Port of Call" },
-                    { id: "additional_info", label: "Additional Info" },
-                    { id: "latest_update", label: "Latest Status" },
-                    { id: "reminder_email", label: "Reminder Email" },
                   ].map((field) => (
                     <div
                       className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4"
@@ -532,23 +530,7 @@ export default function InquiryManagement() {
                       />
                     </div>
                   ))}
-                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                    <Label htmlFor="services" className="text-right">
-                      Services (comma separated)
-                    </Label>
-                    <Input
-                      id="services"
-                      className="sm:col-span-3"
-                      placeholder="Bunkering, Crew Change, Provisions"
-                      value={newInquiry.services}
-                      onChange={(e) =>
-                        setNewInquiry((prev) => ({
-                          ...prev,
-                          services: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
+                  {/* ETA fields (after Client Name) */}
                   <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                     <Label htmlFor="eta_date" className="text-right">
                       ETA Date<span className="text-red-500">*</span>
@@ -583,6 +565,7 @@ export default function InquiryManagement() {
                       className="sm:col-span-3"
                     />
                   </div>
+                  {/* Reminder Date & Time */}
                   <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                     <Label htmlFor="reminder_date" className="text-right">
                       Reminder Date
@@ -614,6 +597,51 @@ export default function InquiryManagement() {
                         }))
                       }
                       className="sm:col-span-3"
+                    />
+                  </div>
+                  {/* rest of fields */}
+                  {[
+                    { id: "port_of_call", label: "Port of Call" },
+                    { id: "additional_info", label: "Additional Info" },
+                    { id: "latest_update", label: "Latest Status" },
+                    { id: "reminder_email", label: "Reminder Email" },
+                  ].map((field) => (
+                    <div
+                      className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4"
+                      key={field.id}
+                    >
+                      <Label htmlFor={field.id} className="text-right">
+                        {field.label}
+                      </Label>
+                      <Input
+                        id={field.id}
+                        className="sm:col-span-3"
+                        placeholder={field.label}
+                        value={(newInquiry as any)[field.id] ?? ""}
+                        onChange={(e) =>
+                          setNewInquiry((prev) => ({
+                            ...prev,
+                            [field.id]: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                    <Label htmlFor="services" className="text-right">
+                      Services (comma separated)
+                    </Label>
+                    <Input
+                      id="services"
+                      className="sm:col-span-3"
+                      placeholder="Bunkering, Crew Change, Provisions"
+                      value={newInquiry.services}
+                      onChange={(e) =>
+                        setNewInquiry((prev) => ({
+                          ...prev,
+                          services: e.target.value,
+                        }))
+                      }
                     />
                   </div>
                 </div>
@@ -749,7 +777,8 @@ export default function InquiryManagement() {
                                     <Edit className="h-4 w-4" />
                                   </Button>
                                 </DialogTrigger>
-                                <DialogContent className="sm:max-w-[600px]">
+                                {/* ------ MODAL SCROLL FIX HERE ------ */}
+                                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                                   <DialogHeader>
                                     <DialogTitle>Edit Inquiry</DialogTitle>
                                     <DialogDescription>
@@ -758,6 +787,7 @@ export default function InquiryManagement() {
                                   </DialogHeader>
                                   {currentInquiry ? (
                                     <div className="grid gap-4 py-4">
+                                      {/* Vessel Name & Client Name */}
                                       {[
                                         {
                                           id: "vessel_name",
@@ -769,6 +799,114 @@ export default function InquiryManagement() {
                                           label: "Client Name",
                                           required: true,
                                         },
+                                      ].map((field) => (
+                                        <div
+                                          className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4"
+                                          key={field.id}
+                                        >
+                                          <Label
+                                            htmlFor={field.id}
+                                            className="text-right"
+                                          >
+                                            {field.label}
+                                            {field.required && (
+                                              <span className="text-red-500">
+                                                *
+                                              </span>
+                                            )}
+                                          </Label>
+                                          <Input
+                                            id={field.id}
+                                            className="sm:col-span-3"
+                                            placeholder={field.label}
+                                            value={
+                                              (currentInquiry as any)[
+                                                field.id
+                                              ] ?? ""
+                                            }
+                                            onChange={(e) =>
+                                              setCurrentInquiry((prev: any) =>
+                                                prev
+                                                  ? {
+                                                      ...prev,
+                                                      [field.id]:
+                                                        e.target.value,
+                                                    }
+                                                  : null
+                                              )
+                                            }
+                                          />
+                                        </div>
+                                      ))}
+                                      {/* ETA and Reminder fields after Client Name */}
+                                      <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                                        <Label
+                                          htmlFor="eta_date"
+                                          className="text-right"
+                                        >
+                                          ETA Date
+                                          <span className="text-red-500">
+                                            *
+                                          </span>
+                                        </Label>
+                                        <DatePicker
+                                          id="eta_date"
+                                          value={editInquiryEtaDate}
+                                          onChange={setEditInquiryEtaDate}
+                                          required
+                                          placeholder="DD.MM.YYYY"
+                                          className="sm:col-span-3"
+                                        />
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                                        <Label
+                                          htmlFor="eta_time"
+                                          className="text-right"
+                                        >
+                                          ETA Time
+                                          <span className="text-red-500">
+                                            *
+                                          </span>
+                                        </Label>
+                                        <TimePicker
+                                          id="eta_time"
+                                          value={editInquiryEtaTime}
+                                          onChange={setEditInquiryEtaTime}
+                                          className="sm:col-span-3"
+                                        />
+                                      </div>
+                                      {/* Reminder Date & Time */}
+                                      <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                                        <Label
+                                          htmlFor="reminder_date"
+                                          className="text-right"
+                                        >
+                                          Reminder Date
+                                        </Label>
+                                        <DatePicker
+                                          id="reminder_date"
+                                          value={editInquiryReminderDate}
+                                          onChange={setEditInquiryReminderDate}
+                                          placeholder="DD.MM.YYYY"
+                                          className="sm:col-span-3"
+                                        />
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                                        <Label
+                                          htmlFor="reminder_time"
+                                          className="text-right"
+                                        >
+                                          Reminder Time
+                                        </Label>
+                                        <TimePicker
+                                          id="reminder_time"
+                                          value={editInquiryReminderTime}
+                                          onChange={setEditInquiryReminderTime}
+                                          className="sm:col-span-3"
+                                        />
+                                      </div>
+                                      {/* rest of fields */}
+                                      {[
                                         {
                                           id: "port_of_call",
                                           label: "Port of Call",
@@ -795,11 +933,6 @@ export default function InquiryManagement() {
                                             className="text-right"
                                           >
                                             {field.label}
-                                            {field.required && (
-                                              <span className="text-red-500">
-                                                *
-                                              </span>
-                                            )}
                                           </Label>
                                           <Input
                                             id={field.id}
@@ -863,71 +996,6 @@ export default function InquiryManagement() {
                                                 : null
                                             )
                                           }
-                                        />
-                                      </div>
-                                      <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                                        <Label
-                                          htmlFor="eta_date"
-                                          className="text-right"
-                                        >
-                                          ETA Date
-                                          <span className="text-red-500">
-                                            *
-                                          </span>
-                                        </Label>
-                                        <DatePicker
-                                          id="eta_date"
-                                          value={editInquiryEtaDate}
-                                          onChange={setEditInquiryEtaDate}
-                                          required
-                                          placeholder="DD.MM.YYYY"
-                                          className="sm:col-span-3"
-                                        />
-                                      </div>
-                                      <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                                        <Label
-                                          htmlFor="eta_time"
-                                          className="text-right"
-                                        >
-                                          ETA Time
-                                          <span className="text-red-500">
-                                            *
-                                          </span>
-                                        </Label>
-                                        <TimePicker
-                                          id="eta_time"
-                                          value={editInquiryEtaTime}
-                                          onChange={setEditInquiryEtaTime}
-                                          className="sm:col-span-3"
-                                        />
-                                      </div>
-                                      <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                                        <Label
-                                          htmlFor="reminder_date"
-                                          className="text-right"
-                                        >
-                                          Reminder Date
-                                        </Label>
-                                        <DatePicker
-                                          id="reminder_date"
-                                          value={editInquiryReminderDate}
-                                          onChange={setEditInquiryReminderDate}
-                                          placeholder="DD.MM.YYYY"
-                                          className="sm:col-span-3"
-                                        />
-                                      </div>
-                                      <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                                        <Label
-                                          htmlFor="reminder_time"
-                                          className="text-right"
-                                        >
-                                          Reminder Time
-                                        </Label>
-                                        <TimePicker
-                                          id="reminder_time"
-                                          value={editInquiryReminderTime}
-                                          onChange={setEditInquiryReminderTime}
-                                          className="sm:col-span-3"
                                         />
                                       </div>
                                     </div>
