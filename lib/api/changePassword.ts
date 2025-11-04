@@ -6,7 +6,7 @@ export async function changeUserPassword(
 ) {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
   
-  const res = await fetch(`${API_BASE_URL}/api/usersetting/change-password/${userId}`, {
+  const res = await fetch(`${API_BASE_URL}/usersetting/change-password/${userId}`, {
     method: "PUT", 
     headers: {
       "Content-Type": "application/json",
