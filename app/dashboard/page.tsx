@@ -21,23 +21,14 @@ import {
   Calendar,
   Activity,
   LogOut,
-  MessageSquare,
-  MessageCircle,
-  Phone,
   Menu,
-  TrendingUp,
   Anchor,
-  Bell,
-  Search,
-  Camera,
   ArrowRight,
   ClipboardList,
   UserCog,
   Handshake,
   Building2,
-  MessageSquareQuote,
   ListTodo,
-  Mails,
   ListChecks,
   Fuel,
   Amphora,
@@ -50,8 +41,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Bar,
   BarChart,
-  Line,
-  LineChart,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -63,7 +52,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -87,30 +75,6 @@ interface PortCall {
   status: string;
   services: number;
   assignedPIC: string;
-}
-
-interface BirthdayAlert {
-  name: string;
-  company: string;
-  date: string;
-  daysUntil: number;
-}
-
-interface DashboardData {
-  active_port_calls: {
-    today_count: number;
-    from_yesterday: number;
-  };
-  pending_services: number;
-  Birthday_count: number;
-  recent_port_calls: {
-    Vessel_Name: string;
-    Company: string;
-    Port: string;
-    status: string;
-    service: number;
-  }[];
-  port_vessel_volume: Record<string, number>;
 }
 
 const StatCard = ({
@@ -153,6 +117,9 @@ export default function Dashboard() {
   const [activePortCallsCount, setActivePortCallsCount] = useState(0);
   const [pendingServicesCount, setPendingServicesCount] = useState(0);
   const [birthdayCount, setBirthdayCount] = useState(0);
+  const [todayBirthdayCount, setTodayBirthdayCount] = useState(0);
+  const [thisWeekBirthdayCount, setThisWeekBirthdayCount] = useState(0);
+  const [thisMonthBirthdayCount, setThisMonthBirthdayCount] = useState(0);
   const [activePortCallsTrend, setActivePortCallsTrend] = useState("");
   const [vesselVolumeData, setVesselVolumeData] = useState<
     { port: string; vessels: number }[]
@@ -204,7 +171,6 @@ export default function Dashboard() {
 
         setActivePortCallsCount(data.active_port_calls.today_count);
         setPendingServicesCount(data.pending_services);
-        setBirthdayCount(data.Birthday_count);
 
         const trendValue =
           data.active_port_calls.today_count -
@@ -246,13 +212,28 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [router]);
 
-  const growthTrendData = [
-    { month: "Sep", vessels: 78, revenue: 2.4 },
-    { month: "Oct", vessels: 85, revenue: 2.8 },
-    { month: "Nov", vessels: 92, revenue: 3.1 },
-    { month: "Dec", vessels: 98, revenue: 3.4 },
-    { month: "Jan", vessels: 105, revenue: 3.7 },
-  ];
+  // Fetch Birthday Summary from separate API on startup
+  useEffect(() => {
+    const fetchBirthdaySummary = async () => {
+      try {
+        const res = await fetch("http://localhost:3080/api/birthdays");
+        if (!res.ok) throw new Error("Unable to fetch birthdays");
+        const b = await res.json();
+        setBirthdayCount(
+          (b.todayBirthdayCount ?? 0) + (b.thisWeekBirthdayCount ?? 0)
+        );
+        setTodayBirthdayCount(b.todayBirthdayCount ?? 0);
+        setThisWeekBirthdayCount(b.thisWeekBirthdayCount ?? 0);
+        setThisMonthBirthdayCount(b.thisMonthBirthdayCount ?? 0);
+      } catch {
+        setBirthdayCount(0);
+        setTodayBirthdayCount(0);
+        setThisWeekBirthdayCount(0);
+        setThisMonthBirthdayCount(0);
+      }
+    };
+    fetchBirthdaySummary();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
@@ -260,30 +241,6 @@ export default function Dashboard() {
   };
 
   const canCreatePortCall = () => {
-    return (
-      currentUser &&
-      ![
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "H",
-        "I",
-        "J",
-        "K",
-        "L",
-        "M",
-        "N",
-        "O",
-        "P",
-        "Q",
-        "R",
-      ].includes(currentUser.accessLevel)
-    );
-  };
-
-  const canViewReports = () => {
     return (
       currentUser &&
       ![
@@ -389,13 +346,13 @@ export default function Dashboard() {
     {
       heading: "Accounts Department",
       items: [
-        // Add links if needed
+        // Add links
       ],
     },
     {
       heading: "HR Department",
       items: [
-        // Add links if needed
+        // Add links
       ],
     },
     {
@@ -405,7 +362,7 @@ export default function Dashboard() {
     {
       heading: "IT & Social Media Department",
       items: [
-        // Add links if needed
+        // Add links
       ],
     },
   ];
@@ -454,7 +411,6 @@ export default function Dashboard() {
     </Card>
   );
 
-  // Mobile profile card to display user info
   const MobileProfileCard = ({ user }: { user: UserType }) => (
     <Card className="mb-6 lg:hidden">
       <CardContent className="flex items-center gap-4 py-4">
@@ -589,15 +545,6 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            {/* <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search vessels, clients, or documents..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-80"
-              />
-            </div> */}
           </div>
           <div className="flex items-center space-x-4">
             <ThemeToggle />
@@ -688,13 +635,47 @@ export default function Dashboard() {
               icon={Activity}
               delay={0.1}
             />
-            <StatCard
-              title="Birthday Alerts"
-              value={birthdayCount}
-              subtitle="next 7 days"
-              icon={Calendar}
-              delay={0.2}
-            />
+            {/* --------- Birthday Card --------- */}
+            <Card
+              className="stats-card animate-fade-in-up"
+              style={{ animationDelay: `0.2s` }}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Birthday Alerts
+                </CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{birthdayCount}</div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  next 7 days
+                </p>
+                <div className="flex gap-2 text-xs mb-2">
+                  <Badge variant="secondary" className="px-1">
+                    Today: {todayBirthdayCount}
+                  </Badge>
+                  <Badge variant="outline" className="px-1">
+                    This Week: {thisWeekBirthdayCount}
+                  </Badge>
+                  <Badge variant="outline" className="px-1">
+                    Month: {thisMonthBirthdayCount}
+                  </Badge>
+                </div>
+                <div>
+                  <Link href="/birthdays">
+                    <Button
+                      variant="link"
+                      className="flex items-center gap-1 p-0 h-auto text-violet-600 dark:text-violet-400 text-xs"
+                    >
+                      View All Birthdays
+                      <ArrowRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+            {/* ---------------------------------------- */}
             <StatCard
               title="Department"
               value={currentUser?.department || ""}

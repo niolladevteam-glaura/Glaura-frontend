@@ -50,6 +50,7 @@ import {
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
 import { userApi } from "@/lib/api";
+import { ErrorAlertDialog } from "@/components/ErrorAlertDialog";
 
 interface User {
   id: string;
@@ -417,6 +418,8 @@ export default function UserManagement() {
   const [editPrivileges, setEditPrivileges] = useState<string[]>([]);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [errorDialogMsg, setErrorDialogMsg] = useState("");
 
   // Add state for privileges
   const [selectedPrivileges, setSelectedPrivileges] = useState<string[]>([]);
@@ -691,13 +694,10 @@ export default function UserManagement() {
       setSelectedPrivileges([]);
       setIsCreateDialogOpen(false);
       setShowSuccessDialog(true);
-    } catch (error) {
-      console.error("Error creating user:", error);
-      alert(
-        `Failed to create user: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+    } catch (error: any) {
+      console.log(error);
+      setErrorDialogMsg(error?.message || "Failed to create user");
+      setErrorDialogOpen(true);
     }
   };
 
@@ -778,13 +778,12 @@ export default function UserManagement() {
       setEditingUser(null);
       setEditPrivileges([]);
       alert("User updated successfully!");
-    } catch (error) {
-      console.error("Error updating user:", error);
-      alert(
-        `Failed to update user: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
+    } catch (error: any) {
+      setErrorDialogMsg(
+        error?.message ||
+          (error instanceof Error ? error.message : "Unknown error")
       );
+      setErrorDialogOpen(true);
     }
   };
 
@@ -796,6 +795,12 @@ export default function UserManagement() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <ErrorAlertDialog
+        open={errorDialogOpen}
+        onOpenChange={setErrorDialogOpen}
+        message={errorDialogMsg}
+        title="Error"
+      />
       {/* Header */}
       <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
