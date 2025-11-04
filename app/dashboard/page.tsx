@@ -651,7 +651,7 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground mb-2">
                   next 7 days
                 </p>
-                <div className="flex gap-2 text-xs mb-2">
+                {/* <div className="flex gap-2 text-xs mb-2">
                   <Badge variant="secondary" className="px-1">
                     Today: {todayBirthdayCount}
                   </Badge>
@@ -661,7 +661,7 @@ export default function Dashboard() {
                   <Badge variant="outline" className="px-1">
                     Month: {thisMonthBirthdayCount}
                   </Badge>
-                </div>
+                </div> */}
                 <div>
                   <Link href="/birthdays">
                     <Button
@@ -688,7 +688,7 @@ export default function Dashboard() {
           {/* Recent Apps Section */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Recent Activities</h2>
+              <h2 className="text-xl font-semibold">Recent Port Calls</h2>
               <Link href="/port-calls">
                 <Button variant="ghost" className="text-primary">
                   View All
