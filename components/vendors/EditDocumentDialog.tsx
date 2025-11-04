@@ -75,6 +75,8 @@ export const EditDocumentDialog = ({
       : false
   );
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
   useEffect(() => {
     if (open && document) {
       setFileUrl(document.url);
@@ -100,7 +102,7 @@ export const EditDocumentDialog = ({
     formData.append("file", f);
 
     try {
-      const res = await fetch("http://localhost:3080/api/upload", {
+      const res = await fetch(`${API_BASE_URL}/api/upload`, {
         method: "POST",
         body: formData,
         headers: {
@@ -142,7 +144,7 @@ export const EditDocumentDialog = ({
     };
     try {
       const res = await fetch(
-        `http://localhost:3080/api/vendor/document/${document.id}`,
+        `${API_BASE_URL}/api/vendor/document/${document.id}`,
         {
           method: "PUT",
           headers: {

@@ -77,8 +77,10 @@ export default function OtpPage() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Countdown state
-  const [secondsLeft, setSecondsLeft] = useState(5 * 60); // 5 minutes
+  const [secondsLeft, setSecondsLeft] = useState(5 * 60);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     if (showSuccess) return;
@@ -120,7 +122,7 @@ export default function OtpPage() {
     try {
       const token = localStorage.getItem("token");
       const resp = await fetch(
-        `http://localhost:3080/api/portcall/nominate-officer/verify/${job_id}`,
+        `${API_BASE_URL}/api/portcall/nominate-officer/verify/${job_id}`,
         {
           method: "PUT",
           headers: {
@@ -163,7 +165,7 @@ export default function OtpPage() {
           {!showSuccess ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-2">
-                <Badge variant="outline">OTP sent to your device</Badge>
+                <Badge variant="outline">OTP sent to your Email</Badge>
                 <span>
                   <Badge
                     variant={urgent ? "destructive" : "outline"}

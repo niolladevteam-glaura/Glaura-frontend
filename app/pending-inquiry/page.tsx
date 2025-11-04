@@ -50,7 +50,8 @@ import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/TimePicker";
 
 // API base
-const API_URL = "http://localhost:3080/api/vessel-inquiries";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = `${API_BASE_URL}/vessel-inquiries`;
 
 interface Inquiry {
   inquiry_id: string;

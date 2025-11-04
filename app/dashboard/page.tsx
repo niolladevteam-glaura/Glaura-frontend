@@ -43,6 +43,7 @@ import {
   Amphora,
   ClipboardCheck,
   Wrench,
+  Gauge,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -323,7 +324,18 @@ export default function Dashboard() {
     {
       heading: "Management",
       items: [
-        { href: "/dashboard", icon: BarChart3, label: "Reports", active: true },
+        {
+          href: "/dashboard",
+          icon: Gauge,
+          label: "Dashboard",
+          active: true,
+        },
+        {
+          href: "/reports",
+          icon: BarChart3,
+          label: "Reports",
+          disabled: true,
+        },
         ...(currentUser?.accessLevel === "A"
           ? [{ href: "/users", icon: Users, label: "User Management" }]
           : []),

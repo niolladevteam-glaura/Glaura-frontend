@@ -67,10 +67,14 @@ function getStatusBadgeColor(status: string) {
   switch (status) {
     case "expired":
       return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700";
+    case "Expired":
+      return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700";
     case "pending":
       return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700";
     case "valid":
       return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-700";
+    case "Expiring Soon":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700";
     default:
       return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600";
   }
@@ -121,19 +125,27 @@ export default function VendorDocumentsPage() {
       if (data.success && Array.isArray(data.data)) {
         setDocuments(data.data);
 
-        // Calculate expiry alerts for sidebar
+        // Updated: Calculate expiry alerts for sidebar to show
+        // - Expired docs (daysUntil < 0, status "Expired")
+        // - Docs expiring within next 7 days (daysUntil >= 0 && daysUntil <= 7, status "Expiring Soon")
+        // - Countdown day-by-day, show "Expired" for expired
+
         const today = new Date();
         const alerts: ExpiryAlert[] = data.data
           .filter((doc: DocumentType) => doc.expired_at)
           .map((doc: DocumentType) => {
             const expiry = new Date(doc.expired_at);
+            // Use floor on time so at 11:59pm same day is still 0 days left until expiry
             const daysUntil = Math.ceil(
               (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
             );
-            let status: ExpiryAlert["status"] = "Expiring Soon";
-            if (daysUntil < 0) status = "Expired";
-            else if (daysUntil <= 7) status = "Expiring Soon";
-            else return null;
+            let status: ExpiryAlert["status"] | null = null;
+            if (daysUntil < 0) {
+              status = "Expired";
+            } else if (daysUntil <= 7 && daysUntil >= 0) {
+              status = "Expiring Soon";
+            } // others do not show in expiryAlerts
+            if (!status) return null;
             return {
               documentId: doc.documentID,
               documentName: doc.remarks || doc.documentID || "",
@@ -143,7 +155,12 @@ export default function VendorDocumentsPage() {
             };
           })
           .filter(Boolean)
-          .sort((a: ExpiryAlert, b: ExpiryAlert) => a.daysUntil - b.daysUntil)
+          .sort((a: ExpiryAlert, b: ExpiryAlert) => {
+            // Expired docs first, then ascending countdown
+            if (a.status === "Expired" && b.status !== "Expired") return -1;
+            if (b.status === "Expired" && a.status !== "Expired") return 1;
+            return a.daysUntil - b.daysUntil;
+          })
           .slice(0, 6) as ExpiryAlert[];
         setExpiryAlerts(alerts);
       } else {
@@ -272,11 +289,7 @@ export default function VendorDocumentsPage() {
                             variant="outline"
                             className={`text-xs font-semibold px-3 py-1 ${getStatusBadgeColor(
                               alert.status
-                            )} ${
-                              alert.status !== "Expired"
-                                ? "text-yellow-600 dark:text-yellow-300"
-                                : ""
-                            }`}
+                            )}`}
                           >
                             {alert.status === "Expired"
                               ? "Expired"

@@ -918,14 +918,14 @@ export default function CustomerCompanies() {
                   </span>
                   <span className="font-medium">{customers.length}</span>
                 </div>
-                <div className="flex justify-between">
+                {/* <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
                     Active Port Calls
                   </span>
                   <span className="font-medium">
                     {customers.reduce((sum, c) => sum + c.activePortCalls, 0)}
                   </span>
-                </div>
+                </div> */}
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
                     Total PICs
@@ -1919,7 +1919,7 @@ export default function CustomerCompanies() {
                       </div>
 
                       {/* Responsive grid for statistics */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-4 border-t">
+                      {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-4 border-t">
                         <div>
                           <p className="text-xs sm:text-sm text-muted-foreground">
                             Total Port Calls
@@ -1944,7 +1944,7 @@ export default function CustomerCompanies() {
                             {formatDateDMY(customer.lastUpdated)}
                           </p>
                         </div>
-                      </div>
+                      </div> */}
 
                       {customer.remarks && (
                         <div className="mt-4 p-3 bg-muted rounded-lg">
@@ -2051,7 +2051,7 @@ export default function CustomerCompanies() {
                     <TabsTrigger value="pics">
                       PICs ({selectedCustomer.pics.length})
                     </TabsTrigger>
-                    <TabsTrigger value="history">Port Call History</TabsTrigger>
+                    {/* <TabsTrigger value="history">Port Call History</TabsTrigger> */}
                   </TabsList>
 
                   <TabsContent value="overview" className="space-y-4">

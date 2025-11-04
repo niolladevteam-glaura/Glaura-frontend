@@ -649,7 +649,7 @@ export default function NewPortCall() {
     async function fetchAllUsers() {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:3080/api/user", {
+        const response = await fetch(`${API_BASE_URL}/api/user`, {
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),

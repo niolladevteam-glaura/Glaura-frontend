@@ -1242,6 +1242,7 @@ export default function UserManagement() {
                   <SelectContent>
                     <SelectItem value="all">All Departments</SelectItem>
                     <SelectItem value="management">Management</SelectItem>
+                    <SelectItem value="finance">Finance</SelectItem>
                     <SelectItem value="operations">Operations</SelectItem>
                     <SelectItem value="disbursement">Disbursement</SelectItem>
                     <SelectItem value="communication">Communication</SelectItem>

@@ -44,12 +44,14 @@ export default function NominateOfficerPage() {
   // --- USER API ---
   const [users, setUsers] = useState<User[]>([]);
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
   // Fetch all users from backend on mount
   useEffect(() => {
     async function fetchAllUsers() {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:3080/api/user", {
+        const response = await fetch(`${API_BASE_URL}/api/user`, {
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
@@ -102,7 +104,7 @@ export default function NominateOfficerPage() {
     try {
       const token = localStorage.getItem("token");
       const resp = await fetch(
-        `http://localhost:3080/api/portcall/nominate-officer/${job_id}`,
+        `${API_BASE_URL}/api/portcall/nominate-officer/${job_id}`,
         {
           method: "PUT",
           headers: {
@@ -115,7 +117,7 @@ export default function NominateOfficerPage() {
       const json = await resp.json();
       if (resp.ok && json.success) {
         toast.success(
-          "Officer nominated, please enter the OTP sent to your device."
+          "Officer nominated, please enter the OTP sent to your Email."
         );
         setStep("otp");
       } else {
@@ -138,7 +140,7 @@ export default function NominateOfficerPage() {
     try {
       const token = localStorage.getItem("token");
       const resp = await fetch(
-        `http://localhost:3080/api/portcall/nominate-officer/verify/${job_id}`,
+        `${API_BASE_URL}/api/portcall/nominate-officer/verify/${job_id}`,
         {
           method: "PUT",
           headers: {
@@ -301,7 +303,7 @@ export default function NominateOfficerPage() {
                   Enter OTP
                 </span>
                 <Badge variant="outline" className="ml-auto">
-                  Sent to your device
+                  Sent to your Email
                 </Badge>
               </div>
               <Input
