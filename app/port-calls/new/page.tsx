@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "@/components/ui/use-toast";
 import {
   Card,
   CardContent,
@@ -46,6 +45,8 @@ import {
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { format } from "date-fns";
+import { Toaster } from "sonner";
+import { toast } from "sonner";
 
 // API Configuration - Replace with your actual API endpoints
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -509,10 +510,9 @@ export default function NewPortCall() {
       }
     }
     if (!hasPermission) {
-      toast({
-        title: "Access Denied",
+      toast.error("Access Denied", {
         description: "You do not have permission to create port calls.",
-        variant: "destructive",
+        duration: 4000,
       });
       router.push("/dashboard");
       return;
@@ -556,10 +556,9 @@ export default function NewPortCall() {
     // Remove from localStorage
     localStorage.removeItem("portCallFormData");
     localStorage.removeItem("portCallSelectedServices");
-    toast({
-      title: "Form Cleared",
+    toast("Form Cleared", {
       description: "Port call form has been cleared.",
-      variant: "default",
+      duration: 3000,
     });
     router.push("/dashboard");
   };
@@ -597,11 +596,9 @@ export default function NewPortCall() {
       },
     });
     setSelectedServices([]);
-    toast({
-      title: "Form Fields Cleared",
-      description:
-        "All form fields have been reset (local storage not cleared).",
-      variant: "default",
+    toast("Form Fields Cleared", {
+      description: "All form fields have been reset.",
+      duration: 3000,
     });
   };
 
@@ -649,7 +646,7 @@ export default function NewPortCall() {
     async function fetchAllUsers() {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${API_BASE_URL}/api/user`, {
+        const response = await fetch(`${API_BASE_URL}/user`, {
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
@@ -757,10 +754,9 @@ export default function NewPortCall() {
       }
       return [];
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to load formality statuses",
-        variant: "destructive",
+        duration: 3000,
       });
       return [];
     }
@@ -784,10 +780,9 @@ export default function NewPortCall() {
       return [];
     } catch (error) {
       console.error("Failed to fetch customer PIC:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to load customer PICs",
-        variant: "destructive",
+        duration: 3000,
       });
       return [];
     }
@@ -839,10 +834,9 @@ export default function NewPortCall() {
       );
       return response.data || [];
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to load services",
-        variant: "destructive",
+        duration: 3000,
       });
       return [];
     }
@@ -860,10 +854,9 @@ export default function NewPortCall() {
       }
       return [];
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to load ports",
-        variant: "destructive",
+        duration: 3000,
       });
       return [];
     }
@@ -882,10 +875,9 @@ export default function NewPortCall() {
       }
       return [];
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to load clients",
-        variant: "destructive",
+        duration: 3000,
       });
       return [];
     }
@@ -899,10 +891,9 @@ export default function NewPortCall() {
       }
       return [];
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to load customer PICs",
-        variant: "destructive",
+        duration: 3000,
       });
       return [];
     }
@@ -962,11 +953,18 @@ export default function NewPortCall() {
     if (imo.length >= 4) {
       const response = await fetchVesselByIMO(imo);
       if (response && response.data) {
+        // Match vessel_type to your select options (case insensitive)
+        const apiVesselType = response.data.vessel_type || "";
+        const matchedVesselType =
+          vesselTypes.find(
+            (t) => t.toLowerCase() === apiVesselType.toLowerCase()
+          ) || "";
+
         setFormData((prev) => ({
           ...prev,
           vesselId: response.data.vessel_id || "",
           vesselName: response.data.vessel_name || prev.vesselName,
-          vesselType: response.data.vessel_type || prev.vesselType,
+          vesselType: matchedVesselType,
           flag: response.data.flag || prev.flag,
           callSign: response.data.call_sign || prev.callSign,
           builtYear: response.data.build_year
@@ -979,12 +977,12 @@ export default function NewPortCall() {
           sscecExpiry: response.data.SSCEC_expires
             ? format(new Date(response.data.SSCEC_expires), "yyyy-MM-dd")
             : prev.sscecExpiry,
+          piClub: response.data.p_and_i_club || prev.piClub,
           remarks: response.data.remark || prev.remarks,
         }));
       }
     }
   };
-
   // Utility function for formatting DD-MM-YYYY
   const formatDateToDDMMYYYY = (date: Date) => {
     const dd = String(date.getDate()).padStart(2, "0");
@@ -1107,10 +1105,9 @@ export default function NewPortCall() {
   // Add new service function - API ready
   const addNewService = async () => {
     if (!newServiceName.trim()) {
-      toast({
-        title: "Validation Error",
+      toast.error("Validation Error", {
         description: "Please enter a service name",
-        variant: "destructive",
+        duration: 3000,
       });
       return;
     }
@@ -1123,15 +1120,14 @@ export default function NewPortCall() {
       setAvailableServices((prev) => [...prev, response]);
       setNewServiceName("");
       setIsAddServiceOpen(false);
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Service added successfully!",
+        duration: 3000,
       });
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to add service",
-        variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setLoading(false);
@@ -1365,21 +1361,21 @@ export default function NewPortCall() {
       const result = await response.json();
       console.log("Step 15: Success result", result);
 
-      toast({
-        title: "Success",
-        description: "Port call created successfully!",
-        duration: 5000,
+      toast.success("Port call created successfully!", {
+        description: "Your new port call has been created.",
+        duration: 3000,
       });
       localStorage.removeItem("portCallFormData");
       localStorage.removeItem("portCallSelectedServices");
-      router.push("/dashboard");
+
+      setTimeout(() => {
+        router.push("/port-calls");
+      }, 1500);
     } catch (error) {
       console.error("Step 16: Caught error", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description:
           error instanceof Error ? error.message : "Failed to create port call",
-        variant: "destructive",
         duration: 8000,
       });
     } finally {
@@ -1791,10 +1787,9 @@ export default function NewPortCall() {
                               <Button
                                 onClick={async () => {
                                   if (!newPortName.trim()) {
-                                    toast({
-                                      title: "Validation Error",
+                                    toast.error("Validation Error", {
                                       description: "Please enter a port name",
-                                      variant: "destructive",
+                                      duration: 3000,
                                     });
                                     return;
                                   }
@@ -1816,18 +1811,17 @@ export default function NewPortCall() {
                                     }));
                                     setIsAddPortOpen(false);
                                     setNewPortName("");
-                                    toast({
-                                      title: "Success",
+                                    toast.success("Success", {
                                       description: "Port added successfully!",
+                                      duration: 3000,
                                     });
                                   } catch (error) {
-                                    toast({
-                                      title: "Error",
+                                    toast.error("Error", {
                                       description:
                                         error instanceof Error
                                           ? error.message
                                           : "Failed to add port",
-                                      variant: "destructive",
+                                      duration: 8000,
                                     });
                                   } finally {
                                     setIsAddingPort(false);
@@ -1971,10 +1965,9 @@ export default function NewPortCall() {
                               <Button
                                 onClick={async () => {
                                   if (!newFormalityStatus.trim()) {
-                                    toast({
-                                      title: "Validation Error",
+                                    toast.error("Validation Error", {
                                       description: "Please enter a status name",
-                                      variant: "destructive",
+                                      duration: 5000,
                                     });
                                     return;
                                   }
@@ -1994,18 +1987,16 @@ export default function NewPortCall() {
                                     }));
                                     setIsAddFormalityOpen(false);
                                     setNewFormalityStatus("");
-                                    toast({
-                                      title: "Success",
+                                    toast.success("Success", {
                                       description: "Status added and selected!",
                                     });
                                   } catch (error) {
-                                    toast({
-                                      title: "Error",
+                                    toast("Error", {
                                       description:
                                         error instanceof Error
                                           ? error.message
                                           : "Failed to add status",
-                                      variant: "destructive",
+                                      duration: 3000,
                                     });
                                   } finally {
                                     setIsAddingFormalityStatus(false);

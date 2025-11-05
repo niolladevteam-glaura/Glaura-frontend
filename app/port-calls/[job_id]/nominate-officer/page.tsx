@@ -51,7 +51,7 @@ export default function NominateOfficerPage() {
     async function fetchAllUsers() {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${API_BASE_URL}/api/user`, {
+        const response = await fetch(`${API_BASE_URL}/user`, {
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
@@ -104,7 +104,7 @@ export default function NominateOfficerPage() {
     try {
       const token = localStorage.getItem("token");
       const resp = await fetch(
-        `${API_BASE_URL}/api/portcall/nominate-officer/${job_id}`,
+        `${API_BASE_URL}/portcall/nominate-officer/${job_id}`,
         {
           method: "PUT",
           headers: {
@@ -117,7 +117,7 @@ export default function NominateOfficerPage() {
       const json = await resp.json();
       if (resp.ok && json.success) {
         toast.success(
-          "Officer nominated, please enter the OTP sent to your Email."
+          "For the verify officer nomination, please enter the OTP sent to your Email."
         );
         setStep("otp");
       } else {
@@ -140,7 +140,7 @@ export default function NominateOfficerPage() {
     try {
       const token = localStorage.getItem("token");
       const resp = await fetch(
-        `${API_BASE_URL}/api/portcall/nominate-officer/verify/${job_id}`,
+        `${API_BASE_URL}/portcall/nominate-officer/verify/${job_id}`,
         {
           method: "PUT",
           headers: {

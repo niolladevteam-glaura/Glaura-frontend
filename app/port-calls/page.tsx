@@ -81,7 +81,7 @@ interface PortCall {
   eta: string;
   etd?: string;
   port: string;
-  assigned_pic: string;
+  // assigned_pic: string;   // REMOVED
   priority: "High" | "Medium" | "Low" | "high" | "medium" | "low";
   created: string;
   updatedAt: string;
@@ -89,6 +89,10 @@ interface PortCall {
   portkey?: string;
   draft?: string;
   tags?: string[];
+  section_head: string;
+  section_head_email: string;
+  assigned_officer: string | null;
+  assigned_officer_email: string | null;
 }
 
 export default function ActivePortCalls() {
@@ -361,7 +365,10 @@ export default function ActivePortCalls() {
             <th className="px-2 py-3 text-left font-semibold">Port</th>
             <th className="px-2 py-3 text-left font-semibold">Priority</th>
             <th className="px-2 py-3 text-left font-semibold">Client</th>
-            <th className="px-2 py-3 text-left font-semibold">Assigned PIC</th>
+            <th className="px-2 py-3 text-left font-semibold">Section Head</th>
+            <th className="px-2 py-3 text-left font-semibold">
+              Assigned Officer
+            </th>
             <th className="px-2 py-3 text-left font-semibold">Action</th>
           </tr>
         </thead>
@@ -435,8 +442,35 @@ export default function ActivePortCalls() {
                 </td>
                 {/* Client */}
                 <td className="px-2 py-2">{portCall.client_company}</td>
-                {/* Assigned PIC */}
-                <td className="px-2 py-2">{portCall.assigned_pic}</td>
+                {/* Section Head */}
+                <td className="px-2 py-2">
+                  <span>{portCall.section_head}</span>
+                  <br />
+                  <span className="text-xs text-gray-500">
+                    {portCall.section_head_email}
+                  </span>
+                </td>
+                {/* Assigned Officer */}
+                <td className="px-2 py-2">
+                  {portCall.assigned_officer ? (
+                    <>
+                      <div className="font-medium">
+                        {portCall.assigned_officer}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {portCall.assigned_officer_email || ""}
+                      </div>
+                    </>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700"
+                    >
+                      Awaiting Assignment
+                    </Badge>
+                  )}
+                </td>
+
                 {/* Action */}
                 <td className="px-2 py-2">
                   <div className="flex gap-2">
@@ -456,7 +490,7 @@ export default function ActivePortCalls() {
           })}
           {sortedPortCalls.length === 0 && (
             <tr>
-              <td colSpan={8} className="text-center py-8">
+              <td colSpan={9} className="text-center py-8">
                 <Ship className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                   No port calls found
@@ -790,23 +824,41 @@ export default function ActivePortCalls() {
                         </p>
                         <p className="font-medium">{portCall.vessel_imo}</p>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Port
-                          </p>
-                          <p className="font-medium">{portCall.port}</p>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Section Head
+                        </p>
+                        <div className="font-medium">
+                          {portCall.section_head}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {portCall.section_head_email}
                         </div>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <Users className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Assigned PIC
-                          </p>
-                          <p className="font-medium">{portCall.assigned_pic}</p>
-                        </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Assigned Officer
+                        </p>
+
+                        {portCall.assigned_officer ? (
+                          <>
+                            <div className="font-medium">
+                              {portCall.assigned_officer}
+                            </div>
+                            {portCall.assigned_officer_email && (
+                              <div className="text-xs text-gray-500">
+                                {portCall.assigned_officer_email}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700"
+                          >
+                            Awaiting Assignment
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">

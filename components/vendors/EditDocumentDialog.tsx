@@ -102,7 +102,7 @@ export const EditDocumentDialog = ({
     formData.append("file", f);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/upload`, {
+      const res = await fetch(`${API_BASE_URL}/upload`, {
         method: "POST",
         body: formData,
         headers: {
@@ -144,7 +144,7 @@ export const EditDocumentDialog = ({
     };
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/vendor/document/${document.id}`,
+        `${API_BASE_URL}/vendor/document/${document.id}`,
         {
           method: "PUT",
           headers: {

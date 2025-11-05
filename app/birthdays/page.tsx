@@ -16,6 +16,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
 type RawBirthdayCustomer = {
   pic_id: string;
   customer_id: string;
@@ -83,7 +85,7 @@ export default function ClientBirthdayAlertsPage() {
   useEffect(() => {
     const fetchBirthdays = async () => {
       try {
-        const resp = await fetch("http://localhost:3080/api/birthdays");
+        const resp = await fetch(`${API_BASE_URL}/birthdays`);
         if (!resp.ok) throw new Error("Unable to fetch birthdays");
         const data = await resp.json();
         setBirthdays(data);

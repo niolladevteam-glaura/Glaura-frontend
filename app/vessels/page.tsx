@@ -64,7 +64,8 @@ interface Vessel {
   loa: number;
   builtYear: number;
   callSign: string;
-  sscecExpiry: string; // Always DD.MM.YYYY for display
+  sscecExpiry: string;
+  sscecIssued: string;
   sscecStatus:
     | "valid"
     | "expiring"
@@ -75,8 +76,6 @@ interface Vessel {
   owner: string;
   manager: string;
   piClub: string;
-  lastPortCall: string;
-  totalPortCalls: number;
   createdAt: string;
   lastUpdated: string;
 }
@@ -96,7 +95,6 @@ export default function VesselManagement() {
   const [vesselToEdit, setVesselToEdit] = useState<Vessel | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [vesselToDelete, setVesselToDelete] = useState<Vessel | null>(null);
-  // New Vessel initial state
   const [newVessel, setNewVessel] = useState<{
     name: string;
     imo: string;
@@ -108,7 +106,7 @@ export default function VesselManagement() {
     loa: number;
     builtYear: number;
     callSign: string;
-    sscecIssued: string; // YYYY-MM-DD, only for UI
+    sscecIssued: string;
     owner: string;
     piClub: string;
   }>({
@@ -129,10 +127,31 @@ export default function VesselManagement() {
 
   const router = useRouter();
 
-  // Helper functions:
+  // Helper: Converts ISO(yyyy-mm-dd or yyyy-mm-ddThh:mm:ssZ) to DD.MM.YYYY
+  function formatDateDDMMYYYY(val: string) {
+    if (!val) return "";
+    const isoDate = val.split("T")[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+      const [yyyy, mm, dd] = isoDate.split("-");
+      return `${dd}.${mm}.${yyyy}`;
+    }
+    return val;
+  }
+  // Helper: Converts DD.MM.YYYY to yyyy-mm-dd
+  function formatDateToISO(ddmmyyyy: string) {
+    if (!ddmmyyyy) return "";
+    const [dd, mm, yyyy] = ddmmyyyy.split(".");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  // To Date object from yyyy-mm-dd or dd.mm.yyyy
   function toDateObj(val: string) {
     if (!val) return null;
-    const [yyyy, mm, dd] = val.split("-");
+    let dd, mm, yyyy;
+    if (val.includes("-")) {
+      [yyyy, mm, dd] = val.split("-");
+    } else if (val.includes(".")) {
+      [dd, mm, yyyy] = val.split(".");
+    }
     if (!yyyy || !mm || !dd) return null;
     const date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     return isNaN(date.getTime()) ? null : date;
@@ -142,41 +161,27 @@ export default function VesselManagement() {
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, "0");
     const dd = String(date.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
+    return `${dd}.${mm}.${yyyy}`;
   }
 
   function formatSSCECExpiry(expiry: string) {
     if (!expiry) return "";
-    // If already in DD.MM.YYYY format
     if (/^\d{2}\.\d{2}\.\d{4}$/.test(expiry)) return expiry;
-    // If ISO string or contains T/time info
     const onlyDate = expiry.split("T")[0];
     if (/^\d{4}-\d{2}-\d{2}$/.test(onlyDate)) {
       const [yyyy, mm, dd] = onlyDate.split("-");
       return `${dd}.${mm}.${yyyy}`;
     }
-    if (/^\d{2}\.\d{2}\.\d{4}$/.test(expiry)) return expiry;
-    if (/^\d{2}\.\d{4}$/.test(expiry)) return "??." + expiry;
-    const date = new Date(expiry);
-    if (!isNaN(date.getTime())) {
-      const dd = String(date.getDate()).padStart(2, "0");
-      const mm = String(date.getMonth() + 1).padStart(2, "0");
-      const yyyy = date.getFullYear();
-      return `${dd}.${mm}.${yyyy}`;
-    }
-    const nums = expiry.match(/\d{4}|\d{2}/g);
-    if (nums && nums.length >= 3) {
-      const [yyyy, mm, dd] = nums.slice(-3);
-      return `${dd}.${mm}.${yyyy}`;
-    }
     return expiry;
   }
-
-  // Issue Date (user input) --> Expiry Date (for API)
   function calcSSCECExpiry(issued: string): string {
     if (!issued) return "";
-    const [yyyy, mm, dd] = issued.split("-");
-    if (!yyyy || !mm || !dd) return "";
+    let yyyy, mm, dd;
+    if (issued.includes("-")) {
+      [yyyy, mm, dd] = issued.split("-");
+    } else if (issued.includes(".")) {
+      [dd, mm, yyyy] = issued.split(".");
+    } else return "";
     const issuedDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     issuedDate.setMonth(issuedDate.getMonth() + 6);
     const expDD = String(issuedDate.getDate()).padStart(2, "0");
@@ -186,8 +191,12 @@ export default function VesselManagement() {
   }
   function calcSSCECExpiryISO(issued: string): string {
     if (!issued) return "";
-    const [yyyy, mm, dd] = issued.split("-");
-    if (!yyyy || !mm || !dd) return "";
+    let yyyy, mm, dd;
+    if (issued.includes("-")) {
+      [yyyy, mm, dd] = issued.split("-");
+    } else if (issued.includes(".")) {
+      [dd, mm, yyyy] = issued.split(".");
+    } else return "";
     const issuedDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     issuedDate.setMonth(issuedDate.getMonth() + 6);
     const expYYYY = issuedDate.getFullYear();
@@ -195,29 +204,12 @@ export default function VesselManagement() {
     const expDD = String(issuedDate.getDate()).padStart(2, "0");
     return `${expYYYY}-${expMM}-${expDD}`;
   }
-
-  // Expiry Date (from DB) --> Issue Date (for UI)
-  function getIssuedFromExpiry(expiry: string): string {
-    if (!expiry) return "";
-    // expiry should be DD.MM.YYYY
-    const [dd, mm, yyyy] = expiry.split(".");
-    if (!dd || !mm || !yyyy) return "";
-    const expDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
-    expDate.setMonth(expDate.getMonth() - 6);
-    const issuedYYYY = expDate.getFullYear();
-    const issuedMM = String(expDate.getMonth() + 1).padStart(2, "0");
-    const issuedDD = String(expDate.getDate()).padStart(2, "0");
-    return `${issuedYYYY}-${issuedMM}-${issuedDD}`;
-  }
-
   // API Utility Function
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     try {
       const token = localStorage.getItem("token");
       const currentUser = localStorage.getItem("currentUser");
-      if (!token || !currentUser) {
-        throw new Error("Authentication required");
-      }
+      if (!token || !currentUser) throw new Error("Authentication required");
       const response = await fetch(endpoint, {
         headers: {
           "Content-Type": "application/json",
@@ -239,12 +231,7 @@ export default function VesselManagement() {
         } catch (e) {
           throw new Error(response.statusText || "Request failed");
         }
-        if (response.status === 400 && errorData.message?.includes("IMO")) {
-          throw new Error(errorData.message);
-        }
-        throw new Error(
-          errorData.message || `Request failed with status ${response.status}`
-        );
+        throw new Error(errorData.message || "Request failed");
       }
       return await response.json();
     } catch (error: any) {
@@ -252,19 +239,17 @@ export default function VesselManagement() {
       throw error;
     }
   };
-
-  // Fetch vessels: sscecExpiry only, reconstruct issue date for UI
+  // Fetch vessels: include sscecIssued from API
   const fetchVessels = async (): Promise<Vessel[]> => {
     const response = await apiCall(`${API_BASE_URL}/vessel`);
     if (response && response.success && Array.isArray(response.data)) {
       return response.data.map((vessel: any) => {
-        let sscecExpiry: string =
-          vessel.SSCEC_expires || vessel.sscecExpiry || "";
-        // Ensure expiry is always DD.MM.YYYY for display
-        if (sscecExpiry.includes("-")) {
-          const [yyyy, mm, dd] = sscecExpiry.split("-");
-          sscecExpiry = `${dd}.${mm}.${yyyy}`;
-        }
+        let sscecExpiry = formatDateDDMMYYYY(
+          vessel.SSCEC_expires || vessel.sscecExpiry || ""
+        );
+        let sscecIssued = formatDateDDMMYYYY(
+          vessel.SSCEC_issued || vessel.sscecIssued || ""
+        );
         return {
           id: vessel.vessel_id || vessel.id,
           name: (vessel.vessel_name || vessel.name || "").toUpperCase(),
@@ -282,20 +267,17 @@ export default function VesselManagement() {
           builtYear: vessel.build_year || vessel.builtYear,
           callSign: (vessel.call_sign || vessel.callSign || "").toUpperCase(),
           sscecExpiry,
+          sscecIssued,
           sscecStatus: vessel.sscec_status || calculateSSCECStatus(sscecExpiry),
           owner: vessel.company || vessel.owner,
           manager: vessel.manager || vessel.company || vessel.owner,
           piClub: vessel.p_and_i_club || vessel.piClub,
-          lastPortCall:
-            vessel.lastPortCall || new Date().toISOString().split("T")[0],
-          totalPortCalls: vessel.totalPortCalls || 0,
           createdAt: vessel.createdAt || new Date().toISOString(),
           lastUpdated:
             vessel.updatedAt || vessel.lastUpdated || new Date().toISOString(),
         };
       });
     }
-    console.error("Unexpected API response format:", response);
     throw new Error("Invalid vessels data format received from server");
   };
 
@@ -337,14 +319,9 @@ export default function VesselManagement() {
         setVessels(data);
         setFilteredVessels(data);
       } catch (error) {
-        console.error("Failed to load vessels:", error);
         toast.error("Failed to load vessel data", {
           description:
             "Please check your internet connection or try again later.",
-          action: {
-            label: "Retry",
-            onClick: loadVessels,
-          },
         });
       }
     };
@@ -370,7 +347,6 @@ export default function VesselManagement() {
       : "Valid";
   };
 
-  // On Add: save only Expiry Date
   const handleAddVessel = async () => {
     try {
       if (!newVessel.sscecIssued) {
@@ -388,12 +364,11 @@ export default function VesselManagement() {
         return;
       }
       const expiryISO = calcSSCECExpiryISO(newVessel.sscecIssued);
-      const expiryDisplay = calcSSCECExpiry(newVessel.sscecIssued);
 
-      // Save only expiry!
       const vesselData = {
         vessel_name: newVessel.name.toUpperCase(),
         imo_number: newVessel.imo,
+        SSCEC_issued: newVessel.sscecIssued, // assume already yyyy-mm-dd
         SSCEC_expires: expiryISO,
         company: newVessel.owner,
         vessel_type: newVessel.vesselType.toUpperCase(),
@@ -406,24 +381,13 @@ export default function VesselManagement() {
         nrt: newVessel.nrt,
         p_and_i_club: newVessel.piClub,
       };
-      const response = await createVessel(vesselData);
+      await createVessel(vesselData);
 
-      const vesselWithId: Vessel = {
-        ...newVessel,
-        id: response.vessel_id,
-        name: newVessel.name.toUpperCase(),
-        vesselType: newVessel.vesselType.toUpperCase(),
-        flag: newVessel.flag.toUpperCase(),
-        callSign: newVessel.callSign.toUpperCase(),
-        sscecExpiry: expiryDisplay,
-        sscecStatus: calculateSSCECStatus(expiryDisplay),
-        createdAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString(),
-        lastPortCall: new Date().toISOString().split("T")[0],
-        totalPortCalls: 0,
-        manager: newVessel.owner,
-      };
-      setVessels((prevVessels) => [...prevVessels, vesselWithId]);
+      // Fetch new vessels list so UI ALWAYS shows the newly added vessel
+      const data = await fetchVessels();
+      setVessels(data);
+      setFilteredVessels(data);
+
       setNewVessel({
         name: "",
         imo: "",
@@ -439,29 +403,22 @@ export default function VesselManagement() {
         owner: "",
         piClub: "",
       });
+
       setIsDialogOpen(false);
       toast.success("Vessel created successfully", {
         icon: <Ship />,
         description: "The Vessel creation has been successfully completed.",
       });
+
       setSearchTerm("");
       setTypeFilter("all");
       setStatusFilter("all");
+      setSelectedTab("all");
     } catch (error: any) {
-      if (
-        error.message.includes("IMO") ||
-        error.message.includes("duplicate")
-      ) {
-        toast.error("Duplicate IMO", {
-          description: "A vessel with this IMO number already exists.",
-          icon: <AlertTriangle />,
-        });
-      } else {
-        toast.error("Error", {
-          description: error.message || "Failed to add vessel",
-          icon: <AlertTriangle />,
-        });
-      }
+      toast.error("Error", {
+        description: error.message || "Failed to add vessel",
+        icon: <AlertTriangle />,
+      });
     }
   };
 
@@ -537,8 +494,26 @@ export default function VesselManagement() {
     }
   };
 
-  if (!currentUser) {
-    return <div>Loading...</div>;
+  if (!currentUser) return <div>Loading...</div>;
+
+  // Helper: Given expiry date (dd.mm.yyyy), return issued date (dd.mm.yyyy) by subtracting 6 months
+  function getIssuedFromExpiry(expiry: string): string {
+    if (!expiry) return "";
+    let dd, mm, yyyy;
+    if (expiry.includes(".")) {
+      [dd, mm, yyyy] = expiry.split(".");
+    } else if (expiry.includes("-")) {
+      [yyyy, mm, dd] = expiry.split("-");
+    } else {
+      return "";
+    }
+    if (!yyyy || !mm || !dd) return "";
+    const expiryDate = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    expiryDate.setMonth(expiryDate.getMonth() - 6);
+    const issuedDD = String(expiryDate.getDate()).padStart(2, "0");
+    const issuedMM = String(expiryDate.getMonth() + 1).padStart(2, "0");
+    const issuedYYYY = expiryDate.getFullYear();
+    return `${issuedDD}.${issuedMM}.${issuedYYYY}`;
   }
 
   function handleViewVessel(vessel: Vessel): void {
@@ -1278,7 +1253,12 @@ export default function VesselManagement() {
                             const vesselData = {
                               vessel_name: vesselToEdit.name.toUpperCase(),
                               imo_number: vesselToEdit.imo,
-                              SSCEC_expires: vesselToEdit.sscecExpiry,
+                              SSCEC_expires: formatDateToISO(
+                                vesselToEdit.sscecExpiry
+                              ),
+                              SSCEC_issued: formatDateToISO(
+                                getIssuedFromExpiry(vesselToEdit.sscecExpiry)
+                              ),
                               company: vesselToEdit.owner,
                               vessel_type:
                                 vesselToEdit.vesselType.toUpperCase(),
@@ -1573,12 +1553,12 @@ export default function VesselManagement() {
                         </p>
                         <p className="font-medium">{vessel.loa}m</p>
                       </div>
-                      <div>
+                      {/* <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           Port Calls
                         </p>
                         <p className="font-medium">{vessel.totalPortCalls}</p>
-                      </div>
+                      </div> */}
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-200 dark:border-gray-700 gap-4">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -1589,13 +1569,13 @@ export default function VesselManagement() {
                             {formatSSCECExpiry(vessel.sscecExpiry)}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        {/* <div className="flex items-center space-x-2">
                           <Ship className="h-4 w-4 text-gray-400" />
                           <span className="text-sm text-gray-600 dark:text-gray-300">
                             Last Port Call:{" "}
                             {new Date(vessel.lastPortCall).toLocaleDateString()}
                           </span>
-                        </div>
+                        </div> */}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
                         Updated:{" "}
