@@ -446,19 +446,19 @@ export default function UserManagement() {
     const user = JSON.parse(userData);
     setCurrentUser(user);
 
-    let hasPermission = false;
-    if (user.permissions) {
-      if (Array.isArray(user.permissions)) {
-        hasPermission = user.permissions.includes("user_management");
-      } else if (typeof user.permissions === "object") {
-        hasPermission = !!user.permissions["user_management"];
-      }
-    }
+    // let hasPermission = false;
+    // if (user.permissions) {
+    //   if (Array.isArray(user.permissions)) {
+    //     hasPermission = user.permissions.includes("user_management");
+    //   } else if (typeof user.permissions === "object") {
+    //     hasPermission = !!user.permissions["user_management"];
+    //   }
+    // }
 
-    if (!hasPermission) {
-      router.push("/dashboard");
-      return;
-    }
+    // if (!hasPermission) {
+    //   router.push("/dashboard");
+    //   return;
+    // }
 
     const loadUsers = async () => {
       try {

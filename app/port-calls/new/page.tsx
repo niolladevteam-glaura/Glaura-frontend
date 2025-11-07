@@ -308,7 +308,7 @@ interface SelectedService {
 }
 
 interface Service {
-  id: number; // or string if you want to use service_id
+  id: number;
   service_id: string;
   service_name: string;
   created_by: string;
@@ -501,22 +501,22 @@ export default function NewPortCall() {
     setCurrentUser(user);
 
     // Permission check for creating port calls
-    let hasPermission = false;
-    if (user.permissions) {
-      if (Array.isArray(user.permissions)) {
-        hasPermission = user.permissions.includes("create_port_calls");
-      } else if (typeof user.permissions === "object") {
-        hasPermission = !!user.permissions["create_port_calls"];
-      }
-    }
-    if (!hasPermission) {
-      toast.error("Access Denied", {
-        description: "You do not have permission to create port calls.",
-        duration: 4000,
-      });
-      router.push("/dashboard");
-      return;
-    }
+    // let hasPermission = false;
+    // if (user.permissions) {
+    //   if (Array.isArray(user.permissions)) {
+    //     hasPermission = user.permissions.includes("create_port_calls");
+    //   } else if (typeof user.permissions === "object") {
+    //     hasPermission = !!user.permissions["create_port_calls"];
+    //   }
+    // }
+    // if (!hasPermission) {
+    //   toast.error("Access Denied", {
+    //     description: "You do not have permission to create port calls.",
+    //     duration: 4000,
+    //   });
+    //   router.push("/dashboard");
+    //   return;
+    // }
   }, [router]);
 
   const handleCancel = () => {

@@ -1,47 +1,79 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { BarChart3, TrendingUp, DollarSign, Ship, Users, Download, LogOut, Anchor, PieChart } from "lucide-react"
-import Link from "next/link"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  BarChart3,
+  TrendingUp,
+  DollarSign,
+  Ship,
+  Users,
+  Download,
+  LogOut,
+  Anchor,
+  PieChart,
+} from "lucide-react";
+import Link from "next/link";
 
 interface ReportData {
-  portCallsByMonth: { month: string; count: number; revenue: number }[]
-  portCallsByPort: { port: string; count: number; percentage: number }[]
-  clientConversion: { month: string; inquiries: number; secured: number; missed: number }[]
-  vendorPerformance: { vendor: string; rating: number; jobs: number; successRate: number }[]
-  servicePopularity: { service: string; count: number; revenue: number }[]
+  portCallsByMonth: { month: string; count: number; revenue: number }[];
+  portCallsByPort: { port: string; count: number; percentage: number }[];
+  clientConversion: {
+    month: string;
+    inquiries: number;
+    secured: number;
+    missed: number;
+  }[];
+  vendorPerformance: {
+    vendor: string;
+    rating: number;
+    jobs: number;
+    successRate: number;
+  }[];
+  servicePopularity: { service: string; count: number; revenue: number }[];
 }
 
 export default function Reports() {
-  const [currentUser, setCurrentUser] = useState<any>(null)
-  const [reportData, setReportData] = useState<ReportData | null>(null)
-  const [selectedPeriod, setSelectedPeriod] = useState("6months")
-  const [selectedPort, setSelectedPort] = useState("all")
-  const router = useRouter()
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState("6months");
+  const [selectedPort, setSelectedPort] = useState("all");
+  const router = useRouter();
 
   useEffect(() => {
-    const userData = localStorage.getItem("currentUser")
+    const userData = localStorage.getItem("currentUser");
     if (!userData) {
-      router.push("/")
-      return
+      router.push("/");
+      return;
     }
 
-    const user = JSON.parse(userData)
-    setCurrentUser(user)
+    const user = JSON.parse(userData);
+    setCurrentUser(user);
 
     // Check if user has access to reports
-    const restrictedLevels = ["C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R"]
-    if (restrictedLevels.includes(user.accessLevel)) {
-      router.push("/dashboard")
-      return
-    }
+    // const restrictedLevels = ["C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R"]
+    // if (restrictedLevels.includes(user.accessLevel)) {
+    //   router.push("/dashboard")
+    //   return
+    // }
 
     // Mock report data
     const mockReportData: ReportData = {
@@ -67,11 +99,36 @@ export default function Reports() {
         { month: "Jan 2024", inquiries: 95, secured: 67, missed: 28 },
       ],
       vendorPerformance: [
-        { vendor: "Lanka Marine Services", rating: 4.5, jobs: 156, successRate: 97 },
-        { vendor: "Ceylon Transport Solutions", rating: 4.2, jobs: 89, successRate: 95 },
-        { vendor: "Port Clearance Experts", rating: 4.8, jobs: 234, successRate: 98 },
-        { vendor: "Island Bunker Services", rating: 4.1, jobs: 67, successRate: 94 },
-        { vendor: "Maritime Supply Co", rating: 4.3, jobs: 123, successRate: 96 },
+        {
+          vendor: "Lanka Marine Services",
+          rating: 4.5,
+          jobs: 156,
+          successRate: 97,
+        },
+        {
+          vendor: "Ceylon Transport Solutions",
+          rating: 4.2,
+          jobs: 89,
+          successRate: 95,
+        },
+        {
+          vendor: "Port Clearance Experts",
+          rating: 4.8,
+          jobs: 234,
+          successRate: 98,
+        },
+        {
+          vendor: "Island Bunker Services",
+          rating: 4.1,
+          jobs: 67,
+          successRate: 94,
+        },
+        {
+          vendor: "Maritime Supply Co",
+          rating: 4.3,
+          jobs: 123,
+          successRate: 96,
+        },
       ],
       servicePopularity: [
         { service: "Crew Changes", count: 145, revenue: 87000 },
@@ -81,37 +138,46 @@ export default function Reports() {
         { service: "Provisions Supply", count: 198, revenue: 67000 },
         { service: "Launch Boat Services", count: 287, revenue: 98000 },
       ],
-    }
+    };
 
-    setReportData(mockReportData)
-  }, [router])
+    setReportData(mockReportData);
+  }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser")
-    router.push("/")
-  }
+    localStorage.removeItem("currentUser");
+    router.push("/");
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-    }).format(amount)
-  }
+    }).format(amount);
+  };
 
   if (!currentUser) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   if (!reportData) {
-    return <div>Loading report data...</div>
+    return <div>Loading report data...</div>;
   }
 
-  const totalPortCalls = reportData.portCallsByMonth.reduce((sum, item) => sum + item.count, 0)
-  const totalRevenue = reportData.portCallsByMonth.reduce((sum, item) => sum + item.revenue, 0)
+  const totalPortCalls = reportData.portCallsByMonth.reduce(
+    (sum, item) => sum + item.count,
+    0
+  );
+  const totalRevenue = reportData.portCallsByMonth.reduce(
+    (sum, item) => sum + item.revenue,
+    0
+  );
   const avgConversionRate =
-    (reportData.clientConversion.reduce((sum, item) => sum + item.secured / item.inquiries, 0) /
+    (reportData.clientConversion.reduce(
+      (sum, item) => sum + item.secured / item.inquiries,
+      0
+    ) /
       reportData.clientConversion.length) *
-    100
+    100;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -125,8 +191,12 @@ export default function Reports() {
                   <Anchor className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Reports & Analytics</h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Business intelligence dashboard</p>
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                    Reports & Analytics
+                  </h1>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Business intelligence dashboard
+                  </p>
                 </div>
               </div>
             </Link>
@@ -194,7 +264,9 @@ export default function Reports() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Port Calls</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Port Calls
+              </CardTitle>
               <Ship className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -207,11 +279,15 @@ export default function Reports() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Revenue
+              </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
+              <div className="text-2xl font-bold">
+                {formatCurrency(totalRevenue)}
+              </div>
               <p className="text-xs text-muted-foreground">
                 <span className="text-green-600">+8%</span> from last period
               </p>
@@ -220,11 +296,15 @@ export default function Reports() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Conversion Rate
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{avgConversionRate.toFixed(1)}%</div>
+              <div className="text-2xl font-bold">
+                {avgConversionRate.toFixed(1)}%
+              </div>
               <p className="text-xs text-muted-foreground">
                 <span className="text-green-600">+3%</span> from last period
               </p>
@@ -233,11 +313,15 @@ export default function Reports() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Vendors</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Active Vendors
+              </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{reportData.vendorPerformance.length}</div>
+              <div className="text-2xl font-bold">
+                {reportData.vendorPerformance.length}
+              </div>
               <p className="text-xs text-muted-foreground">
                 <span className="text-blue-600">2 new</span> this month
               </p>
@@ -263,26 +347,43 @@ export default function Reports() {
                     <BarChart3 className="h-5 w-5" />
                     <span>Port Calls Trend</span>
                   </CardTitle>
-                  <CardDescription>Monthly port call volume over time</CardDescription>
+                  <CardDescription>
+                    Monthly port call volume over time
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {reportData.portCallsByMonth.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center space-x-3">
-                          <div className="w-16 text-sm text-gray-500 dark:text-gray-400">{item.month}</div>
+                          <div className="w-16 text-sm text-gray-500 dark:text-gray-400">
+                            {item.month}
+                          </div>
                           <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 max-w-32">
                             <div
                               className="bg-blue-600 h-2 rounded-full"
                               style={{
-                                width: `${(item.count / Math.max(...reportData.portCallsByMonth.map((i) => i.count))) * 100}%`,
+                                width: `${
+                                  (item.count /
+                                    Math.max(
+                                      ...reportData.portCallsByMonth.map(
+                                        (i) => i.count
+                                      )
+                                    )) *
+                                  100
+                                }%`,
                               }}
                             ></div>
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="font-medium">{item.count}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">{formatCurrency(item.revenue)}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatCurrency(item.revenue)}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -297,14 +398,21 @@ export default function Reports() {
                     <PieChart className="h-5 w-5" />
                     <span>Port Distribution</span>
                   </CardTitle>
-                  <CardDescription>Port call distribution by location</CardDescription>
+                  <CardDescription>
+                    Port call distribution by location
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {reportData.portCallsByPort.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center space-x-3">
-                          <div className="w-20 text-sm font-medium">{item.port}</div>
+                          <div className="w-20 text-sm font-medium">
+                            {item.port}
+                          </div>
                           <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 max-w-32">
                             <div
                               className="bg-green-600 h-2 rounded-full"
@@ -314,7 +422,9 @@ export default function Reports() {
                         </div>
                         <div className="text-right">
                           <div className="font-medium">{item.count}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">{item.percentage}%</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {item.percentage}%
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -334,13 +444,20 @@ export default function Reports() {
                 <CardContent>
                   <div className="space-y-4">
                     {reportData.portCallsByMonth.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
                         <div>
                           <p className="font-medium">{item.month}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{item.count} port calls</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {item.count} port calls
+                          </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-lg">{formatCurrency(item.revenue)}</p>
+                          <p className="font-semibold text-lg">
+                            {formatCurrency(item.revenue)}
+                          </p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             {formatCurrency(item.revenue / item.count)} avg
                           </p>
@@ -361,13 +478,20 @@ export default function Reports() {
                     {reportData.servicePopularity
                       .sort((a, b) => b.revenue - a.revenue)
                       .map((item, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
                           <div>
                             <p className="font-medium">{item.service}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{item.count} requests</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {item.count} requests
+                            </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold">{formatCurrency(item.revenue)}</p>
+                            <p className="font-semibold">
+                              {formatCurrency(item.revenue)}
+                            </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                               {formatCurrency(item.revenue / item.count)} avg
                             </p>
@@ -384,7 +508,9 @@ export default function Reports() {
             <Card>
               <CardHeader>
                 <CardTitle>Client Conversion Analysis</CardTitle>
-                <CardDescription>Inquiry to secured port call conversion rates</CardDescription>
+                <CardDescription>
+                  Inquiry to secured port call conversion rates
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -393,31 +519,48 @@ export default function Reports() {
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-medium">{item.month}</h3>
                         <Badge variant="outline">
-                          {((item.secured / item.inquiries) * 100).toFixed(1)}% conversion
+                          {((item.secured / item.inquiries) * 100).toFixed(1)}%
+                          conversion
                         </Badge>
                       </div>
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400">Inquiries</p>
-                          <p className="font-semibold text-lg">{item.inquiries}</p>
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Inquiries
+                          </p>
+                          <p className="font-semibold text-lg">
+                            {item.inquiries}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400">Secured</p>
-                          <p className="font-semibold text-lg text-green-600">{item.secured}</p>
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Secured
+                          </p>
+                          <p className="font-semibold text-lg text-green-600">
+                            {item.secured}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400">Missed</p>
-                          <p className="font-semibold text-lg text-red-600">{item.missed}</p>
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Missed
+                          </p>
+                          <p className="font-semibold text-lg text-red-600">
+                            {item.missed}
+                          </p>
                         </div>
                       </div>
                       <div className="mt-3 flex space-x-1">
                         <div
                           className="bg-green-500 h-2 rounded-l"
-                          style={{ width: `${(item.secured / item.inquiries) * 100}%` }}
+                          style={{
+                            width: `${(item.secured / item.inquiries) * 100}%`,
+                          }}
                         ></div>
                         <div
                           className="bg-red-500 h-2 rounded-r"
-                          style={{ width: `${(item.missed / item.inquiries) * 100}%` }}
+                          style={{
+                            width: `${(item.missed / item.inquiries) * 100}%`,
+                          }}
                         ></div>
                       </div>
                     </div>
@@ -431,7 +574,9 @@ export default function Reports() {
             <Card>
               <CardHeader>
                 <CardTitle>Vendor Performance Analysis</CardTitle>
-                <CardDescription>Performance metrics for service providers</CardDescription>
+                <CardDescription>
+                  Performance metrics for service providers
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -443,23 +588,41 @@ export default function Reports() {
                           <h3 className="font-medium">{vendor.vendor}</h3>
                           <div className="flex items-center space-x-2">
                             <Badge variant="outline">{vendor.rating} ⭐</Badge>
-                            <Badge variant={vendor.successRate >= 95 ? "default" : "secondary"}>
+                            <Badge
+                              variant={
+                                vendor.successRate >= 95
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
                               {vendor.successRate}% success
                             </Badge>
                           </div>
                         </div>
                         <div className="grid grid-cols-3 gap-4 text-sm">
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400">Total Jobs</p>
-                            <p className="font-semibold text-lg">{vendor.jobs}</p>
+                            <p className="text-gray-500 dark:text-gray-400">
+                              Total Jobs
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {vendor.jobs}
+                            </p>
                           </div>
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400">Success Rate</p>
-                            <p className="font-semibold text-lg">{vendor.successRate}%</p>
+                            <p className="text-gray-500 dark:text-gray-400">
+                              Success Rate
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {vendor.successRate}%
+                            </p>
                           </div>
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400">Rating</p>
-                            <p className="font-semibold text-lg">{vendor.rating}/5.0</p>
+                            <p className="text-gray-500 dark:text-gray-400">
+                              Rating
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {vendor.rating}/5.0
+                            </p>
                           </div>
                         </div>
                         <div className="mt-3">
@@ -481,7 +644,9 @@ export default function Reports() {
             <Card>
               <CardHeader>
                 <CardTitle>Service Popularity & Revenue</CardTitle>
-                <CardDescription>Most requested services and their revenue contribution</CardDescription>
+                <CardDescription>
+                  Most requested services and their revenue contribution
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -491,20 +656,34 @@ export default function Reports() {
                       <div key={index} className="p-4 border rounded-lg">
                         <div className="flex items-center justify-between mb-3">
                           <h3 className="font-medium">{service.service}</h3>
-                          <Badge variant="outline">#{index + 1} most popular</Badge>
+                          <Badge variant="outline">
+                            #{index + 1} most popular
+                          </Badge>
                         </div>
                         <div className="grid grid-cols-3 gap-4 text-sm">
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400">Requests</p>
-                            <p className="font-semibold text-lg">{service.count}</p>
+                            <p className="text-gray-500 dark:text-gray-400">
+                              Requests
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {service.count}
+                            </p>
                           </div>
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400">Total Revenue</p>
-                            <p className="font-semibold text-lg">{formatCurrency(service.revenue)}</p>
+                            <p className="text-gray-500 dark:text-gray-400">
+                              Total Revenue
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {formatCurrency(service.revenue)}
+                            </p>
                           </div>
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400">Avg per Request</p>
-                            <p className="font-semibold text-lg">{formatCurrency(service.revenue / service.count)}</p>
+                            <p className="text-gray-500 dark:text-gray-400">
+                              Avg per Request
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {formatCurrency(service.revenue / service.count)}
+                            </p>
                           </div>
                         </div>
                         <div className="mt-3">
@@ -512,7 +691,15 @@ export default function Reports() {
                             <div
                               className="bg-purple-600 h-2 rounded-full"
                               style={{
-                                width: `${(service.count / Math.max(...reportData.servicePopularity.map((s) => s.count))) * 100}%`,
+                                width: `${
+                                  (service.count /
+                                    Math.max(
+                                      ...reportData.servicePopularity.map(
+                                        (s) => s.count
+                                      )
+                                    )) *
+                                  100
+                                }%`,
                               }}
                             ></div>
                           </div>
@@ -526,5 +713,5 @@ export default function Reports() {
         </Tabs>
       </div>
     </div>
-  )
+  );
 }
