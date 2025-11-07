@@ -156,7 +156,7 @@ export default function OtpPage() {
       <SuccessDialog open={showSuccess} onOk={handleSuccessOk} />
       <Card className="w-full max-w-md shadow-xl border border-[#232e45]">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white text-2xl font-semibold">
+          <CardTitle className="flex items-center gap-2 text-2xl font-semibold">
             <KeyRound className="w-5 h-5 text-primary" />
             Enter OTP
           </CardTitle>

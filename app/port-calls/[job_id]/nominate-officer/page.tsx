@@ -175,7 +175,7 @@ export default function NominateOfficerPage() {
     <div className="min-h-screen bg-background flex items-center justify-center">
       <Card className="w-full max-w-md shadow-xl border border-[#232e45]">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white text-2xl font-semibold">
+          <CardTitle className="flex items-center gap-2 text-2xl font-semibold">
             <UserCheck className="w-5 h-5" />
             Nominate Officer
           </CardTitle>
@@ -185,18 +185,20 @@ export default function NominateOfficerPage() {
           {step === "select" && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium mb-2 text-white">
+                <label className="block text-sm font-medium mb-2">
                   Select Nominated Officer
                 </label>
                 <div ref={dropdownRef} className="relative">
                   <button
                     type="button"
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded bg-[#232e45] text-white font-medium border border-[#232e45] focus:outline-none transition-all
-                    ${
-                      dropdownOpen
-                        ? "ring-2 ring-blue-500"
-                        : "hover:border-blue-500"
-                    }`}
+                    className={`
+      w-full flex items-center justify-between px-3 py-2 rounded
+      border focus:outline-none transition-all
+      bg-white border-gray-300 shadow-sm
+      text-gray-900
+      ${dropdownOpen ? "ring-2 ring-primary" : "hover:border-blue-400"}
+      dark:bg-[#232e45] dark:border-[#232e45] dark:text-white
+    `}
                     onClick={() => setDropdownOpen((v) => !v)}
                     disabled={loading}
                   >
@@ -205,17 +207,29 @@ export default function NominateOfficerPage() {
                         const user = users.find(
                           (u) => String(u.id) === selectedOfficer
                         );
-                        return user
-                          ? `${user.first_name} ${user.last_name} (${user.department}) [${user.email}]`
-                          : "-- Select Officer --";
+                        return user ? (
+                          <>
+                            <span className="font-medium">
+                              {user.first_name} {user.last_name}
+                            </span>{" "}
+                            <span className="text-xs text-gray-500 ml-1">
+                              ({user.department})
+                            </span>{" "}
+                            <span className="text-xs text-gray-400">
+                              [{user.email}]
+                            </span>
+                          </>
+                        ) : (
+                          "-- Select Officer --"
+                        );
                       })()
                     ) : (
-                      <span className="text-[#a3aed0]">
+                      <span className="text-gray-400">
                         -- Select Officer --
                       </span>
                     )}
                     <ChevronDown
-                      className="w-5 h-5 ml-2 text-[#a3aed0] transition-transform"
+                      className="w-5 h-5 ml-2 text-gray-400 transition-transform"
                       style={{
                         transform: dropdownOpen
                           ? "rotate(180deg)"
@@ -224,62 +238,58 @@ export default function NominateOfficerPage() {
                     />
                   </button>
                   {dropdownOpen && (
-                    <div className="absolute left-0 top-full z-10 w-full mt-2 bg-background border border-[#232e45] rounded shadow-lg animate-fadeIn">
+                    <div
+                      className={`
+      absolute left-0 top-full z-10 w-full mt-2
+      bg-white border border-gray-300 rounded shadow-lg animate-fadeIn
+      max-h-60 overflow-y-auto
+      dark:bg-[#232e45] dark:border-[#232e45]
+    `}
+                    >
                       {users.length > 0 ? (
-                        users.map((user) => (
-                          <button
-                            type="button"
-                            key={user.id}
-                            className={`w-full text-left px-4 py-2 flex items-center gap-2
-                            hover:bg-[#232e45] hover:text-white transition-all
-                            ${
-                              selectedOfficer === String(user.id)
-                                ? "bg-[#232e45] text-blue-400"
-                                : "text-[#a3aed0]"
-                            }
-                          `}
-                            onClick={() => {
-                              setSelectedOfficer(String(user.id));
-                              setDropdownOpen(false);
-                            }}
-                          >
-                            <UserCheck className="w-4 h-4" />
-                            <span className="font-medium">
-                              {user.first_name} {user.last_name}
-                            </span>
-                            <span className="text-xs text-[#6e7ea5]">
-                              {user.department}
-                            </span>
-                            <span className="text-xs text-[#888]">
-                              {user.email}
-                            </span>
-                            {selectedOfficer === String(user.id) && (
-                              <Check className="w-4 h-4 ml-auto text-blue-400" />
-                            )}
-                          </button>
-                        ))
+                        users.map((user) => {
+                          const isSelected =
+                            selectedOfficer === String(user.id);
+                          return (
+                            <button
+                              type="button"
+                              key={user.id}
+                              className={`
+                w-full text-left px-4 py-2 flex items-center gap-2 transition-all
+                ${
+                  isSelected
+                    ? "bg-blue-50 text-blue-900 font-medium dark:bg-blue-900/40 dark:text-blue-100"
+                    : "text-gray-900 hover:bg-blue-50 hover:text-blue-900 dark:text-gray-200 dark:hover:bg-blue-900/20"
+                }
+              `}
+                              onClick={() => {
+                                setSelectedOfficer(String(user.id));
+                                setDropdownOpen(false);
+                              }}
+                            >
+                              <UserCheck className="w-4 h-4" />
+                              <span className="font-medium">
+                                {user.first_name} {user.last_name}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {user.department}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {user.email}
+                              </span>
+                              {isSelected && (
+                                <Check className="w-4 h-4 ml-auto text-blue-500" />
+                              )}
+                            </button>
+                          );
+                        })
                       ) : (
-                        <div className="px-4 py-2 text-[#a3aed0]">
+                        <div className="px-4 py-2 text-gray-400">
                           No users found
                         </div>
                       )}
                     </div>
                   )}
-                  <style jsx>{`
-                    .animate-fadeIn {
-                      animation: fadeIn 0.2s ease;
-                    }
-                    @keyframes fadeIn {
-                      from {
-                        opacity: 0;
-                        transform: translateY(-10px);
-                      }
-                      to {
-                        opacity: 1;
-                        transform: translateY(0);
-                      }
-                    }
-                  `}</style>
                 </div>
               </div>
               <div className="flex flex-col gap-2 mt-4">
@@ -299,9 +309,7 @@ export default function NominateOfficerPage() {
             <div className="space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <KeyRound className="w-5 h-5 text-primary" />
-                <span className="text-lg font-semibold text-white">
-                  Enter OTP
-                </span>
+                <span className="text-lg font-semibold">Enter OTP</span>
                 <Badge variant="outline" className="ml-auto">
                   Sent to your Email
                 </Badge>
@@ -336,7 +344,7 @@ export default function NominateOfficerPage() {
                 You will be redirected to the Port Calls page.
               </p>
               <Button
-                className="mt-4 px-6 py-2 bg-primary text-white rounded shadow"
+                className="mt-4 px-6 py-2 bg-primary rounded shadow"
                 onClick={handleSuccessOk}
               >
                 Okay
