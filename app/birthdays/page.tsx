@@ -261,12 +261,12 @@ export default function ClientBirthdayAlertsPage() {
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Phone className="h-3 w-3" /> {c.phone_number}
                       </span>
-                      <Button
+                      {/* <Button
                         size="sm"
                         className="bg-primary text-white hover:bg-primary/90"
                       >
                         Send Wishes
-                      </Button>
+                      </Button> */}
                     </div>
                   </Card>
                 ))}
