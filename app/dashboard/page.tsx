@@ -35,6 +35,7 @@ import {
   ClipboardCheck,
   Wrench,
   Gauge,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -324,6 +325,7 @@ export default function Dashboard() {
           disabled: true,
         },
         { href: "/documents", icon: FileText, label: "Document Management" },
+        { href: "/emails", icon: Mail, label: "Emails Management" },
       ],
     },
     {

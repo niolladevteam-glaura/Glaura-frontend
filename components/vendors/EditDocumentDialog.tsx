@@ -134,17 +134,18 @@ export const EditDocumentDialog = ({
     if (!document) return;
     setSaving(true);
 
-    // Only update approval for Udith or Amal
     const payload = {
+      vendorID: document.vendorID, // <---- Add this!
       url: fileUrl || document.url,
       expired_at: expiredAt,
       remarks,
       approved_by_udith: isUdith ? approved : document.approved_by_udith,
       approved_by_amal: isAmal ? approved : document.approved_by_amal,
     };
+
     try {
       const res = await fetch(
-        `${API_BASE_URL}/vendor/document/${document.id}`,
+        `${API_BASE_URL}/vendor/document/${document.documentID}`, // <--- If your API expects documentID (string), not id (number)
         {
           method: "PUT",
           headers: {
