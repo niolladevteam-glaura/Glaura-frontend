@@ -37,7 +37,6 @@ interface DocumentType {
 interface CurrentUser {
   name: string;
   email: string;
-  // ...other fields if needed
 }
 
 interface EditDocumentDialogProps {
@@ -46,6 +45,7 @@ interface EditDocumentDialogProps {
   document: DocumentType | null;
   currentUser: CurrentUser | null;
   onUpdated?: (doc: DocumentType) => void;
+  documentTypes: { documentID: string; document_name: string }[]; // <-- NEW PROP
 }
 
 export const EditDocumentDialog = ({
@@ -54,6 +54,7 @@ export const EditDocumentDialog = ({
   document,
   currentUser,
   onUpdated,
+  documentTypes = [],
 }: EditDocumentDialogProps) => {
   const [fileUrl, setFileUrl] = useState(document?.url || "");
   const [fileUploading, setFileUploading] = useState(false);
@@ -77,6 +78,12 @@ export const EditDocumentDialog = ({
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
+  // Helper to get document name by ID
+  function getDocumentName(docId: string): string {
+    const found = documentTypes.find((d) => d.documentID === docId);
+    return found ? found.document_name : docId;
+  }
+
   useEffect(() => {
     if (open && document) {
       setFileUrl(document.url);
@@ -92,6 +99,7 @@ export const EditDocumentDialog = ({
       setFileUploading(false);
       setSaving(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, document, isUdith, isAmal]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,7 +143,7 @@ export const EditDocumentDialog = ({
     setSaving(true);
 
     const payload = {
-      vendorID: document.vendorID, // <---- Add this!
+      vendorID: document.vendorID,
       url: fileUrl || document.url,
       expired_at: expiredAt,
       remarks,
@@ -145,7 +153,7 @@ export const EditDocumentDialog = ({
 
     try {
       const res = await fetch(
-        `${API_BASE_URL}/vendor/document/${document.documentID}`, // <--- If your API expects documentID (string), not id (number)
+        `${API_BASE_URL}/vendor/document/${document.documentID}`,
         {
           method: "PUT",
           headers: {
@@ -207,7 +215,7 @@ export const EditDocumentDialog = ({
     </div>
   );
 
-  // Only show approve/reject for Udith or Amal (not both), for those users only
+  // Only show approve/reject for Udith or Amal
   let approvalControls = null;
   if (isUdith || isAmal) {
     approvalControls = (
@@ -220,7 +228,7 @@ export const EditDocumentDialog = ({
           size="sm"
         >
           <CheckCircle className="w-4 h-4 mr-1" />
-          Approve {approverLabel}
+          Approve
         </Button>
         <Button
           variant={!approved ? "default" : "ghost"}
@@ -230,7 +238,7 @@ export const EditDocumentDialog = ({
           size="sm"
         >
           <XCircle className="w-4 h-4 mr-1" />
-          Reject {approverLabel}
+          Reject
         </Button>
       </div>
     );
@@ -248,9 +256,9 @@ export const EditDocumentDialog = ({
         {document ? (
           <div className="space-y-5">
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Document ID</label>
+              <label className="text-sm font-medium">Document Name</label>
               <div className="font-mono text-muted-foreground text-xs px-2 py-1 bg-muted rounded-md">
-                {document.documentID}
+                {getDocumentName(document.documentID)}
               </div>
             </div>
             <div className="flex flex-col gap-2">

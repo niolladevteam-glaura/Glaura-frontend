@@ -20,7 +20,15 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Eye, Edit, ArrowLeft, FileText } from "lucide-react";
+import {
+  AlertTriangle,
+  Eye,
+  Edit,
+  ArrowLeft,
+  FileText,
+  XCircle,
+  CheckCircle,
+} from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import EditDocumentDialog from "@/components/vendors/EditDocumentDialog";
 import { Toaster, toast } from "sonner";
@@ -94,6 +102,39 @@ export default function VendorDocumentsPage() {
   const [selectedDocument, setSelectedDocument] = useState<DocumentType | null>(
     null
   );
+  const [documentTypes, setDocumentTypes] = useState<
+    { documentID: string; document_name: string }[]
+  >([]);
+
+  //Load the documents list with name and id
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/vendor/document/list`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setDocumentTypes(data.data);
+        }
+      } catch {
+        setDocumentTypes([]);
+      }
+    };
+    fetchTypes();
+  }, []);
+
+  //helper for the match document id with name
+  function getDocumentName(docId: string): string {
+    const found = documentTypes.find((d) => d.documentID === docId);
+    return found ? found.document_name : docId;
+  }
 
   useEffect(() => {
     // Load current user
@@ -128,16 +169,11 @@ export default function VendorDocumentsPage() {
         setDocuments(data.data);
 
         // Updated: Calculate expiry alerts for sidebar to show
-        // - Expired docs (daysUntil < 0, status "Expired")
-        // - Docs expiring within next 7 days (daysUntil >= 0 && daysUntil <= 7, status "Expiring Soon")
-        // - Countdown day-by-day, show "Expired" for expired
-
         const today = new Date();
         const alerts: ExpiryAlert[] = data.data
           .filter((doc: DocumentType) => doc.expired_at)
           .map((doc: DocumentType) => {
             const expiry = new Date(doc.expired_at);
-            // Use floor on time so at 11:59pm same day is still 0 days left until expiry
             const daysUntil = Math.ceil(
               (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
             );
@@ -146,11 +182,11 @@ export default function VendorDocumentsPage() {
               status = "Expired";
             } else if (daysUntil <= 7 && daysUntil >= 0) {
               status = "Expiring Soon";
-            } // others do not show in expiryAlerts
+            }
             if (!status) return null;
             return {
               documentId: doc.documentID,
-              documentName: doc.remarks || doc.documentID || "",
+              documentName: getDocumentName(doc.documentID),
               expiryDate: expiry,
               daysUntil,
               status,
@@ -158,7 +194,6 @@ export default function VendorDocumentsPage() {
           })
           .filter(Boolean)
           .sort((a: ExpiryAlert, b: ExpiryAlert) => {
-            // Expired docs first, then ascending countdown
             if (a.status === "Expired" && b.status !== "Expired") return -1;
             if (b.status === "Expired" && a.status !== "Expired") return 1;
             return a.daysUntil - b.daysUntil;
@@ -202,6 +237,63 @@ export default function VendorDocumentsPage() {
     fetchDocuments();
   };
 
+  // Approve/Reject logic
+  const handleApprove = async (doc: DocumentType) => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/vendor/document/${doc.documentID}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          },
+          body: JSON.stringify({
+            ...doc,
+            status: "valid",
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Document approved!");
+        fetchDocuments();
+      } else {
+        toast.error(data.message || "Approval failed.");
+      }
+    } catch {
+      toast.error("Approval failed.");
+    }
+  };
+
+  const handleReject = async (doc: DocumentType) => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/vendor/document/${doc.documentID}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          },
+          body: JSON.stringify({
+            ...doc,
+            status: "rejected",
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Document rejected!");
+        fetchDocuments();
+      } else {
+        toast.error(data.message || "Rejection failed.");
+      }
+    } catch {
+      toast.error("Rejection failed.");
+    }
+  };
+
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -209,6 +301,11 @@ export default function VendorDocumentsPage() {
       </div>
     );
   }
+
+  // Check if user should see Approve/Reject
+  const canApproveOrReject =
+    currentUser.email === "udith@greeklanka.com" ||
+    currentUser.email === "amal@greeklanka.com";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -218,6 +315,7 @@ export default function VendorDocumentsPage() {
         document={selectedDocument}
         currentUser={currentUser}
         onUpdated={handleEditUpdated}
+        documentTypes={documentTypes}
       />
       {/* Header - same as VendorManagement */}
       <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
@@ -285,7 +383,7 @@ export default function VendorDocumentsPage() {
                       >
                         <div className="flex items-center justify-between mb-1">
                           <p className="font-medium text-sm">
-                            {alert.documentName}
+                            {getDocumentName(alert.documentId)}
                           </p>
                           <Badge
                             variant="outline"
@@ -322,7 +420,7 @@ export default function VendorDocumentsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Document ID</TableHead>
+                      <TableHead>Document Name</TableHead>
                       <TableHead>Remarks</TableHead>
                       <TableHead>Expiry Date</TableHead>
                       <TableHead>Status</TableHead>
@@ -332,20 +430,22 @@ export default function VendorDocumentsPage() {
                   <TableBody>
                     {loading ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center">
+                        <TableCell colSpan={6} className="text-center">
                           Loading...
                         </TableCell>
                       </TableRow>
                     ) : documents.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center">
+                        <TableCell colSpan={6} className="text-center">
                           No documents found.
                         </TableCell>
                       </TableRow>
                     ) : (
                       documents.map((doc) => (
                         <TableRow key={doc.id}>
-                          <TableCell>{doc.documentID}</TableCell>
+                          <TableCell>
+                            {getDocumentName(doc.documentID)}
+                          </TableCell>
                           <TableCell>{doc.remarks}</TableCell>
                           <TableCell>
                             {doc.expired_at
@@ -369,17 +469,39 @@ export default function VendorDocumentsPage() {
                                 size="sm"
                                 onClick={() => handleView(doc)}
                               >
-                                <Eye className="h-4 w-4 mr-1" />
-                                View
+                                <Eye className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleEdit(doc)}
                               >
-                                <Edit className="h-4 w-4 mr-1" />
-                                Edit
+                                <Edit className="h-4 w-4" />
                               </Button>
+                              {canApproveOrReject && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleApprove(doc)}
+                                    disabled={doc.status === "valid"}
+                                    className="text-green-700 border-green-200"
+                                    title="Approve"
+                                  >
+                                    <CheckCircle className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleReject(doc)}
+                                    disabled={doc.status === "rejected"}
+                                    className="text-purple-700 border-purple-200"
+                                    title="Reject"
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

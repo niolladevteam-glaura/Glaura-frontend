@@ -157,6 +157,7 @@ export default function AddVendorDialog({
   const [documentList, setDocumentList] = useState<DocumentType[]>([]);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const hasLoadedDraft = useRef(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -212,6 +213,7 @@ export default function AddVendorDialog({
 
   useEffect(() => {
     if (!open) {
+      setSubmitAttempted(false);
       hasLoadedDraft.current = false;
       localStorage.removeItem(VENDOR_FORM_DRAFT_KEY);
       setVendorForm(null);
@@ -406,17 +408,16 @@ export default function AddVendorDialog({
           att.type.toLowerCase().includes("insurance certificate") ||
           att.type.toLowerCase().includes("insurance certificates")
         ) {
-          return att.file
-            ? !(att.file && att.expiryDate && att.remarks)
-            : false;
+          return att.file ? !(att.file && att.expiryDate) : false;
         }
-        return !(att.file && att.expiryDate && att.remarks);
+        return !(att.file && att.expiryDate);
       })
     );
   }, [vendorForm?.attachments]);
 
   // Save vendor handler
   const handleSaveVendor = async () => {
+    setSubmitAttempted(true);
     if (!vendorForm) return;
     if (attachmentErrors.some((err) => err)) {
       alert(
@@ -761,7 +762,7 @@ export default function AddVendorDialog({
                         </div>
                         {attachmentErrors[idx] && (
                           <p className="text-xs text-red-600 mt-2">
-                            Attachment, expiry date, and remarks required.
+                            Attachment and expiry date required.
                           </p>
                         )}
                       </div>
