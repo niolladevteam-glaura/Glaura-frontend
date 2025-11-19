@@ -332,7 +332,7 @@ export default function Dashboard() {
       heading: "Disbursement Department",
       items: [
         ...(canCreatePortCall()
-          ? [{ href: "/port-calls/new", icon: Plus, label: "New Port Call" }]
+          ? [{ href: "/port-calls/new", icon: Plus, label: "New Port Calls" }]
           : []),
         { href: "/customers", icon: Building2, label: "Customers" },
         { href: "/vessels", icon: Ship, label: "Vessel Management" },
