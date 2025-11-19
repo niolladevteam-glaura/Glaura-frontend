@@ -298,7 +298,6 @@ export default function Dashboard() {
           ? [{ href: "/users", icon: Users, label: "User Management" }]
           : []),
         { href: "/pic-management", icon: UserCog, label: "PIC Management" },
-        { href: "/services", icon: Wrench, label: "Services Management" },
       ],
     },
     {
@@ -306,6 +305,8 @@ export default function Dashboard() {
       items: [
         { href: "/port-calls", icon: Anchor, label: "Active Port Calls" },
         { href: "/all-services", icon: ListChecks, label: "Active Services" },
+        { href: "/services", icon: Wrench, label: "Services Management" },
+        { href: "/emails", icon: Mail, label: "Email" },
         {
           href: "/husbandry-services",
           icon: ClipboardList,
@@ -325,7 +326,6 @@ export default function Dashboard() {
           disabled: true,
         },
         { href: "/documents", icon: FileText, label: "Document Management" },
-        { href: "/emails", icon: Mail, label: "Emails Management" },
       ],
     },
     {
@@ -336,6 +336,7 @@ export default function Dashboard() {
           : []),
         { href: "/customers", icon: Building2, label: "Customers" },
         { href: "/vessels", icon: Ship, label: "Vessel Management" },
+        { href: "/services", icon: Wrench, label: "Services Management" },
         { href: "/tasks", icon: ListTodo, label: "Task Management" },
         { href: "/documents", icon: FileText, label: "Document Management" },
         {
