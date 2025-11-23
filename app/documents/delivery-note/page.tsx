@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Plus, Trash2, Anchor } from "lucide-react";
+import { Plus, Trash2, Anchor, ArrowLeft } from "lucide-react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -218,7 +218,16 @@ export default function DeliveryNoteGeneratePage() {
       <header className="glass-effect border-b px-2 py-2 sm:px-4 sm:py-3 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
-            <Link href="/dashboard" className="flex-shrink-0"></Link>
+            <Link href="/documents" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-0 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
+            </Link>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="bg-purple-600 p-2 rounded-lg">
                 <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
