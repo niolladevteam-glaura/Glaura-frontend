@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Plus, Trash2, Anchor, LogOut } from "lucide-react";
+import { Plus, Trash2, Anchor, LogOut, ArrowLeft } from "lucide-react";
 
 // IMPORT Textarea
 import { Textarea } from "@/components/ui/textarea";
@@ -54,7 +54,7 @@ export default function PdaGeneratePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [date, setDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [ClientName, setClientName] = useState<string>("");
   const [ClientAddress, setClientAddress] = useState<string>("");
@@ -126,7 +126,7 @@ export default function PdaGeneratePage() {
     const updatedInvoiceData = invoiceData.map((table) => {
       const total = table.tableRows.reduce(
         (sum, row) => sum + (parseFloat(row.amount as string) || 0),
-        0
+        0,
       );
       return { ...table, tableTotal: total };
     });
@@ -134,7 +134,7 @@ export default function PdaGeneratePage() {
 
     const totalAll = updatedInvoiceData.reduce(
       (sum, table) => sum + table.tableTotal,
-      0
+      0,
     );
     setInvoiceTotal(totalAll);
     // eslint-disable-next-line
@@ -154,15 +154,15 @@ export default function PdaGeneratePage() {
 
   const removeInvoiceTable = (index: number) => {
     setInvoiceData((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
   };
 
   const handleTableHeaderChange = (index: number, header: string) => {
     setInvoiceData((prev) =>
       prev.map((table, i) =>
-        i === index ? { ...table, tableHeader: header } : table
-      )
+        i === index ? { ...table, tableHeader: header } : table,
+      ),
     );
   };
 
@@ -170,7 +170,7 @@ export default function PdaGeneratePage() {
     tableIdx: number,
     rowIdx: number,
     field: keyof InvoiceRow,
-    value: string
+    value: string,
   ) => {
     setInvoiceData((prev) =>
       prev.map((table, i) =>
@@ -178,11 +178,11 @@ export default function PdaGeneratePage() {
           ? {
               ...table,
               tableRows: table.tableRows.map((row, ri) =>
-                ri === rowIdx ? { ...row, [field]: value } : row
+                ri === rowIdx ? { ...row, [field]: value } : row,
               ),
             }
-          : table
-      )
+          : table,
+      ),
     );
   };
 
@@ -202,8 +202,8 @@ export default function PdaGeneratePage() {
                 },
               ],
             }
-          : table
-      )
+          : table,
+      ),
     );
   };
 
@@ -223,8 +223,8 @@ export default function PdaGeneratePage() {
                       }))
                   : table.tableRows,
             }
-          : table
-      )
+          : table,
+      ),
     );
   };
 
@@ -289,7 +289,7 @@ export default function PdaGeneratePage() {
       const blobUrl = window.URL.createObjectURL(blob);
       window.open(blobUrl, "_blank");
       setSuccess(
-        "PDA Document generated successfully! PDF should open/download automatically."
+        "PDA Document generated successfully! PDF should open/download automatically.",
       );
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -317,7 +317,16 @@ export default function PdaGeneratePage() {
       <header className="glass-effect border-b px-2 py-2 sm:px-4 sm:py-3 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
-            <Link href="/dashboard" className="flex-shrink-0"></Link>
+            <Link href="/documents" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-0 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
+            </Link>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="bg-yellow-500 p-2 rounded-lg">
                 <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
@@ -454,7 +463,6 @@ export default function PdaGeneratePage() {
                     type="datetime-local"
                     value={arraivalDate}
                     onChange={(e) => setArraivalDate(e.target.value)}
-                    required
                   />
                 </div>
                 <div>
@@ -465,7 +473,6 @@ export default function PdaGeneratePage() {
                     type="datetime-local"
                     value={departureDate}
                     onChange={(e) => setDepartureDate(e.target.value)}
-                    required
                   />
                 </div>
                 <div className="sm:col-span-2">
@@ -544,7 +551,7 @@ export default function PdaGeneratePage() {
                                       tableIdx,
                                       rowIdx,
                                       "details",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   required
@@ -561,7 +568,7 @@ export default function PdaGeneratePage() {
                                       tableIdx,
                                       rowIdx,
                                       "amount",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   required
@@ -580,7 +587,7 @@ export default function PdaGeneratePage() {
                                       tableIdx,
                                       rowIdx,
                                       "remarks",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="w-full"
