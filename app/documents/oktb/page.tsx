@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Plus, Trash2, Anchor } from "lucide-react";
+import { Plus, Trash2, Anchor, ArrowLeft } from "lucide-react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -88,7 +88,7 @@ export default function OKTBPage() {
 
   // Form state
   const [date, setDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [principle, setPrinciple] = useState<string>("");
   const [vessel, setVessel] = useState<string>("");
@@ -175,7 +175,7 @@ export default function OKTBPage() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {
@@ -197,7 +197,7 @@ export default function OKTBPage() {
     if (!selectedCrewServiceID) return;
     // Find the crew change in crewServices array
     const service = crewServices.find(
-      (cs) => cs.Crw_Chg_Serv_id === selectedCrewServiceID
+      (cs) => cs.Crw_Chg_Serv_id === selectedCrewServiceID,
     );
     if (!service) return;
 
@@ -221,7 +221,7 @@ export default function OKTBPage() {
               passport_number: "",
               eTicketNo: "",
             },
-          ]
+          ],
     );
     setFlights(
       service.crewFlights && service.crewFlights.length > 0
@@ -248,7 +248,7 @@ export default function OKTBPage() {
               flight_from: "",
               flight_to: "",
             },
-          ]
+          ],
     );
   }, [selectedCrewServiceID, crewServices]);
 
@@ -256,10 +256,10 @@ export default function OKTBPage() {
   const handleCrewChange = (
     index: number,
     field: keyof Crew,
-    value: string
+    value: string,
   ) => {
     setCrew((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c))
+      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)),
     );
   };
   const addCrew = () =>
@@ -275,17 +275,17 @@ export default function OKTBPage() {
     ]);
   const removeCrew = (index: number) =>
     setCrew((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
   // Flights dynamic handlers
   const handleFlightChange = (
     index: number,
     field: keyof Flight,
-    value: string
+    value: string,
   ) => {
     setFlights((prev) =>
-      prev.map((f, i) => (i === index ? { ...f, [field]: value } : f))
+      prev.map((f, i) => (i === index ? { ...f, [field]: value } : f)),
     );
   };
   const addFlight = () =>
@@ -304,7 +304,7 @@ export default function OKTBPage() {
     ]);
   const removeFlight = (index: number) =>
     setFlights((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
   // Form submit with token
@@ -353,7 +353,7 @@ export default function OKTBPage() {
       const blobUrl = window.URL.createObjectURL(blob);
       window.open(blobUrl, "_blank");
       setSuccess(
-        "OKTB Document generated successfully! PDF should open/download automatically."
+        "OKTB Document generated successfully! PDF should open/download automatically.",
       );
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -371,7 +371,16 @@ export default function OKTBPage() {
       <header className="glass-effect border-b px-2 py-2 sm:px-4 sm:py-3 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
-            <Link href="/dashboard" className="flex-shrink-0"></Link>
+            <Link href="/documents" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-0 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
+            </Link>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="bg-primary p-2 rounded-xl flex-shrink-0">
                 <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
@@ -442,7 +451,7 @@ export default function OKTBPage() {
                       setJobId(e.target.value);
                       setSelectedCrewServiceID("");
                     }}
-                    placeholder="Enter job id to autofill"
+                    placeholder="Enter job id"
                   />
                 </div>
                 {crewServices.length > 0 && (
@@ -520,7 +529,6 @@ export default function OKTBPage() {
                   <Input
                     value={bookingReference}
                     onChange={(e) => setBookingReference(e.target.value)}
-                    required
                   />
                 </div>
                 <div>
@@ -530,7 +538,6 @@ export default function OKTBPage() {
                   <Input
                     value={airLinePNR}
                     onChange={(e) => setAirLinePNR(e.target.value)}
-                    required
                   />
                 </div>
               </div>
@@ -665,7 +672,7 @@ export default function OKTBPage() {
                         handleFlightChange(
                           i,
                           "flight_depature_date",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       required
@@ -678,7 +685,7 @@ export default function OKTBPage() {
                         handleFlightChange(
                           i,
                           "flight_depature_time",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       required
