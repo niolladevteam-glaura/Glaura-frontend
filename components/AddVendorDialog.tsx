@@ -251,7 +251,7 @@ export default function AddVendorDialog({
               },
             ],
           }
-        : prev
+        : prev,
     );
   };
 
@@ -274,7 +274,7 @@ export default function AddVendorDialog({
             ...prev,
             pics: (prev.pics || []).filter((_, i) => i !== index),
           }
-        : prev
+        : prev,
     );
   };
 
@@ -297,7 +297,7 @@ export default function AddVendorDialog({
   const updatePICContactNumber = (
     picIndex: number,
     contactIndex: number,
-    value: string
+    value: string,
   ) => {
     setVendorForm((prev) => {
       if (!prev) return prev;
@@ -316,7 +316,7 @@ export default function AddVendorDialog({
       ].contactNumbers.filter((_, i) => i !== contactIndex);
       updatedPics[picIndex].contactTypes = updatedPics[picIndex].contactTypes
         ? updatedPics[picIndex].contactTypes!.filter(
-            (_, i) => i !== contactIndex
+            (_, i) => i !== contactIndex,
           )
         : [];
       return { ...prev, pics: updatedPics };
@@ -339,7 +339,7 @@ export default function AddVendorDialog({
   const updatePICEmail = (
     picIndex: number,
     emailIndex: number,
-    value: string
+    value: string,
   ) => {
     setVendorForm((prev) => {
       if (!prev) return prev;
@@ -354,7 +354,7 @@ export default function AddVendorDialog({
       if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails = updatedPics[picIndex].emails.filter(
-        (_, i) => i !== emailIndex
+        (_, i) => i !== emailIndex,
       );
       updatedPics[picIndex].emailTypes = updatedPics[picIndex].emailTypes
         ? updatedPics[picIndex].emailTypes!.filter((_, i) => i !== emailIndex)
@@ -396,7 +396,7 @@ export default function AddVendorDialog({
 
   // Service filter
   const filteredServiceCategories = serviceCategories.filter((cat) =>
-    cat.toLowerCase().includes(serviceSearchTerm.toLowerCase())
+    cat.toLowerCase().includes(serviceSearchTerm.toLowerCase()),
   );
 
   // Validation for attachments
@@ -411,7 +411,7 @@ export default function AddVendorDialog({
           return att.file ? !(att.file && att.expiryDate) : false;
         }
         return !(att.file && att.expiryDate);
-      })
+      }),
     );
   }, [vendorForm?.attachments]);
 
@@ -421,7 +421,7 @@ export default function AddVendorDialog({
     if (!vendorForm) return;
     if (attachmentErrors.some((err) => err)) {
       alert(
-        "Please fill all required attachment fields, including file, expiry date, and remarks."
+        "Please fill all required attachment fields, including file, expiry date, and remarks.",
       );
       return;
     }
@@ -442,7 +442,7 @@ export default function AddVendorDialog({
             return att;
           }
           return att;
-        })
+        }),
       );
 
       // 2. Prepare documents array for payload
@@ -550,7 +550,7 @@ export default function AddVendorDialog({
                 value={vendorForm.name}
                 onChange={(e) =>
                   setVendorForm((prev) =>
-                    prev ? { ...prev, name: e.target.value } : prev
+                    prev ? { ...prev, name: e.target.value } : prev,
                   )
                 }
                 placeholder="Enter company name"
@@ -566,7 +566,7 @@ export default function AddVendorDialog({
                 value={vendorForm.company_type}
                 onChange={(e) =>
                   setVendorForm((prev) =>
-                    prev ? { ...prev, company_type: e.target.value } : prev
+                    prev ? { ...prev, company_type: e.target.value } : prev,
                   )
                 }
                 placeholder="e.g., Launch Boat Operator"
@@ -582,7 +582,7 @@ export default function AddVendorDialog({
                 value={vendorForm.address}
                 onChange={(e) =>
                   setVendorForm((prev) =>
-                    prev ? { ...prev, address: e.target.value } : prev
+                    prev ? { ...prev, address: e.target.value } : prev,
                   )
                 }
                 placeholder="Enter company address"
@@ -606,7 +606,7 @@ export default function AddVendorDialog({
                           ? (data as any).dialCode
                           : "");
                       setVendorForm((prev) =>
-                        prev ? { ...prev, phoneCountryCode: dial } : prev
+                        prev ? { ...prev, phoneCountryCode: dial } : prev,
                       );
                     }}
                   />
@@ -616,7 +616,7 @@ export default function AddVendorDialog({
                   value={vendorForm.phoneNumber}
                   onChange={(e) =>
                     setVendorForm((prev) =>
-                      prev ? { ...prev, phoneNumber: e.target.value } : prev
+                      prev ? { ...prev, phoneNumber: e.target.value } : prev,
                     )
                   }
                   placeholder="112223344"
@@ -633,7 +633,7 @@ export default function AddVendorDialog({
                 value={vendorForm.email}
                 onChange={(e) =>
                   setVendorForm((prev) =>
-                    prev ? { ...prev, email: e.target.value } : prev
+                    prev ? { ...prev, email: e.target.value } : prev,
                   )
                 }
                 placeholder="email@company.com"
@@ -678,14 +678,14 @@ export default function AddVendorDialog({
                               ? {
                                   ...prev,
                                   services: vendorForm.services.includes(
-                                    category
+                                    category,
                                   )
                                     ? vendorForm.services.filter(
-                                        (c) => c !== category
+                                        (c) => c !== category,
                                       )
                                     : [...vendorForm.services, category],
                                 }
-                              : prev
+                              : prev,
                           )
                         }
                         className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
@@ -716,6 +716,30 @@ export default function AddVendorDialog({
                 <FileText className="h-5 w-5" />
                 Required Attachments
               </h3>
+              <p
+                className="bg-[#FA4812] isolate gap-2 relative before:absolute before:inset-0 before:rounded-[6px] before:bg-[linear-gradient(180deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0)_50%)]
+        items-center   mb-2 inline-flex  tracking-tight border border-[#FA4812] dark:border-none py-2  text-white  px-3 rounded-[6px] shadow-[0px_1px_0px_rgba(255,255,255,0.12)_inset,0px_2px_5px_rgba(0,0,0,0.20)] text-sm  "
+              >
+                <span>
+                  <svg
+                    width="15"
+                    height="13"
+                    viewBox="0 0 15 13"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M7.08891 5.43092V7.76426M7.08891 9.43092V9.42426M6.51364 1.07973L0.843394 10.7607C0.583088 11.2051 0.903594 11.7643 1.41865 11.7643H12.7592C13.2742 11.7643 13.5947 11.2051 13.3344 10.7607L7.66417 1.07973C7.40664 0.64009 6.77117 0.64009 6.51364 1.07973ZM7.25557 9.43092C7.25557 9.52299 7.18097 9.59759 7.08891 9.59759C6.99684 9.59759 6.92224 9.52299 6.92224 9.43092C6.92224 9.33886 6.99684 9.26426 7.08891 9.26426C7.18097 9.26426 7.25557 9.33886 7.25557 9.43092Z"
+                      stroke="white"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+                Max upload size is 5MB
+              </p>
+
+
               <div className="space-y-6">
                 {vendorForm.attachments.map((att, idx) => (
                   <div
@@ -726,21 +750,16 @@ export default function AddVendorDialog({
                       <div className="flex-1">
                         <Label className="font-semibold mb-2 block">
                           {idx + 1}. {att.type}
-                          <span className="text-red-600 ml-1">*</span>
+                          {/*<span className="text-red-600 ml-1">*</span>*/}
                         </Label>
                         <div className="flex items-center gap-3 mt-2">
                           <Input
                             type="file"
-                            required={
-                              !att.type
-                                .toLowerCase()
-                                .includes("insurance certificate")
-                            }
                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                             onChange={(e) =>
                               handleAttachmentFile(
                                 idx,
-                                e.target.files?.[0] || null
+                                e.target.files?.[0] || null,
                               )
                             }
                           />
@@ -760,11 +779,11 @@ export default function AddVendorDialog({
                             </a>
                           )}
                         </div>
-                        {attachmentErrors[idx] && (
+                        {/*{attachmentErrors[idx] && (
                           <p className="text-xs text-red-600 mt-2">
                             Attachment and expiry date required.
                           </p>
-                        )}
+                        )}*/}
                       </div>
                       <div className="w-full md:w-40">
                         <Label className="mb-1 block">Expiry Date</Label>
@@ -772,7 +791,6 @@ export default function AddVendorDialog({
                           value={att.expiryDate}
                           onChange={(val) => handleAttachmentExpiry(idx, val)}
                           placeholder="dd.mm.yyyy"
-                          required={att.file != null}
                           minDate={new Date()}
                         />
                       </div>
@@ -780,7 +798,6 @@ export default function AddVendorDialog({
                         <Label className="mb-1 block">Remarks</Label>
                         <Input
                           type="text"
-                          required={att.file != null}
                           maxLength={60}
                           placeholder="Enter remarks"
                           value={att.remarks}
@@ -882,7 +899,7 @@ export default function AddVendorDialog({
                                 updatePIC(
                                   picIdx,
                                   "type",
-                                  val as "Primary" | "Secondary"
+                                  val as "Primary" | "Secondary",
                                 )
                               }
                             >
@@ -990,7 +1007,7 @@ export default function AddVendorDialog({
                                   onChange={(val, data) => {
                                     const rest = num.replace(
                                       /^(\+\d+)?\s?/,
-                                      ""
+                                      "",
                                     );
                                     const dial =
                                       "+" +
@@ -1003,7 +1020,7 @@ export default function AddVendorDialog({
                                     updatePICContactNumber(
                                       picIdx,
                                       numIdx,
-                                      updatedNumber.trim()
+                                      updatedNumber.trim(),
                                     );
                                   }}
                                 />
@@ -1021,7 +1038,7 @@ export default function AddVendorDialog({
                                       numIdx,
                                       (num.startsWith("+")
                                         ? num.split(" ")[0] + " "
-                                        : "+94 ") + e.target.value
+                                        : "+94 ") + e.target.value,
                                     )
                                   }
                                   placeholder="77 123 4567"
@@ -1071,7 +1088,7 @@ export default function AddVendorDialog({
                                     updatePICEmail(
                                       picIdx,
                                       emailIdx,
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   placeholder="email@company.com"
@@ -1138,7 +1155,7 @@ export default function AddVendorDialog({
                 value={vendorForm.remark}
                 onChange={(e) =>
                   setVendorForm((prev) =>
-                    prev ? { ...prev, remark: e.target.value } : prev
+                    prev ? { ...prev, remark: e.target.value } : prev,
                   )
                 }
                 placeholder="Additional notes about the vendor"
