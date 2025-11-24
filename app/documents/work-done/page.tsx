@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Plus, Trash2, Anchor } from "lucide-react";
+import { Plus, Trash2, Anchor, ArrowLeft } from "lucide-react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -62,7 +62,7 @@ export default function WorkDoneGeneratePage() {
   const [atd, setAtd] = useState<string>("");
   const [port, setPort] = useState<string>("");
   const [date, setDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [launchTrip, setLaunchTrip] = useState<string>("");
 
@@ -146,27 +146,27 @@ export default function WorkDoneGeneratePage() {
   const handleDeliveryChange = (
     index: number,
     field: keyof Delivery,
-    value: string
+    value: string,
   ) => {
     setDeliveries((prev) =>
-      prev.map((d, i) => (i === index ? { ...d, [field]: value } : d))
+      prev.map((d, i) => (i === index ? { ...d, [field]: value } : d)),
     );
   };
   const addDelivery = () =>
     setDeliveries((prev) => [...prev, { awb: "", weight: "", pcs: "" }]);
   const removeDelivery = (index: number) =>
     setDeliveries((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
   // Dynamic Crew On
   const handleSingOnCrewChange = (
     index: number,
     field: keyof CrewMember,
-    value: string
+    value: string,
   ) => {
     setSingOncrew((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c))
+      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)),
     );
   };
   const addSingOnCrew = () =>
@@ -176,17 +176,17 @@ export default function WorkDoneGeneratePage() {
     ]);
   const removeSingOnCrew = (index: number) =>
     setSingOncrew((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
   // Dynamic Crew Off
   const handleSingOffCrewChange = (
     index: number,
     field: keyof CrewMember,
-    value: string
+    value: string,
   ) => {
     setSingOffcrew((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c))
+      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)),
     );
   };
   const addSingOffCrew = () =>
@@ -196,7 +196,7 @@ export default function WorkDoneGeneratePage() {
     ]);
   const removeSingOffCrew = (index: number) =>
     setSingOffcrew((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
   // Form submit
@@ -231,19 +231,19 @@ export default function WorkDoneGeneratePage() {
       payload.deliveries = deliveries.filter((d) => d.awb || d.weight || d.pcs);
     if (
       SingOncrew.some(
-        (c) => c.name || c.nationality || c.rank || c.passport_number
+        (c) => c.name || c.nationality || c.rank || c.passport_number,
       )
     )
       payload.SingOncrew = SingOncrew.filter(
-        (c) => c.name || c.nationality || c.rank || c.passport_number
+        (c) => c.name || c.nationality || c.rank || c.passport_number,
       );
     if (
       SingOffcrew.some(
-        (c) => c.name || c.nationality || c.rank || c.passport_number
+        (c) => c.name || c.nationality || c.rank || c.passport_number,
       )
     )
       payload.SingOffcrew = SingOffcrew.filter(
-        (c) => c.name || c.nationality || c.rank || c.passport_number
+        (c) => c.name || c.nationality || c.rank || c.passport_number,
       );
 
     try {
@@ -263,7 +263,7 @@ export default function WorkDoneGeneratePage() {
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
         setSuccess(
-          "Work Done Certificate generated successfully! PDF should open/download automatically."
+          "Work Done Certificate generated successfully! PDF should open/download automatically.",
         );
         setLoading(false);
         return;
@@ -293,7 +293,16 @@ export default function WorkDoneGeneratePage() {
       <header className="glass-effect border-b px-2 py-2 sm:px-4 sm:py-3 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
-            <Link href="/dashboard" className="flex-shrink-0"></Link>
+            <Link href="/documents" className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex items-center px-2 py-1 text-xs sm:text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-0 sm:mr-2" />
+                <span className="hidden xs:inline">Back to Dashboard</span>
+              </Button>
+            </Link>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="bg-blue-600 p-2 rounded-lg">
                 <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
@@ -389,7 +398,6 @@ export default function WorkDoneGeneratePage() {
                   <Input
                     value={port}
                     onChange={(e) => setPort(e.target.value)}
-                    required
                   />
                 </div>
                 <div>
@@ -398,7 +406,6 @@ export default function WorkDoneGeneratePage() {
                     type="datetime-local"
                     value={eta}
                     onChange={(e) => setEta(e.target.value)}
-                    required
                   />
                 </div>
                 <div>
@@ -504,7 +511,6 @@ export default function WorkDoneGeneratePage() {
                       onChange={(e) =>
                         handleDeliveryChange(i, "awb", e.target.value)
                       }
-                      required
                     />
                     <Input
                       placeholder="Weight"
@@ -512,7 +518,6 @@ export default function WorkDoneGeneratePage() {
                       onChange={(e) =>
                         handleDeliveryChange(i, "weight", e.target.value)
                       }
-                      required
                     />
                     <Input
                       placeholder="Pieces"
@@ -520,7 +525,6 @@ export default function WorkDoneGeneratePage() {
                       onChange={(e) =>
                         handleDeliveryChange(i, "pcs", e.target.value)
                       }
-                      required
                     />
                     <Button
                       type="button"
@@ -559,7 +563,6 @@ export default function WorkDoneGeneratePage() {
                       onChange={(e) =>
                         handleSingOnCrewChange(i, "name", e.target.value)
                       }
-                      required
                     />
                     <Input
                       placeholder="Nationality"
@@ -567,7 +570,6 @@ export default function WorkDoneGeneratePage() {
                       onChange={(e) =>
                         handleSingOnCrewChange(i, "nationality", e.target.value)
                       }
-                      required
                     />
                     <Input
                       placeholder="Rank"
@@ -575,7 +577,6 @@ export default function WorkDoneGeneratePage() {
                       onChange={(e) =>
                         handleSingOnCrewChange(i, "rank", e.target.value)
                       }
-                      required
                     />
                     <Input
                       placeholder="Passport No."
@@ -584,10 +585,9 @@ export default function WorkDoneGeneratePage() {
                         handleSingOnCrewChange(
                           i,
                           "passport_number",
-                          e.target.value
+                          e.target.value,
                         )
                       }
-                      required
                     />
                     <Input
                       placeholder="Accommodation"
@@ -596,7 +596,7 @@ export default function WorkDoneGeneratePage() {
                         handleSingOnCrewChange(
                           i,
                           "accommodation",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                     />
@@ -644,7 +644,6 @@ export default function WorkDoneGeneratePage() {
                       onChange={(e) =>
                         handleSingOffCrewChange(i, "name", e.target.value)
                       }
-                      required
                     />
                     <Input
                       placeholder="Nationality"
@@ -653,10 +652,9 @@ export default function WorkDoneGeneratePage() {
                         handleSingOffCrewChange(
                           i,
                           "nationality",
-                          e.target.value
+                          e.target.value,
                         )
                       }
-                      required
                     />
                     <Input
                       placeholder="Rank"
@@ -664,7 +662,6 @@ export default function WorkDoneGeneratePage() {
                       onChange={(e) =>
                         handleSingOffCrewChange(i, "rank", e.target.value)
                       }
-                      required
                     />
                     <Input
                       placeholder="Passport No."
@@ -673,10 +670,9 @@ export default function WorkDoneGeneratePage() {
                         handleSingOffCrewChange(
                           i,
                           "passport_number",
-                          e.target.value
+                          e.target.value,
                         )
                       }
-                      required
                     />
                     <Input
                       placeholder="Accommodation"
@@ -685,7 +681,7 @@ export default function WorkDoneGeneratePage() {
                         handleSingOffCrewChange(
                           i,
                           "accommodation",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                     />
@@ -716,7 +712,6 @@ export default function WorkDoneGeneratePage() {
                 <Input
                   value={approvedBy}
                   onChange={(e) => setApprovedBy(e.target.value)}
-                  required
                 />
               </div>
 

@@ -32,7 +32,7 @@ import {
   Calendar,
   User,
   Ship,
-  ArrowLeftCircle,
+  ArrowLeftCircle
 } from "lucide-react";
 import Link from "next/link";
 
