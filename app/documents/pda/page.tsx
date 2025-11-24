@@ -23,6 +23,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus, Trash2, Anchor, LogOut, ArrowLeft } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // IMPORT Textarea
 import { Textarea } from "@/components/ui/textarea";
@@ -79,6 +87,8 @@ export default function PdaGeneratePage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
 
   // Fetch vessels on mount
   useEffect(() => {
@@ -291,6 +301,7 @@ export default function PdaGeneratePage() {
       setSuccess(
         "PDA Document generated successfully! PDF should open/download automatically.",
       );
+      clearDraft(); // Clear draft after successful generation
     } catch (err: any) {
       setError(err.message || "An error occurred");
     }
@@ -301,6 +312,112 @@ export default function PdaGeneratePage() {
     localStorage.removeItem("currentUser");
     localStorage.removeItem("token");
     router.push("/");
+  };
+
+  // Check if form has any content
+  const hasFormContent = () => {
+    return (
+      ClientName.trim() !== "" ||
+      ClientAddress.trim() !== "" ||
+      ClientRefNo.trim() !== "" ||
+      AgentName.trim() !== "" ||
+      VesselName.trim() !== "" ||
+      grt !== "" ||
+      port.trim() !== "" ||
+      arraivalDate !== "" ||
+      departureDate !== "" ||
+      poc !== "Cargo Operations" ||
+      invoiceData.some(
+        (table) =>
+          table.tableHeader.trim() !== "" ||
+          table.tableRows.some(
+            (row) =>
+              row.details.trim() !== "" ||
+              row.amount !== "" ||
+              row.remarks.trim() !== ""
+          )
+      )
+    );
+  };
+
+  // Save draft to localStorage
+  const handleSaveDraft = () => {
+    const draftData = {
+      date,
+      ClientName,
+      ClientAddress,
+      ClientRefNo,
+      AgentName,
+      VesselName,
+      port,
+      grt,
+      arraivalDate,
+      departureDate,
+      poc,
+      invoiceData,
+      InvoiceTotal,
+    };
+
+    try {
+      localStorage.setItem("pdaDraft", JSON.stringify(draftData));
+      setShowDraftModal(false);
+      router.push("/documents");
+    } catch (err: any) {
+      alert("Failed to save draft to local storage");
+    }
+  };
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem("pdaDraft");
+    if (savedDraft) {
+      try {
+        const draftData = JSON.parse(savedDraft);
+        setDate(draftData.date || new Date().toISOString().slice(0, 10));
+        setClientName(draftData.ClientName || "");
+        setClientAddress(draftData.ClientAddress || "");
+        setClientRefNo(draftData.ClientRefNo || "");
+        setAgentName(draftData.AgentName || "");
+        setVesselName(draftData.VesselName || "");
+        setGrt(draftData.grt || "");
+        setPort(draftData.port || "");
+        setArraivalDate(draftData.arraivalDate || "");
+        setDepartureDate(draftData.departureDate || "");
+        setPoc(draftData.poc || "Cargo Operations");
+        setInvoiceData(draftData.invoiceData || [
+          {
+            tableHeader: "",
+            tableRows: [{ no: 1, details: "", amount: "", remarks: "" }],
+            tableTotal: 0,
+          },
+        ]);
+        setInvoiceTotal(draftData.InvoiceTotal || 0);
+        setHasDraft(true);
+      } catch (err) {
+        console.error("Failed to load draft:", err);
+      }
+    }
+  }, []);
+
+  // Handle back button click
+  const handleBackClick = () => {
+    if (hasFormContent()) {
+      setShowDraftModal(true);
+    } else {
+      router.push("/documents");
+    }
+  };
+
+  // Discard draft and go back
+  const handleDiscard = () => {
+    localStorage.removeItem("pdaDraft");
+    setShowDraftModal(false);
+    router.push("/documents");
+  };
+
+  // Clear draft after successful submission
+  const clearDraft = () => {
+    localStorage.removeItem("pdaDraft");
   };
 
   if (!currentUser) {
@@ -317,16 +434,15 @@ export default function PdaGeneratePage() {
       <header className="glass-effect border-b px-2 py-2 sm:px-4 sm:py-3 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
-            <Link href="/documents" className="flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex items-center px-2 py-1 text-xs sm:text-sm"
-              >
-                <ArrowLeft className="h-4 w-4 mr-0 sm:mr-2" />
-                <span className="hidden xs:inline">Back to Dashboard</span>
-              </Button>
-            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="flex items-center px-2 py-1 text-xs sm:text-sm flex-shrink-0"
+              onClick={handleBackClick}
+            >
+              <ArrowLeft className="h-4 w-4 mr-0 sm:mr-2" />
+              <span className="hidden xs:inline">Back to Dashboard</span>
+            </Button>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="bg-yellow-500 p-2 rounded-lg">
                 <Anchor className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
@@ -652,7 +768,7 @@ export default function PdaGeneratePage() {
                 variant="ghost"
                 type="button"
                 className="w-full sm:w-auto"
-                onClick={() => router.push("/documents")}
+                onClick={handleBackClick}
               >
                 Back
               </Button>
@@ -660,6 +776,33 @@ export default function PdaGeneratePage() {
           </form>
         </Card>
       </div>
+
+      {/* Draft Modal */}
+      <Dialog open={showDraftModal} onOpenChange={setShowDraftModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Draft?</DialogTitle>
+            <DialogDescription>
+              You have unsaved changes. Would you like to save this as a draft before leaving?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={handleDiscard}
+              className="w-full sm:w-auto"
+            >
+              Discard
+            </Button>
+            <Button
+              onClick={handleSaveDraft}
+              className="w-full sm:w-auto"
+            >
+              Save as Draft
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
