@@ -368,6 +368,7 @@ export default function DocumentManagement() {
   };
 
   const openDocumentWithToken = async (url: string) => {
+
     const token =
       typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token) {
@@ -403,7 +404,7 @@ export default function DocumentManagement() {
       url = `${API_URL}/documents/work-done/${document.id}/pdf`;
     } else if (document.category === "Delivery Note") {
       // NOTE: Delivery Note API returns PDF at GET /api/documents/delivery-note/:id
-      url = `${API_URL}/documents/delivery-note/${document.id}`;
+      url = `${API_URL}/documents/delivery-note/${document.id}/pdf`;
     }
     if (url) {
       openDocumentWithToken(url);
