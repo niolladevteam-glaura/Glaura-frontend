@@ -402,29 +402,14 @@ export default function AddVendorDialog({
   // Validation for attachments
   useEffect(() => {
     if (!vendorForm) return;
-    setAttachmentErrors(
-      vendorForm.attachments.map((att, idx) => {
-        if (
-          att.type.toLowerCase().includes("insurance certificate") ||
-          att.type.toLowerCase().includes("insurance certificates")
-        ) {
-          return att.file ? !(att.file && att.expiryDate) : false;
-        }
-        return !(att.file && att.expiryDate);
-      }),
-    );
+    // No validation - allow any attachments without requirements
+    setAttachmentErrors(vendorForm.attachments.map(() => false));
   }, [vendorForm?.attachments]);
 
   // Save vendor handler
   const handleSaveVendor = async () => {
     setSubmitAttempted(true);
     if (!vendorForm) return;
-    if (attachmentErrors.some((err) => err)) {
-      alert(
-        "Please fill all required attachment fields, including file, expiry date, and remarks.",
-      );
-      return;
-    }
     setLoading(true);
     try {
       // 1. Upload files and get public URLs
@@ -1177,11 +1162,7 @@ export default function AddVendorDialog({
           <Button
             onClick={handleSaveVendor}
             className="professional-button-primary w-full sm:w-auto"
-            disabled={
-              loading ||
-              !vendorForm.name.trim() ||
-              attachmentErrors.some((err) => err)
-            }
+            disabled={loading}
           >
             {loading ? "Saving..." : "Add Vendor"}
           </Button>
