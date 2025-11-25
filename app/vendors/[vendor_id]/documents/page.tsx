@@ -240,6 +240,9 @@ export default function VendorDocumentsPage() {
   // Approve/Reject logic
   const handleApprove = async (doc: DocumentType) => {
     try {
+      const isUdith = currentUser?.email === "udith@greeklanka.com";
+      const isAmal = currentUser?.email === "amal@greeklanka.com";
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/vendor/document/${doc.documentID}`,
         {
@@ -249,8 +252,12 @@ export default function VendorDocumentsPage() {
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
           },
           body: JSON.stringify({
-            ...doc,
-            status: "valid",
+            vendorID: doc.vendorID,
+            url: doc.url,
+            expired_at: doc.expired_at,
+            remarks: doc.remarks,
+            approved_by_udith: isUdith ? true : doc.approved_by_udith,
+            approved_by_amal: isAmal ? true : doc.approved_by_amal,
           }),
         }
       );
@@ -268,6 +275,9 @@ export default function VendorDocumentsPage() {
 
   const handleReject = async (doc: DocumentType) => {
     try {
+      const isUdith = currentUser?.email === "udith@greeklanka.com";
+      const isAmal = currentUser?.email === "amal@greeklanka.com";
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/vendor/document/${doc.documentID}`,
         {
@@ -277,8 +287,12 @@ export default function VendorDocumentsPage() {
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
           },
           body: JSON.stringify({
-            ...doc,
-            status: "rejected",
+            vendorID: doc.vendorID,
+            url: doc.url,
+            expired_at: doc.expired_at,
+            remarks: doc.remarks,
+            approved_by_udith: isUdith ? false : doc.approved_by_udith,
+            approved_by_amal: isAmal ? false : doc.approved_by_amal,
           }),
         }
       );
