@@ -28,6 +28,10 @@ import {
   FileText,
   XCircle,
   CheckCircle,
+  Building,
+  Phone,
+  Mail,
+  User,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import EditDocumentDialog from "@/components/vendors/EditDocumentDialog";
@@ -59,6 +63,44 @@ interface CurrentUser {
   name: string;
   email: string;
   accessLevel: string;
+}
+
+interface VendorPIC {
+  id: number;
+  pic_id: string;
+  vendor_id: string;
+  firstName: string;
+  lastName: string;
+  phone_number: string;
+  email: string;
+  picType: string;
+  remark: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface VendorStatus {
+  id: number;
+  status_id: string;
+  vendor_id: string;
+  status: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Vendor {
+  id: number;
+  vendor_id: string;
+  name: string;
+  address: string;
+  phone_number: string;
+  company_type: string;
+  email: string;
+  remark: string;
+  createdAt: string;
+  updatedAt: string;
+  vendorPic: VendorPIC | null;
+  vendorStatus: VendorStatus | null;
 }
 
 function formatDateDMY(dateStr?: string | Date) {
@@ -105,6 +147,8 @@ export default function VendorDocumentsPage() {
   const [documentTypes, setDocumentTypes] = useState<
     { documentID: string; document_name: string }[]
   >([]);
+  const [vendor, setVendor] = useState<Vendor | null>(null);
+  const [vendorLoading, setVendorLoading] = useState(true);
 
   //Load the documents list with name and id
   useEffect(() => {
@@ -216,8 +260,40 @@ export default function VendorDocumentsPage() {
     }
   };
 
+  const fetchVendor = async () => {
+    setVendorLoading(true);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/vendor/${vendor_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await res.json();
+      if (data.success && data.data) {
+        setVendor(data.data);
+      } else {
+        setVendor(null);
+        if (data.success === false) {
+          toast.error(data.message || "Failed to fetch vendor details.");
+        }
+      }
+    } catch {
+      setVendor(null);
+      toast.error("Failed to fetch vendor details.");
+    } finally {
+      setVendorLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (vendor_id) fetchDocuments();
+    if (vendor_id) {
+      fetchDocuments();
+      fetchVendor();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendor_id]);
 
@@ -419,6 +495,102 @@ export default function VendorDocumentsPage() {
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     No expiring documents
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+            {/* Vendor Summary */}
+            <Card className="professional-card">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Building className="h-5 w-5" />
+                  <span>Vendor Summary</span>
+                </CardTitle>
+                <CardDescription>Vendor Details</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {vendorLoading ? (
+                  <div className="text-sm text-muted-foreground">
+                    Loading vendor details...
+                  </div>
+                ) : vendor ? (
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Name</p>
+                      <p className="text-sm font-medium">{vendor.name}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        Phone Number
+                      </p>
+                      <p className="text-sm">{vendor.phone_number}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Mail className="h-3 w-3" />
+                        Email
+                      </p>
+                      <p className="text-sm break-all">{vendor.email}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Remark</p>
+                      <p className="text-sm">{vendor.remark || "-"}</p>
+                    </div>
+                    {vendor.vendorPic && (
+                      <>
+                        <div className="border-t pt-3 mt-3">
+                          <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            Person in Charge
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">
+                            PIC Name
+                          </p>
+                          <p className="text-sm font-medium">
+                            {vendor.vendorPic.firstName}{" "}
+                            {vendor.vendorPic.lastName}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            PIC Number
+                          </p>
+                          <p className="text-sm">
+                            {vendor.vendorPic.phone_number}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            PIC Email
+                          </p>
+                          <p className="text-sm break-all">
+                            {vendor.vendorPic.email}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Status</p>
+                      <Badge
+                        variant="outline"
+                        className={
+                          vendor.vendorStatus?.status
+                            ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300"
+                            : "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700"
+                        }
+                      >
+                        {vendor.vendorStatus?.status ? "Active" : "Pending"}
+                      </Badge>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No vendor details available.
                   </p>
                 )}
               </CardContent>
