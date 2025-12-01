@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus, Trash2, Anchor, ArrowLeft } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -555,67 +556,80 @@ export default function OKTBPage() {
                     <Plus className="w-4 h-4 mr-1" /> Add Crew
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2 font-semibold">
-                  <span>Name</span>
-                  <span>Nationality</span>
-                  <span>Rank</span>
-                  <span>Passport No.</span>
-                  <span>eTicket No.</span>
-                </div>
                 {crew.map((c, i) => (
-                  <div
-                    key={i}
-                    className="grid grid-cols-1 md:grid-cols-6 gap-2 mb-2 items-end"
-                  >
-                    <Input
-                      placeholder="Name"
-                      value={c.name}
-                      onChange={(e) =>
-                        handleCrewChange(i, "name", e.target.value)
-                      }
-                      required
-                    />
-                    <Input
-                      placeholder="Nationality"
-                      value={c.natinality}
-                      onChange={(e) =>
-                        handleCrewChange(i, "natinality", e.target.value)
-                      }
-                      required
-                    />
-                    <Input
-                      placeholder="Rank"
-                      value={c.rank}
-                      onChange={(e) =>
-                        handleCrewChange(i, "rank", e.target.value)
-                      }
-                      required
-                    />
-                    <Input
-                      placeholder="Passport No."
-                      value={c.passport_number}
-                      onChange={(e) =>
-                        handleCrewChange(i, "passport_number", e.target.value)
-                      }
-                      required
-                    />
-                    <Input
-                      placeholder="eTicket No."
-                      value={c.eTicketNo}
-                      onChange={(e) =>
-                        handleCrewChange(i, "eTicketNo", e.target.value)
-                      }
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeCrew(i)}
-                      disabled={crew.length === 1}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                  <div key={i} className="border rounded-lg p-4 mb-4 bg-muted/30">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Name</label>
+                        <Input
+                          placeholder="Name"
+                          value={c.name}
+                          onChange={(e) =>
+                            handleCrewChange(i, "name", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Nationality</label>
+                        <Input
+                          placeholder="Nationality"
+                          value={c.natinality}
+                          onChange={(e) =>
+                            handleCrewChange(i, "natinality", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Rank</label>
+                        <Input
+                          placeholder="Rank"
+                          value={c.rank}
+                          onChange={(e) =>
+                            handleCrewChange(i, "rank", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Passport No.</label>
+                        <Input
+                          placeholder="Passport No."
+                          value={c.passport_number}
+                          onChange={(e) =>
+                            handleCrewChange(i, "passport_number", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">eTicket No.</label>
+                        <Input
+                          placeholder="eTicket No."
+                          value={c.eTicketNo}
+                          onChange={(e) =>
+                            handleCrewChange(i, "eTicketNo", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="default"
+                          onClick={() => removeCrew(i)}
+                          disabled={crew.length === 1}
+                          className="w-full"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remove Crew
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -633,104 +647,120 @@ export default function OKTBPage() {
                     <Plus className="w-4 h-4 mr-1" /> Add Flight
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-9 gap-2 mb-2 font-semibold">
-                  <span>Number</span>
-                  <span>Name</span>
-                  <span>Dep. Date</span>
-                  <span>Dep. Time</span>
-                  <span>Arr. Date</span>
-                  <span>Arr. Time</span>
-                  <span>From</span>
-                  <span>To</span>
-                </div>
                 {flights.map((f, i) => (
-                  <div
-                    key={i}
-                    className="grid grid-cols-1 md:grid-cols-10 gap-2 mb-2 items-end"
-                  >
-                    <Input
-                      placeholder="Flight Number"
-                      value={f.flight_number}
-                      onChange={(e) =>
-                        handleFlightChange(i, "flight_number", e.target.value)
-                      }
-                      required
-                    />
-                    <Input
-                      placeholder="Flight Name"
-                      value={f.flight_name}
-                      onChange={(e) =>
-                        handleFlightChange(i, "flight_name", e.target.value)
-                      }
-                      required
-                    />
-                    <Input
-                      type="date"
-                      placeholder="Dep. Date"
-                      value={f.flight_depature_date}
-                      onChange={(e) =>
-                        handleFlightChange(
-                          i,
-                          "flight_depature_date",
-                          e.target.value,
-                        )
-                      }
-                      required
-                    />
-                    <Input
-                      type="time"
-                      placeholder="Dep. Time"
-                      value={f.flight_depature_time}
-                      onChange={(e) =>
-                        handleFlightChange(
-                          i,
-                          "flight_depature_time",
-                          e.target.value,
-                        )
-                      }
-                      required
-                    />
-                    <Input
-                      type="date"
-                      placeholder="Arr. Date"
-                      value={f.arrive_date || ""}
-                      onChange={(e) =>
-                        handleFlightChange(i, "arrive_date", e.target.value)
-                      }
-                    />
-                    <Input
-                      type="time"
-                      placeholder="Arr. Time"
-                      value={f.arrive_time || ""}
-                      onChange={(e) =>
-                        handleFlightChange(i, "arrive_time", e.target.value)
-                      }
-                    />
-                    <Input
-                      placeholder="From"
-                      value={f.flight_from}
-                      onChange={(e) =>
-                        handleFlightChange(i, "flight_from", e.target.value)
-                      }
-                      required
-                    />
-                    <Input
-                      placeholder="To"
-                      value={f.flight_to}
-                      onChange={(e) =>
-                        handleFlightChange(i, "flight_to", e.target.value)
-                      }
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFlight(i)}
-                      disabled={flights.length === 1}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                  <div key={i} className="border rounded-lg p-4 mb-4 bg-muted/30">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Flight Number</label>
+                        <Input
+                          placeholder="Flight Number"
+                          value={f.flight_number}
+                          onChange={(e) =>
+                            handleFlightChange(i, "flight_number", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Flight Name</label>
+                        <Input
+                          placeholder="Flight Name"
+                          value={f.flight_name}
+                          onChange={(e) =>
+                            handleFlightChange(i, "flight_name", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">From</label>
+                        <Input
+                          placeholder="From"
+                          value={f.flight_from}
+                          onChange={(e) =>
+                            handleFlightChange(i, "flight_from", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">To</label>
+                        <Input
+                          placeholder="To"
+                          value={f.flight_to}
+                          onChange={(e) =>
+                            handleFlightChange(i, "flight_to", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Departure Date</label>
+                        <DatePicker
+                          value={f.flight_depature_date}
+                          onChange={(val) =>
+                            handleFlightChange(
+                              i,
+                              "flight_depature_date",
+                              val,
+                            )
+                          }
+                          placeholder="Dep. Date"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Departure Time</label>
+                        <Input
+                          type="time"
+                          placeholder="Dep. Time"
+                          value={f.flight_depature_time}
+                          onChange={(e) =>
+                            handleFlightChange(
+                              i,
+                              "flight_depature_time",
+                              e.target.value,
+                            )
+                          }
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Arrival Date</label>
+                        <DatePicker
+                          value={f.arrive_date || ""}
+                          onChange={(val) =>
+                            handleFlightChange(i, "arrive_date", val)
+                          }
+                          placeholder="Arr. Date"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Arrival Time</label>
+                        <Input
+                          type="time"
+                          placeholder="Arr. Time"
+                          value={f.arrive_time || ""}
+                          onChange={(e) =>
+                            handleFlightChange(i, "arrive_time", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="default"
+                          onClick={() => removeFlight(i)}
+                          disabled={flights.length === 1}
+                          className="w-full"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
