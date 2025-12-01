@@ -176,23 +176,6 @@ export default function InquiryManagement() {
 
   // --- CREATE ---
   const handleCreateInquiry = async () => {
-    // Validate
-    if (!newInquiry.vessel_name || !newInquiry.client_name) {
-      toast({
-        title: "Validation Error",
-        description: "Vessel name and client name are required.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!newInquiry.eta_date || !newInquiry.eta_time) {
-      toast({
-        title: "Validation Error",
-        description: "ETA date and time are required.",
-        variant: "destructive",
-      });
-      return;
-    }
     setIsLoading(true);
     try {
       const payload = {
@@ -261,22 +244,6 @@ export default function InquiryManagement() {
   // --- EDIT ---
   const handleEditInquiry = async () => {
     if (!currentInquiry) return;
-    if (!currentInquiry.vessel_name || !currentInquiry.client_name) {
-      toast({
-        title: "Validation Error",
-        description: "Vessel name and client name are required.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!currentInquiry.eta || !editInquiryEtaDate || !editInquiryEtaTime) {
-      toast({
-        title: "Validation Error",
-        description: "ETA date and time are required.",
-        variant: "destructive",
-      });
-      return;
-    }
     setIsLoading(true);
     try {
       const payload = {
@@ -504,8 +471,8 @@ export default function InquiryManagement() {
                 <div className="grid gap-4 py-4">
                   {/* Vessel Name & Client Name */}
                   {[
-                    { id: "vessel_name", label: "Vessel Name", required: true },
-                    { id: "client_name", label: "Client Name", required: true },
+                    { id: "vessel_name", label: "Vessel Name", required: false },
+                    { id: "client_name", label: "Client Name", required: false },
                   ].map((field) => (
                     <div
                       className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4"
@@ -534,7 +501,7 @@ export default function InquiryManagement() {
                   {/* ETA fields (after Client Name) */}
                   <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                     <Label htmlFor="eta_date" className="text-right">
-                      ETA Date<span className="text-red-500">*</span>
+                      ETA Date
                     </Label>
                     <DatePicker
                       id="eta_date"
@@ -545,14 +512,13 @@ export default function InquiryManagement() {
                           eta_date: val,
                         }))
                       }
-                      required
                       placeholder="DD.MM.YYYY"
                       className="sm:col-span-3"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
                     <Label htmlFor="eta_time" className="text-right">
-                      ETA Time<span className="text-red-500">*</span>
+                      ETA Time
                     </Label>
                     <TimePicker
                       id="eta_time"
@@ -793,12 +759,12 @@ export default function InquiryManagement() {
                                         {
                                           id: "vessel_name",
                                           label: "Vessel Name",
-                                          required: true,
+                                          required: false,
                                         },
                                         {
                                           id: "client_name",
                                           label: "Client Name",
-                                          required: true,
+                                          required: false,
                                         },
                                       ].map((field) => (
                                         <div
@@ -846,15 +812,11 @@ export default function InquiryManagement() {
                                           className="text-right"
                                         >
                                           ETA Date
-                                          <span className="text-red-500">
-                                            *
-                                          </span>
                                         </Label>
                                         <DatePicker
                                           id="eta_date"
                                           value={editInquiryEtaDate}
                                           onChange={setEditInquiryEtaDate}
-                                          required
                                           placeholder="DD.MM.YYYY"
                                           className="sm:col-span-3"
                                         />
@@ -865,9 +827,6 @@ export default function InquiryManagement() {
                                           className="text-right"
                                         >
                                           ETA Time
-                                          <span className="text-red-500">
-                                            *
-                                          </span>
                                         </Label>
                                         <TimePicker
                                           id="eta_time"
