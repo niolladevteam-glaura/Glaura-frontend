@@ -144,10 +144,12 @@ async function uploadFile(file: File): Promise<string> {
   return data.data.publicUrl || data.data.public_url;
 }
 
-// Helper function to determine if a document is required
 function isDocumentRequired(documentName: string): boolean {
-  const optionalDocuments = ["Insurance Certificates", "Insurance Certificates (if applicable)"];
-  return !optionalDocuments.some(opt => documentName.toLowerCase().includes(opt.toLowerCase()));
+  const documentsRequiringExpiry = [
+    "Relevant ISO or industry certifications",
+    "Insurance certificates"
+  ];
+  return documentsRequiringExpiry.some(doc => documentName.toLowerCase().includes(doc.toLowerCase()));
 }
 
 export default function AddVendorDialog({
@@ -420,10 +422,9 @@ export default function AddVendorDialog({
     const errors = vendorForm.attachments.map((att) => {
       const doc = documentList.find(d => d.documentID === att.documentID);
       if (doc?.isRequired) {
-        // Required documents must have both file and expiry date
         return !att.file || !att.expiryDate;
       }
-      return false;
+      return !att.file;
     });
     setAttachmentErrors(errors);
   }, [vendorForm?.attachments, documentList]);
@@ -437,9 +438,11 @@ export default function AddVendorDialog({
     const hasErrors = vendorForm.attachments.some((att, idx) => {
       const doc = documentList.find(d => d.documentID === att.documentID);
       if (doc?.isRequired) {
+        // Certifications and insurance require both file and expiry
         return !att.file || !att.expiryDate;
       }
-      return false;
+
+      return !att.file;
     });
 
     if (hasErrors) {
@@ -809,7 +812,9 @@ export default function AddVendorDialog({
                         </div>
                         {submitAttempted && attachmentErrors[idx] && (
                           <p className="text-xs text-red-600 mt-2">
-                            File and expiry date are required for this document.
+                            {documentList.find(d => d.documentID === att.documentID)?.isRequired
+                              ? "File and expiry date are required for this document."
+                              : "File is required for this document."}
                           </p>
                         )}
                       </div>
