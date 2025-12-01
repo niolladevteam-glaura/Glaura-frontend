@@ -73,6 +73,18 @@ interface ServiceHeader {
   }[];
 }
 
+interface Service {
+  id: string;
+  job_id: string;
+  service_id: string;
+  service_name: string;
+  vendor_id: string;
+  vendor_name: string;
+  status: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface PortCall {
   job_id: string;
   vessel_name: string;
@@ -83,6 +95,7 @@ interface PortCall {
   port: string;
   // assigned_pic: string;   // REMOVED
   priority: "High" | "Medium" | "Low" | "high" | "medium" | "low";
+  status: string;
   created: string;
   updatedAt: string;
   call_type?: string;
@@ -93,6 +106,7 @@ interface PortCall {
   section_head_email: string;
   assigned_officer: string | null;
   assigned_officer_email: string | null;
+  services?: Service[];
 }
 
 export default function ActivePortCalls() {
@@ -249,8 +263,7 @@ export default function ActivePortCalls() {
     }
     if (statusFilter !== "all") {
       filtered = filtered.filter((pc) => {
-        const headers = portCallHeaders[pc.job_id] || [];
-        const status = getPortCallStatus(headers);
+        const status = getPortCallStatus(pc);
         return status.toLowerCase() === statusFilter;
       });
     }
@@ -259,8 +272,7 @@ export default function ActivePortCalls() {
     }
     if (selectedTab !== "all") {
       filtered = filtered.filter((pc) => {
-        const headers = portCallHeaders[pc.job_id] || [];
-        const status = getPortCallStatus(headers);
+        const status = getPortCallStatus(pc);
         switch (selectedTab) {
           case "active":
             return status === "Pending";
@@ -284,24 +296,14 @@ export default function ActivePortCalls() {
   ]);
 
   const getPortCallStatus = (
-    headers: ServiceHeader[]
+    portCall: PortCall
   ): "Pending" | "Completed" => {
-    if (
-      Array.isArray(headers) &&
-      headers.length > 0 &&
-      headers.every(
-        (header) =>
-          Array.isArray(header.tasks) &&
-          header.tasks.length > 0 &&
-          header.tasks.every(
-            (task) => task.status === true || task.status === "true"
-          )
-      )
-    ) {
+    if (portCall.status === "Completed") {
       return "Completed";
     }
     return "Pending";
   };
+
 
   const getHeaderStats = (headers: ServiceHeader[]) => {
     const totalHeaders = headers.length;
@@ -402,8 +404,7 @@ export default function ActivePortCalls() {
         </thead>
         <tbody>
           {sortedPortCalls.map((portCall) => {
-            const headers = portCallHeaders[portCall.job_id] || [];
-            const status = getPortCallStatus(headers);
+            const status = getPortCallStatus(portCall);
 
             return (
               <tr
@@ -714,8 +715,7 @@ export default function ActivePortCalls() {
                     Active (
                     {
                       portCalls.filter((pc) => {
-                        const headers = portCallHeaders[pc.job_id] || [];
-                        return getPortCallStatus(headers) === "Pending";
+                        return getPortCallStatus(pc) === "Pending";
                       }).length
                     }
                     )
@@ -727,8 +727,7 @@ export default function ActivePortCalls() {
                     Completed (
                     {
                       portCalls.filter((pc) => {
-                        const headers = portCallHeaders[pc.job_id] || [];
-                        return getPortCallStatus(headers) === "Completed";
+                        return getPortCallStatus(pc) === "Completed";
                       }).length
                     }
                     )
@@ -772,7 +771,7 @@ export default function ActivePortCalls() {
               } else {
                 completionPhrase = "No headers found.";
               }
-              const status = getPortCallStatus(headers);
+              const status = getPortCallStatus(portCall);
               return (
                 <Card
                   key={portCall.job_id}
