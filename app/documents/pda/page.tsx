@@ -252,6 +252,12 @@ export default function PdaGeneratePage() {
     }
 
     // Prepare payload
+    // Convert datetime-local format (YYYY-MM-DDTHH:mm) to YYYY-MM-DD for backend
+    const formatDate = (dateTimeStr: string) => {
+      if (!dateTimeStr) return "";
+      return dateTimeStr.split('T')[0]; // Extract date part only
+    };
+
     const payload = {
       date,
       ClientName,
@@ -261,8 +267,8 @@ export default function PdaGeneratePage() {
       VesselName,
       port,
       grt: grt ? Number(grt) : null,
-      arraivalDate,
-      departureDate,
+      arraivalDate: formatDate(arraivalDate),
+      departureDate: formatDate(departureDate),
       poc,
       invoiceData: invoiceData.map((table) => ({
         tableHeader: table.tableHeader,
