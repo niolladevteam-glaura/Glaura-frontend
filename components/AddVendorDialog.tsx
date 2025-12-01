@@ -30,6 +30,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
+import { useToast } from "@/hooks/use-toast";
 
 // Vendor PIC and VendorFormType definitions
 interface VendorPIC {
@@ -75,6 +76,7 @@ type AttachmentFormType = {
 type DocumentType = {
   documentID: string;
   document_name: string;
+  isRequired?: boolean;
 };
 
 type AddVendorDialogProps = {
@@ -137,9 +139,15 @@ async function uploadFile(file: File): Promise<string> {
     },
     body: formData,
   });
-  if (!res.ok) throw new Error("File upload failed");
+
   const data = await res.json();
-  return data.data.public_url;
+  return data.data.publicUrl || data.data.public_url;
+}
+
+// Helper function to determine if a document is required
+function isDocumentRequired(documentName: string): boolean {
+  const optionalDocuments = ["Insurance Certificates", "Insurance Certificates (if applicable)"];
+  return !optionalDocuments.some(opt => documentName.toLowerCase().includes(opt.toLowerCase()));
 }
 
 export default function AddVendorDialog({
@@ -158,6 +166,7 @@ export default function AddVendorDialog({
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const hasLoadedDraft = useRef(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
@@ -172,7 +181,12 @@ export default function AddVendorDialog({
         .then((res) => res.json())
         .then((data) => {
           if (data.success && Array.isArray(data.data)) {
-            setDocumentList(data.data);
+            // Add isRequired flag to each document
+            const documentsWithRequiredFlag = data.data.map((doc: DocumentType) => ({
+              ...doc,
+              isRequired: isDocumentRequired(doc.document_name),
+            }));
+            setDocumentList(documentsWithRequiredFlag);
           } else {
             setDocumentList([]);
           }
@@ -402,14 +416,41 @@ export default function AddVendorDialog({
   // Validation for attachments
   useEffect(() => {
     if (!vendorForm) return;
-    // No validation - allow any attachments without requirements
-    setAttachmentErrors(vendorForm.attachments.map(() => false));
-  }, [vendorForm?.attachments]);
+    // Validate required attachments
+    const errors = vendorForm.attachments.map((att) => {
+      const doc = documentList.find(d => d.documentID === att.documentID);
+      if (doc?.isRequired) {
+        // Required documents must have both file and expiry date
+        return !att.file || !att.expiryDate;
+      }
+      return false;
+    });
+    setAttachmentErrors(errors);
+  }, [vendorForm?.attachments, documentList]);
 
   // Save vendor handler
   const handleSaveVendor = async () => {
     setSubmitAttempted(true);
     if (!vendorForm) return;
+
+    // Validate required attachments before submission
+    const hasErrors = vendorForm.attachments.some((att, idx) => {
+      const doc = documentList.find(d => d.documentID === att.documentID);
+      if (doc?.isRequired) {
+        return !att.file || !att.expiryDate;
+      }
+      return false;
+    });
+
+    if (hasErrors) {
+      toast({
+        title: "Validation Error",
+        description: "Please upload all required documents with expiry dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // 1. Upload files and get public URLs
@@ -735,7 +776,9 @@ export default function AddVendorDialog({
                       <div className="flex-1">
                         <Label className="font-semibold mb-2 block">
                           {idx + 1}. {att.type}
-                          {/*<span className="text-red-600 ml-1">*</span>*/}
+                          {documentList.find(d => d.documentID === att.documentID)?.isRequired && (
+                            <span className="text-red-600 ml-1">*</span>
+                          )}
                         </Label>
                         <div className="flex items-center gap-3 mt-2">
                           <Input
@@ -764,14 +807,19 @@ export default function AddVendorDialog({
                             </a>
                           )}
                         </div>
-                        {/*{attachmentErrors[idx] && (
+                        {submitAttempted && attachmentErrors[idx] && (
                           <p className="text-xs text-red-600 mt-2">
-                            Attachment and expiry date required.
+                            File and expiry date are required for this document.
                           </p>
-                        )}*/}
+                        )}
                       </div>
                       <div className="w-full md:w-40">
-                        <Label className="mb-1 block">Expiry Date</Label>
+                        <Label className="mb-1 block">
+                          Expiry Date
+                          {documentList.find(d => d.documentID === att.documentID)?.isRequired && (
+                            <span className="text-red-600 ml-1">*</span>
+                          )}
+                        </Label>
                         <DatePicker
                           value={att.expiryDate}
                           onChange={(val) => handleAttachmentExpiry(idx, val)}
