@@ -652,24 +652,24 @@ export default function VesselManagement() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="CONTAINER SHIP">
-                              Container Ship
+                              CONTAINER SHIP
                             </SelectItem>
                             <SelectItem value="BULK CARRIER">
-                              Bulk Carrier
+                              BULK CARRIER
                             </SelectItem>
-                            <SelectItem value="TANKER">Tanker</SelectItem>
+                            <SelectItem value="TANKER">TANKER</SelectItem>
                             <SelectItem value="GENERAL CARGO">
-                              General Cargo
+                              GENERAL CARGO
                             </SelectItem>
-                            <SelectItem value="RORO">RoRo</SelectItem>
+                            <SelectItem value="RORO">RORO</SelectItem>
                             <SelectItem value="CRUISE SHIP">
-                              Cruise Ship
+                              CRUISE SHIP
                             </SelectItem>
-                            <SelectItem value="FERRY">Ferry</SelectItem>
+                            <SelectItem value="FERRY">FERRY</SelectItem>
                             <SelectItem value="OFFSHORE VESSEL">
-                              Offshore Vessel
+                              OFFSHORE VESSEL
                             </SelectItem>
-                            <SelectItem value="OTHER">Other</SelectItem>
+                            <SelectItem value="OTHER">OTHER</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1053,24 +1053,24 @@ export default function VesselManagement() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="CONTAINER SHIP">
-                                Container Ship
+                                CONTAINER SHIP
                               </SelectItem>
                               <SelectItem value="BULK CARRIER">
-                                Bulk Carrier
+                                BULK CARRIER
                               </SelectItem>
-                              <SelectItem value="TANKER">Tanker</SelectItem>
+                              <SelectItem value="TANKER">TANKER</SelectItem>
                               <SelectItem value="GENERAL CARGO">
-                                General Cargo
+                                GENERAL CARGO
                               </SelectItem>
-                              <SelectItem value="RORO">RoRo</SelectItem>
+                              <SelectItem value="RORO">RORO</SelectItem>
                               <SelectItem value="CRUISE SHIP">
-                                Cruise Ship
+                                CRUISE SHIP
                               </SelectItem>
-                              <SelectItem value="FERRY">Ferry</SelectItem>
+                              <SelectItem value="FERRY">FERRY</SelectItem>
                               <SelectItem value="OFFSHORE VESSEL">
-                                Offshore Vessel
+                                OFFSHORE VESSEL
                               </SelectItem>
-                              <SelectItem value="OTHER">Other</SelectItem>
+                              <SelectItem value="OTHER">OTHER</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

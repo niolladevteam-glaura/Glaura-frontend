@@ -104,6 +104,7 @@ export default function ActivePortCalls() {
   const [portFilter, setPortFilter] = useState("all");
   const [selectedTab, setSelectedTab] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [ports, setPorts] = useState<{ value: string; label: string }[]>([]);
   const router = useRouter();
 
   const [portCallHeaders, setPortCallHeaders] = useState<
@@ -157,6 +158,32 @@ export default function ActivePortCalls() {
       }
     };
 
+    const fetchPorts = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/port`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await response.json();
+        if (data.success && data.data) {
+          const portOptions = data.data.map((port: any) => ({
+            value: port.port_name.toLowerCase(),
+            label: port.port_name,
+          }));
+          setPorts(portOptions);
+        }
+      } catch (error) {
+        console.error("Error fetching ports:", error);
+      }
+    };
+
     const userData = localStorage.getItem("currentUser");
     if (!userData) {
       router.push("/");
@@ -164,6 +191,7 @@ export default function ActivePortCalls() {
     }
     setCurrentUser(JSON.parse(userData));
     fetchPortCalls();
+    fetchPorts();
   }, [router]);
 
   useEffect(() => {
@@ -635,10 +663,11 @@ export default function ActivePortCalls() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Ports</SelectItem>
-                    <SelectItem value="colombo">Colombo</SelectItem>
-                    <SelectItem value="gall">Gall</SelectItem>
-                    <SelectItem value="hambantota">Hambantota</SelectItem>
-                    <SelectItem value="trincomalee">Trincomalee</SelectItem>
+                    {ports.map((port) => (
+                      <SelectItem key={port.value} value={port.value}>
+                        {port.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
