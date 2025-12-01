@@ -98,7 +98,7 @@ interface Vendor {
     id: number;
     status_id: string;
     vendor_id: string;
-    status: boolean;
+    status: boolean | string;
     createdAt: string;
     updatedAt: string;
   };
@@ -364,9 +364,19 @@ export default function VendorManagement() {
         } else if (vendor.pic) {
           vendorPics = [vendor.pic];
         }
+        // Handle status: can be boolean (true/false) or string ("approved"/"pending"/"rejected")
+        let kycStatus = "Pending";
+        if (vendor.vendorStatus?.status === true || vendor.vendorStatus?.status === "approved") {
+          kycStatus = "Approved";
+        } else if (vendor.vendorStatus?.status === "rejected") {
+          kycStatus = "Rejected";
+        } else if (vendor.vendorStatus?.status === false || vendor.vendorStatus?.status === "pending") {
+          kycStatus = "Pending";
+        }
+
         return {
           ...vendor,
-          kycStatus: vendor.vendorStatus?.status ? "Approved" : "Pending",
+          kycStatus,
           rating: 0,
           totalJobs: 0,
           completedJobs: 0,
@@ -460,10 +470,17 @@ export default function VendorManagement() {
       );
     }
     if (statusFilter !== "all") {
-      const statusBoolean = statusFilter === "approved";
-      filtered = filtered.filter(
-        (vendor) => vendor.vendorStatus?.status === statusBoolean
-      );
+      filtered = filtered.filter((vendor) => {
+        const status = vendor.vendorStatus?.status;
+        if (statusFilter === "approved") {
+          return status === true || status === "approved";
+        } else if (statusFilter === "pending") {
+          return status === false || status === "pending";
+        } else if (statusFilter === "rejected") {
+          return status === "rejected";
+        }
+        return false;
+      });
     }
     setFilteredVendors(filtered);
   }, [searchTerm, typeFilter, statusFilter, vendors]);
@@ -835,6 +852,14 @@ export default function VendorManagement() {
                     {vendors.filter((v) => v.kycStatus === "Pending").length}
                   </span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Rejected KYC
+                  </span>
+                  <span className="font-medium">
+                    {vendors.filter((v) => v.kycStatus === "Rejected").length}
+                  </span>
+                </div>
 
                 {/* <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
@@ -1062,6 +1087,7 @@ export default function VendorManagement() {
                         <SelectItem value="all">All Status</SelectItem>
                         <SelectItem value="approved">Approved</SelectItem>
                         <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
