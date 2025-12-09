@@ -60,7 +60,7 @@ interface ServiceTask {
   compleated_date?: string;
   compleated_time?: string;
   createdAt?: string;
-  created_time?: string; // If you have a separate created_time
+  created_time?: string;
   updatedAt?: string;
 }
 
@@ -83,27 +83,23 @@ function isTaskCompleted(task: ServiceTask) {
   return task.status === true || task.status === "true";
 }
 
-// --- UTILITY SORTING ---
 function compareCompletedTasks(a: ServiceTask, b: ServiceTask) {
-  // Sort by compleated_date + compleated_time DESC
+
   const dateA = a.compleated_date
-    ? new Date(a.compleated_date + "T" + (a.compleated_time || "00:00:00"))
+    ? new Date(a.compleated_date.replace(' ', 'T'))
     : new Date(0);
   const dateB = b.compleated_date
-    ? new Date(b.compleated_date + "T" + (b.compleated_time || "00:00:00"))
+    ? new Date(b.compleated_date.replace(' ', 'T'))
     : new Date(0);
   return dateB.getTime() - dateA.getTime();
 }
 function comparePendingTasks(a: ServiceTask, b: ServiceTask) {
-  // Sort by createdAt + created_time DESC
-  const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-  const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-  // If you have created_time, you can add it as well:
-  // const timeA = a.created_time || "00:00:00";
-  // const timeB = b.created_time || "00:00:00";
-  // const dateAFull = new Date(a.createdAt?.slice(0,10) + "T" + timeA);
-  // const dateBFull = new Date(b.createdAt?.slice(0,10) + "T" + timeB);
-  // return dateBFull.getTime() - dateAFull.getTime();
+  const dateA = a.createdAt
+    ? new Date(a.createdAt.replace(' ', 'T'))
+    : new Date(0);
+  const dateB = b.createdAt
+    ? new Date(b.createdAt.replace(' ', 'T'))
+    : new Date(0);
   return dateB.getTime() - dateA.getTime();
 }
 
@@ -225,14 +221,16 @@ export default function PCSTasksPage() {
           }))
         : [];
 
-      // -- SORTING LOGIC HERE --
-      const completedTasks = tasksList
-        .filter(isTaskCompleted)
-        .sort(compareCompletedTasks);
+
       const pendingTasks = tasksList
         .filter((t: ServiceTask) => !isTaskCompleted(t))
         .sort(comparePendingTasks);
-      const sortedTasks = [...completedTasks, ...pendingTasks];
+
+      const completedTasks = tasksList
+        .filter(isTaskCompleted)
+        .sort(compareCompletedTasks);
+
+      const sortedTasks = [...pendingTasks, ...completedTasks];
 
       setTasks(sortedTasks);
 
