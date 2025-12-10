@@ -432,6 +432,7 @@ export default function VendorManagement() {
         }
         const data = await response.json();
         const services = data.data.map((service: any) => service.service_name);
+        services.sort((a: string, b: string) => a.localeCompare(b));
         setServiceCategories(services);
       } catch (error: any) {
         toast({
@@ -466,7 +467,9 @@ export default function VendorManagement() {
     }
     if (typeFilter !== "all") {
       filtered = filtered.filter((vendor) =>
-        vendor.company_type.toLowerCase().includes(typeFilter.toLowerCase())
+        vendor.vendorServices.some((service) =>
+          service.service_name.toLowerCase() === typeFilter.toLowerCase()
+        )
       );
     }
     if (statusFilter !== "all") {
@@ -1068,12 +1071,17 @@ export default function VendorManagement() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="launch boat">Launch Boat</SelectItem>
-                        <SelectItem value="transport">Transport</SelectItem>
-                        <SelectItem value="clearance">
-                          Clearance Agent
-                        </SelectItem>
-                        <SelectItem value="supply">Supply</SelectItem>
+                        {loadingServices ? (
+                          <SelectItem value="loading" disabled>
+                            Loading services...
+                          </SelectItem>
+                        ) : (
+                          serviceCategories.map((service) => (
+                            <SelectItem key={service} value={service}>
+                              {service}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <Select

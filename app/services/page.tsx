@@ -45,6 +45,7 @@ import {
 import { Plus, Search, Edit, Trash2, ArrowLeft, Anchor } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 // Dummy current user fallback if you don't have a context
@@ -60,6 +61,7 @@ interface Service {
   created_by: string;
   updatedAt: string;
   createdAt: string;
+  required_oktb?: boolean;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -80,6 +82,7 @@ export default function ServicesManagement() {
   } | null>(null);
   const [newService, setNewService] = useState({
     service_name: "",
+    required_oktb: false,
   });
 
   // Fetch services from API
@@ -175,6 +178,7 @@ export default function ServicesManagement() {
         body: JSON.stringify({
           service_name: newService.service_name,
           created_by,
+          required_oktb: newService.required_oktb,
         }),
       });
 
@@ -190,7 +194,7 @@ export default function ServicesManagement() {
 
       setServices((prevServices) => [...prevServices, result.data]);
       setIsCreating(false);
-      setNewService({ service_name: "" });
+      setNewService({ service_name: "", required_oktb: false });
 
       toast({
         title: "Service Created",
@@ -435,6 +439,23 @@ export default function ServicesManagement() {
                         })
                       }
                     />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                    <Label htmlFor="requiredOktb" className="text-right">
+                      Required OKTB
+                    </Label>
+                    <div className="sm:col-span-3 flex items-center space-x-2">
+                      <Checkbox
+                        id="requiredOktb"
+                        checked={newService.required_oktb}
+                        onCheckedChange={(checked) =>
+                          setNewService({
+                            ...newService,
+                            required_oktb: checked === true,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
                 <DialogFooter className="flex flex-col sm:flex-row gap-2">
