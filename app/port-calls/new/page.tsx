@@ -343,10 +343,30 @@ interface Client {
   label: string;
 }
 
+interface VendorService {
+  id: number;
+  vendor_id: string;
+  service_name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface VendorStatus {
+  id: number;
+  status_id: string;
+  vendor_id: string;
+  status: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface Vendor {
   id: string;
+  vendor_id?: string;
   name: string;
   category: string;
+  vendorServices?: VendorService[];
+  vendorStatus?: VendorStatus;
 }
 
 export default function NewPortCall() {
@@ -2355,19 +2375,31 @@ export default function NewPortCall() {
                   <SelectValue placeholder="Select a vendor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vendors.map((vendor) => (
-                    <SelectItem key={vendor.id} value={vendor.id}>
-                      <div className="flex items-center space-x-2">
-                        <Users className="h-4 w-4" />
-                        <div>
-                          <div className="font-medium">{vendor.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {vendor.category}
+                  {vendors
+                    .filter((vendor) => {
+                      // Filter vendors that are approved (status === true)
+                      const isApproved = vendor.vendorStatus?.status === true;
+
+                      // Filter vendors that provide the current service
+                      const providesService = vendor.vendorServices?.some(
+                        (service) => service.service_name === currentService
+                      );
+
+                      return isApproved && providesService;
+                    })
+                    .map((vendor) => (
+                      <SelectItem key={vendor.id} value={vendor.id}>
+                        <div className="flex items-center space-x-2">
+                          <Users className="h-4 w-4" />
+                          <div>
+                            <div className="font-medium">{vendor.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {vendor.category}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </SelectItem>
-                  ))}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
