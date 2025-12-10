@@ -321,6 +321,39 @@ export default function OKTBPage() {
       return;
     }
     try {
+      // Validate and sanitize date fields
+      const isValidDate = (dateStr: string) => {
+        if (!dateStr || dateStr === 'Invalid date') return false;
+        const regex = /^\d{4}-\d{2}-\d{2}$/;
+        return regex.test(dateStr);
+      };
+
+      // Sanitize flights data - remove invalid dates and arrive_date/arrive_time fields
+      const sanitizedFlights = flights.map(flight => {
+        const sanitized: any = {
+          flight_number: flight.flight_number,
+          flight_name: flight.flight_name,
+          flight_from: flight.flight_from,
+          flight_to: flight.flight_to,
+        };
+
+        // Only include dates if they are valid
+        if (isValidDate(flight.flight_depature_date)) {
+          sanitized.flight_depature_date = flight.flight_depature_date;
+        }
+        if (flight.flight_depature_time) {
+          sanitized.flight_depature_time = flight.flight_depature_time;
+        }
+        if (isValidDate(flight.flight_date)) {
+          sanitized.flight_date = flight.flight_date;
+        }
+        if (flight.flight_time) {
+          sanitized.flight_time = flight.flight_time;
+        }
+
+        return sanitized;
+      });
+
       const res = await fetch(`${API_BASE_URL}/documents/oktb`, {
         method: "POST",
         headers: {
@@ -328,13 +361,13 @@ export default function OKTBPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          date,
+          date: isValidDate(date) ? date : undefined,
           principle,
           vessel,
           airline,
-          onBoardDate,
+          onBoardDate: isValidDate(onBoardDate) ? onBoardDate : undefined,
           crew,
-          fights: flights,
+          fights: sanitizedFlights,
           bookingReference,
           airLinePNR,
         }),
