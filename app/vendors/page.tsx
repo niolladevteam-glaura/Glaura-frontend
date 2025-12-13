@@ -198,6 +198,7 @@ export default function VendorManagement() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceCategories, setServiceCategories] = useState<string[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
+  const [companyTypes, setCompanyTypes] = useState<string[]>([]);
   const [vendorToDelete, setVendorToDelete] = useState<{
     id: string;
     name: string;
@@ -448,6 +449,20 @@ export default function VendorManagement() {
   }, []);
 
   useEffect(() => {
+    // Extract unique company types from vendors
+    if (vendors.length > 0) {
+      const uniqueTypes = Array.from(
+        new Set(
+          vendors
+            .map((vendor) => vendor.company_type)
+            .filter((type) => type && type.trim() !== "")
+        )
+      ).sort();
+      setCompanyTypes(uniqueTypes);
+    }
+  }, [vendors]);
+
+  useEffect(() => {
     let filtered = vendors;
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -467,9 +482,7 @@ export default function VendorManagement() {
     }
     if (typeFilter !== "all") {
       filtered = filtered.filter((vendor) =>
-        vendor.vendorServices.some((service) =>
-          service.service_name.toLowerCase() === typeFilter.toLowerCase()
-        )
+        vendor.company_type.toLowerCase() === typeFilter.toLowerCase()
       );
     }
     if (statusFilter !== "all") {
@@ -1067,21 +1080,15 @@ export default function VendorManagement() {
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                       <SelectTrigger className="w-full sm:w-48 form-input">
-                        <SelectValue placeholder="Service Type" />
+                        <SelectValue placeholder="Company Type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
-                        {loadingServices ? (
-                          <SelectItem value="loading" disabled>
-                            Loading services...
+                        {companyTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
                           </SelectItem>
-                        ) : (
-                          serviceCategories.map((service) => (
-                            <SelectItem key={service} value={service}>
-                              {service}
-                            </SelectItem>
-                          ))
-                        )}
+                        ))}
                       </SelectContent>
                     </Select>
                     <Select
