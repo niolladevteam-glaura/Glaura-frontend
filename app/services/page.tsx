@@ -228,7 +228,10 @@ export default function ServicesManagement() {
       if (!token) throw new Error("No authentication token found");
 
       const endpoint = `${API_URL}/service/${currentService.service_id}`;
-      const payload = { service_name: currentService.service_name };
+      const payload = {
+        service_name: currentService.service_name,
+        required_oktb: currentService.required_oktb
+      };
 
       const response = await fetch(endpoint, {
         method: "PUT",
@@ -441,7 +444,7 @@ export default function ServicesManagement() {
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                    <Label htmlFor="requiredOktb" className="text-right">
+                    <Label htmlFor="requiredOktb" className="text-right whitespace-nowrap">
                       Required OKTB
                     </Label>
                     <div className="sm:col-span-3 flex items-center space-x-2">
@@ -616,6 +619,27 @@ export default function ServicesManagement() {
                                         })
                                       }
                                     />
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                                    <Label
+                                      htmlFor="editRequiredOktb"
+                                      className="text-right whitespace-nowrap"
+                                    >
+                                      Required OKTB
+                                    </Label>
+                                    <div className="sm:col-span-3 flex items-center space-x-2">
+                                      <Checkbox
+                                        id="editRequiredOktb"
+                                        checked={currentService?.required_oktb || false}
+                                        onCheckedChange={(checked) =>
+                                          currentService &&
+                                          setCurrentService({
+                                            ...currentService,
+                                            required_oktb: checked === true,
+                                          })
+                                        }
+                                      />
+                                    </div>
                                   </div>
                                 </div>
                                 <DialogFooter className="flex flex-col sm:flex-row gap-2">
