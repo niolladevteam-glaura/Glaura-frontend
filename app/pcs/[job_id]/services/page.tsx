@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTheme } from "next-themes";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,7 @@ import {
   Anchor,
   Loader2,
   Pencil,
+  House,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -137,6 +139,7 @@ export default function PortCallServicesPage() {
   const router = useRouter();
   const job_id = params.job_id as string;
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const { theme } = useTheme();
 
   const [pcsList, setPCSList] = useState<PCS[]>([]);
   const [vendors, setVendors] = useState<(Vendor | null)[]>([]);

@@ -12,7 +12,15 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Anchor, Trash2, Loader2, Plus, Eye } from "lucide-react";
+import {
+  ArrowLeft,
+  Anchor,
+  Trash2,
+  Loader2,
+  Plus,
+  Eye,
+  House,
+} from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {

@@ -34,6 +34,7 @@ import {
   Table2,
   LayoutGrid,
   Edit3,
+  House,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -295,15 +296,12 @@ export default function ActivePortCalls() {
     portCallHeaders,
   ]);
 
-  const getPortCallStatus = (
-    portCall: PortCall
-  ): "Pending" | "Completed" => {
+  const getPortCallStatus = (portCall: PortCall): "Pending" | "Completed" => {
     if (portCall.status === "Completed") {
       return "Completed";
     }
     return "Pending";
   };
-
 
   const getHeaderStats = (headers: ServiceHeader[]) => {
     const totalHeaders = headers.length;

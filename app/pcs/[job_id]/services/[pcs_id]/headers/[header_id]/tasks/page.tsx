@@ -30,6 +30,7 @@ import {
   Check,
   X,
   Edit3,
+  House,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -84,21 +85,20 @@ function isTaskCompleted(task: ServiceTask) {
 }
 
 function compareCompletedTasks(a: ServiceTask, b: ServiceTask) {
-
   const dateA = a.compleated_date
-    ? new Date(a.compleated_date.replace(' ', 'T'))
+    ? new Date(a.compleated_date.replace(" ", "T"))
     : new Date(0);
   const dateB = b.compleated_date
-    ? new Date(b.compleated_date.replace(' ', 'T'))
+    ? new Date(b.compleated_date.replace(" ", "T"))
     : new Date(0);
   return dateB.getTime() - dateA.getTime();
 }
 function comparePendingTasks(a: ServiceTask, b: ServiceTask) {
   const dateA = a.createdAt
-    ? new Date(a.createdAt.replace(' ', 'T'))
+    ? new Date(a.createdAt.replace(" ", "T"))
     : new Date(0);
   const dateB = b.createdAt
-    ? new Date(b.createdAt.replace(' ', 'T'))
+    ? new Date(b.createdAt.replace(" ", "T"))
     : new Date(0);
   return dateB.getTime() - dateA.getTime();
 }
@@ -220,7 +220,6 @@ export default function PCSTasksPage() {
             id: t.id || t.task_id, // normalize
           }))
         : [];
-
 
       const pendingTasks = tasksList
         .filter((t: ServiceTask) => !isTaskCompleted(t))
