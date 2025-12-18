@@ -79,8 +79,6 @@ type Flight = {
   flight_time: string;
   flight_from: string;
   flight_to: string;
-  arrive_date?: string;
-  arrive_time?: string;
 };
 
 export default function OKTBPage() {
@@ -235,8 +233,6 @@ export default function OKTBPage() {
             flight_time: f.arriveTime ?? "",
             flight_from: f.destination.split(" - ")[0] || f.destination || "",
             flight_to: f.destination.split(" - ")[1] || f.destination || "",
-            arrive_date: f.arriveDate ?? "",
-            arrive_time: f.arriveTime ?? "",
           }))
         : [
             {
@@ -762,9 +758,9 @@ export default function OKTBPage() {
                       <div>
                         <label className="block text-sm font-medium mb-1">Arrival Date</label>
                         <DatePicker
-                          value={f.arrive_date || ""}
+                          value={f.flight_date || ""}
                           onChange={(val) =>
-                            handleFlightChange(i, "arrive_date", val)
+                            handleFlightChange(i, "flight_date", val)
                           }
                           placeholder="Arr. Date"
                         />
@@ -774,9 +770,9 @@ export default function OKTBPage() {
                         <Input
                           type="time"
                           placeholder="Arr. Time"
-                          value={f.arrive_time || ""}
+                          value={f.flight_time || ""}
                           onChange={(e) =>
-                            handleFlightChange(i, "arrive_time", e.target.value)
+                            handleFlightChange(i, "flight_time", e.target.value)
                           }
                         />
                       </div>
