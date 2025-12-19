@@ -459,42 +459,43 @@ export default function Dashboard() {
                 className="w-[300px] max-h-[90vh] overflow-y-auto"
               >
                 <nav className="space-y-6 pt-6">
-                  {navigationGroups
-                    .filter((group) => group.items.length > 0)
-                    .map((group, idx) => (
-                      <div key={group.heading || idx}>
-                        <h3 className="text-xs font-bold text-muted-foreground mb-2 uppercase">
-                          {group.heading}
-                        </h3>
-                        <div className="space-y-1">
-                          {group.items.map((item, index) =>
-                            item.disabled ? (
-                              <div
-                                key={item.href}
-                                className="nav-item nav-item--disabled animate-fade-in-left"
-                                style={{ animationDelay: `${index * 0.05}s` }}
-                              >
-                                <item.icon className="h-5 w-5" />
-                                <span className="font-medium">{item.label}</span>
-                              </div>
-                            ) : (
-                              <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`nav-item animate-fade-in-left ${
-                                  (item as any).active ? "active" : ""
-                                }`}
-                                style={{ animationDelay: `${index * 0.05}s` }}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                              >
-                                <item.icon className="h-5 w-5" />
-                                <span className="font-medium">{item.label}</span>
-                              </Link>
-                            )
-                          )}
-                        </div>
+                  {navigationGroups.map((group, idx) => (
+                    <div key={group.heading || idx}>
+                      <h3 className="text-xs font-bold text-muted-foreground mb-2 uppercase">
+                        {group.heading}
+                      </h3>
+                      <div className="space-y-1">
+                        {group.items.map((item, index) =>
+                          item.disabled ? (
+                            <div
+                              key={item.href}
+                              className="nav-item nav-item--disabled animate-fade-in-left"
+                              style={{ animationDelay: `${index * 0.05}s` }}
+                            >
+                              <item.icon className="h-5 w-5" />
+                              <span className="font-medium">{item.label}</span>
+                            </div>
+                          ) : (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className={`nav-item animate-fade-in-left ${
+                                (item as any).active ? "active" : ""
+                              }`}
+                              style={{ animationDelay: `${index * 0.05}s` }}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <item.icon className="h-5 w-5" />
+                              <span className="font-medium">{item.label}</span>
+                            </Link>
+                          )
+                        )}
+
+
+
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </nav>
               </SheetContent>
             </Sheet>
@@ -578,41 +579,42 @@ export default function Dashboard() {
         <aside className="hidden lg:block w-72 border-r bg-background min-h-screen sticky top-[73px]">
           <div className="h-screen max-h-screen overflow-y-auto">
             <nav className="p-4 space-y-6">
-              {navigationGroups
-                .filter((group) => group.items.length > 0)
-                .map((group, idx) => (
-                  <div key={group.heading || idx}>
-                    <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase">
-                      {group.heading}
-                    </h3>
-                    <div className="space-y-2">
-                      {group.items.map((item, index) =>
-                        item.disabled ? (
-                          <div
-                            key={item.href}
-                            className="nav-item nav-item--disabled animate-fade-in-left"
-                            style={{ animationDelay: `${index * 0.05}s` }}
-                          >
-                            <item.icon className="h-5 w-5" />
-                            <span className="font-medium">{item.label}</span>
-                          </div>
-                        ) : (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`nav-item animate-fade-in-left ${
-                              (item as any).active ? "active" : ""
-                            }`}
-                            style={{ animationDelay: `${index * 0.05}s` }}
-                          >
-                            <item.icon className="h-5 w-5" />
-                            <span className="font-medium">{item.label}</span>
-                          </Link>
-                        )
-                      )}
-                    </div>
+              {navigationGroups.map((group, idx) => (
+                <div key={group.heading || idx}>
+                  <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase">
+                    {group.heading}
+                  </h3>
+                  <div className="space-y-2">
+                    {group.items.map((item, index) =>
+                      item.disabled ? (
+                        <div
+                          key={item.href}
+                          className="nav-item nav-item--disabled animate-fade-in-left"
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+                      ) : (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`nav-item animate-fade-in-left ${
+                            (item as any)?.active ? "active" : ""
+                          }`}
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span className="font-medium">{item.label}</span>
+                        </Link>
+                      )
+                    )}
+
+
+
                   </div>
-                ))}
+                </div>
+              ))}
             </nav>
           </div>
         </aside>
