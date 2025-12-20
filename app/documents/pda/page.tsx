@@ -74,6 +74,9 @@ export default function PdaGeneratePage() {
   const [arraivalDate, setArraivalDate] = useState<string>("");
   const [departureDate, setDepartureDate] = useState<string>("");
   const [poc, setPoc] = useState<string>("Cargo Operations");
+  const [paymentTerms, setPaymentTerms] = useState<string>(
+    "PDA in Advance Balance upon receipt of Final DA"
+  );
   const [vessels, setVessels] = useState<Vessel[]>([]);
   const [invoiceData, setInvoiceData] = useState<InvoiceTable[]>([
     {
@@ -270,6 +273,7 @@ export default function PdaGeneratePage() {
       arraivalDate: formatDate(arraivalDate),
       departureDate: formatDate(departureDate),
       poc,
+      paymentTerms,
       invoiceData: invoiceData.map((table) => ({
         tableHeader: table.tableHeader,
         tableTotal: table.tableTotal,
@@ -355,11 +359,12 @@ export default function PdaGeneratePage() {
       ClientRefNo,
       AgentName,
       VesselName,
-      port,
       grt,
+      port,
       arraivalDate,
       departureDate,
       poc,
+      paymentTerms,
       invoiceData,
       InvoiceTotal,
     };
@@ -390,6 +395,9 @@ export default function PdaGeneratePage() {
         setArraivalDate(draftData.arraivalDate || "");
         setDepartureDate(draftData.departureDate || "");
         setPoc(draftData.poc || "Cargo Operations");
+        setPaymentTerms(
+          draftData.paymentTerms || "PDA in Advance Balance upon receipt of Final DA"
+        );
         setInvoiceData(draftData.invoiceData || [
           {
             tableHeader: "",
@@ -606,6 +614,34 @@ export default function PdaGeneratePage() {
                     onChange={(e) => setPoc(e.target.value)}
                     required
                   />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block mb-1 text-sm font-medium">
+                    Payment Terms
+                  </label>
+                  <Select
+                    value={paymentTerms}
+                    onValueChange={(v) => setPaymentTerms(v)}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment terms" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PDA in Advance Balance upon receipt of Final DA">
+                        PDA in Advance Balance upon receipt of Final DA
+                      </SelectItem>
+                      <SelectItem value="PDA in Advance Balance within 30 days upon receipt of Final DA">
+                        PDA in Advance Balance within 30 days upon receipt of Final DA
+                      </SelectItem>
+                      <SelectItem value="PDA in Advance Balance within 45 days upon receipt of Final DA">
+                        PDA in Advance Balance within 45 days upon receipt of Final DA
+                      </SelectItem>
+                      <SelectItem value="PDA in Advance Balance within 14 days upon receipt of Final DA">
+                        PDA in Advance Balance within 14 days upon receipt of Final DA
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
