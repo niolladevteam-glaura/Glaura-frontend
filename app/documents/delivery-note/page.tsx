@@ -340,7 +340,7 @@ export default function DeliveryNoteGeneratePage() {
                     required
                   />
                 </div>
-                <div>
+                {/* <div>
                   <label className="block mb-1 text-sm font-medium">
                     Master Signature
                   </label>
@@ -349,7 +349,7 @@ export default function DeliveryNoteGeneratePage() {
                     onChange={(e) => setMasterSignature(e.target.value)}
                     required
                   />
-                </div>
+                </div> */}
                 <div>
                   <label className="block mb-1 text-sm font-medium">
                     Signature Date

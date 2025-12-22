@@ -31,8 +31,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-// IMPORT Textarea
 import { Textarea } from "@/components/ui/textarea";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -41,7 +39,6 @@ type Vessel = {
   id: string;
   vessel_name: string;
   grt: number;
-  // ...other fields
 };
 
 type InvoiceRow = {
@@ -57,12 +54,24 @@ type InvoiceTable = {
   tableTotal: number;
 };
 
+const PAYMENT_TERMS_OPTIONS = [
+  "Upon receipt of the Final DA",
+  "Within 07 days upon receipt of the Final DA",
+  "Within 14 days upon receipt of the Final DA",
+  "Within 30 days upon receipt of the Final DA",
+  "Within 60 days upon receipt of the Final DA",
+  "PDA amount in Advance and any balance Upon receipt of the Final DA",
+  "PDA amount in Advance and any balance Within 07 days upon receipt of the Final DA",
+  "PDA amount in Advance and any balance Within 14 days upon receipt of the Final DA",
+  "PDA amount in Advance and any balance Within 30 days upon receipt of the Final DA",
+];
+
 export default function PdaGeneratePage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [date, setDate] = useState<string>(
-    new Date().toISOString().slice(0, 10),
+    new Date().toISOString().slice(0, 10)
   );
   const [ClientName, setClientName] = useState<string>("");
   const [ClientAddress, setClientAddress] = useState<string>("");
@@ -74,9 +83,15 @@ export default function PdaGeneratePage() {
   const [arraivalDate, setArraivalDate] = useState<string>("");
   const [departureDate, setDepartureDate] = useState<string>("");
   const [poc, setPoc] = useState<string>("Cargo Operations");
+
   const [paymentTerms, setPaymentTerms] = useState<string>(
-    "PDA in Advance Balance upon receipt of Final DA"
+    "Upon receipt of the Final DA"
   );
+  const [paymentTermsOther, setPaymentTermsOther] = useState<string>("");
+
+  const [isOtherPaymentTerms, setIsOtherPaymentTerms] =
+    useState<boolean>(false);
+
   const [vessels, setVessels] = useState<Vessel[]>([]);
   const [invoiceData, setInvoiceData] = useState<InvoiceTable[]>([
     {
@@ -139,7 +154,7 @@ export default function PdaGeneratePage() {
     const updatedInvoiceData = invoiceData.map((table) => {
       const total = table.tableRows.reduce(
         (sum, row) => sum + (parseFloat(row.amount as string) || 0),
-        0,
+        0
       );
       return { ...table, tableTotal: total };
     });
@@ -147,11 +162,21 @@ export default function PdaGeneratePage() {
 
     const totalAll = updatedInvoiceData.reduce(
       (sum, table) => sum + table.tableTotal,
-      0,
+      0
     );
     setInvoiceTotal(totalAll);
     // eslint-disable-next-line
   }, [JSON.stringify(invoiceData)]);
+
+  // Handle paymentTerms selection
+  useEffect(() => {
+    if (paymentTerms === "Other") {
+      setIsOtherPaymentTerms(true);
+    } else {
+      setIsOtherPaymentTerms(false);
+      setPaymentTermsOther(""); // Reset other field when not selected
+    }
+  }, [paymentTerms]);
 
   // Handlers for invoiceData (tables/rows)
   const addInvoiceTable = () => {
@@ -167,15 +192,15 @@ export default function PdaGeneratePage() {
 
   const removeInvoiceTable = (index: number) => {
     setInvoiceData((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
     );
   };
 
   const handleTableHeaderChange = (index: number, header: string) => {
     setInvoiceData((prev) =>
       prev.map((table, i) =>
-        i === index ? { ...table, tableHeader: header } : table,
-      ),
+        i === index ? { ...table, tableHeader: header } : table
+      )
     );
   };
 
@@ -183,7 +208,7 @@ export default function PdaGeneratePage() {
     tableIdx: number,
     rowIdx: number,
     field: keyof InvoiceRow,
-    value: string,
+    value: string
   ) => {
     setInvoiceData((prev) =>
       prev.map((table, i) =>
@@ -191,11 +216,11 @@ export default function PdaGeneratePage() {
           ? {
               ...table,
               tableRows: table.tableRows.map((row, ri) =>
-                ri === rowIdx ? { ...row, [field]: value } : row,
+                ri === rowIdx ? { ...row, [field]: value } : row
               ),
             }
-          : table,
-      ),
+          : table
+      )
     );
   };
 
@@ -215,8 +240,8 @@ export default function PdaGeneratePage() {
                 },
               ],
             }
-          : table,
-      ),
+          : table
+      )
     );
   };
 
@@ -236,8 +261,8 @@ export default function PdaGeneratePage() {
                       }))
                   : table.tableRows,
             }
-          : table,
-      ),
+          : table
+      )
     );
   };
 
@@ -258,8 +283,12 @@ export default function PdaGeneratePage() {
     // Convert datetime-local format (YYYY-MM-DDTHH:mm) to YYYY-MM-DD for backend
     const formatDate = (dateTimeStr: string) => {
       if (!dateTimeStr) return "";
-      return dateTimeStr.split('T')[0]; // Extract date part only
+      return dateTimeStr.split("T")[0]; // Extract date part only
     };
+
+    // PAYLOAD: When paymentTerms is "Other" use paymentTermsOther
+    const outPaymentTerms =
+      paymentTerms === "Other" ? paymentTermsOther.trim() : paymentTerms;
 
     const payload = {
       date,
@@ -273,7 +302,7 @@ export default function PdaGeneratePage() {
       arraivalDate: formatDate(arraivalDate),
       departureDate: formatDate(departureDate),
       poc,
-      paymentTerms,
+      paymentTerms: outPaymentTerms,
       invoiceData: invoiceData.map((table) => ({
         tableHeader: table.tableHeader,
         tableTotal: table.tableTotal,
@@ -309,7 +338,7 @@ export default function PdaGeneratePage() {
       const blobUrl = window.URL.createObjectURL(blob);
       window.open(blobUrl, "_blank");
       setSuccess(
-        "PDA Document generated successfully! PDF should open/download automatically.",
+        "PDA Document generated successfully! PDF should open/download automatically."
       );
       clearDraft(); // Clear draft after successful generation
     } catch (err: any) {
@@ -365,6 +394,7 @@ export default function PdaGeneratePage() {
       departureDate,
       poc,
       paymentTerms,
+      paymentTermsOther,
       invoiceData,
       InvoiceTotal,
     };
@@ -396,15 +426,19 @@ export default function PdaGeneratePage() {
         setDepartureDate(draftData.departureDate || "");
         setPoc(draftData.poc || "Cargo Operations");
         setPaymentTerms(
-          draftData.paymentTerms || "PDA in Advance Balance upon receipt of Final DA"
+          draftData.paymentTerms ||
+            "PDA in Advance Balance upon receipt of Final DA"
         );
-        setInvoiceData(draftData.invoiceData || [
-          {
-            tableHeader: "",
-            tableRows: [{ no: 1, details: "", amount: "", remarks: "" }],
-            tableTotal: 0,
-          },
-        ]);
+        setPaymentTermsOther(draftData.paymentTermsOther || "");
+        setInvoiceData(
+          draftData.invoiceData || [
+            {
+              tableHeader: "",
+              tableRows: [{ no: 1, details: "", amount: "", remarks: "" }],
+              tableTotal: 0,
+            },
+          ]
+        );
         setInvoiceTotal(draftData.InvoiceTotal || 0);
         setHasDraft(true);
       } catch (err) {
@@ -615,12 +649,13 @@ export default function PdaGeneratePage() {
                     required
                   />
                 </div>
+                {/* PAYMENT TERMS FIELD */}
                 <div className="sm:col-span-2">
                   <label className="block mb-1 text-sm font-medium">
                     Payment Terms
                   </label>
                   <Select
-                    value={paymentTerms}
+                    value={isOtherPaymentTerms ? "Other" : paymentTerms}
                     onValueChange={(v) => setPaymentTerms(v)}
                     required
                   >
@@ -628,20 +663,24 @@ export default function PdaGeneratePage() {
                       <SelectValue placeholder="Select payment terms" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PDA in Advance Balance upon receipt of Final DA">
-                        PDA in Advance Balance upon receipt of Final DA
-                      </SelectItem>
-                      <SelectItem value="PDA in Advance Balance within 30 days upon receipt of Final DA">
-                        PDA in Advance Balance within 30 days upon receipt of Final DA
-                      </SelectItem>
-                      <SelectItem value="PDA in Advance Balance within 45 days upon receipt of Final DA">
-                        PDA in Advance Balance within 45 days upon receipt of Final DA
-                      </SelectItem>
-                      <SelectItem value="PDA in Advance Balance within 14 days upon receipt of Final DA">
-                        PDA in Advance Balance within 14 days upon receipt of Final DA
-                      </SelectItem>
+                      {PAYMENT_TERMS_OPTIONS.map((term) => (
+                        <SelectItem key={term} value={term}>
+                          {term}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  {isOtherPaymentTerms && (
+                    <div className="mt-2">
+                      <Input
+                        value={paymentTermsOther}
+                        onChange={(e) => setPaymentTermsOther(e.target.value)}
+                        placeholder="Enter custom payment terms"
+                        required={isOtherPaymentTerms}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -709,7 +748,7 @@ export default function PdaGeneratePage() {
                                       tableIdx,
                                       rowIdx,
                                       "details",
-                                      e.target.value,
+                                      e.target.value
                                     )
                                   }
                                   required
@@ -726,7 +765,7 @@ export default function PdaGeneratePage() {
                                       tableIdx,
                                       rowIdx,
                                       "amount",
-                                      e.target.value,
+                                      e.target.value
                                     )
                                   }
                                   required
@@ -745,7 +784,7 @@ export default function PdaGeneratePage() {
                                       tableIdx,
                                       rowIdx,
                                       "remarks",
-                                      e.target.value,
+                                      e.target.value
                                     )
                                   }
                                   className="w-full"
@@ -825,7 +864,8 @@ export default function PdaGeneratePage() {
           <DialogHeader>
             <DialogTitle>Save Draft?</DialogTitle>
             <DialogDescription>
-              You have unsaved changes. Would you like to save this as a draft before leaving?
+              You have unsaved changes. Would you like to save this as a draft
+              before leaving?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
@@ -836,10 +876,7 @@ export default function PdaGeneratePage() {
             >
               Discard
             </Button>
-            <Button
-              onClick={handleSaveDraft}
-              className="w-full sm:w-auto"
-            >
+            <Button onClick={handleSaveDraft} className="w-full sm:w-auto">
               Save as Draft
             </Button>
           </DialogFooter>

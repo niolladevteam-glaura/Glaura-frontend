@@ -87,7 +87,7 @@ export default function OKTBPage() {
 
   // Form state
   const [date, setDate] = useState<string>(
-    new Date().toISOString().slice(0, 10),
+    new Date().toISOString().slice(0, 10)
   );
   const [principle, setPrinciple] = useState<string>("");
   const [vessel, setVessel] = useState<string>("");
@@ -174,7 +174,7 @@ export default function OKTBPage() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-          },
+          }
         );
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {
@@ -196,7 +196,7 @@ export default function OKTBPage() {
     if (!selectedCrewServiceID) return;
     // Find the crew change in crewServices array
     const service = crewServices.find(
-      (cs) => cs.Crw_Chg_Serv_id === selectedCrewServiceID,
+      (cs) => cs.Crw_Chg_Serv_id === selectedCrewServiceID
     );
     if (!service) return;
 
@@ -220,7 +220,7 @@ export default function OKTBPage() {
               passport_number: "",
               eTicketNo: "",
             },
-          ],
+          ]
     );
     setFlights(
       service.crewFlights && service.crewFlights.length > 0
@@ -245,7 +245,7 @@ export default function OKTBPage() {
               flight_from: "",
               flight_to: "",
             },
-          ],
+          ]
     );
   }, [selectedCrewServiceID, crewServices]);
 
@@ -253,10 +253,10 @@ export default function OKTBPage() {
   const handleCrewChange = (
     index: number,
     field: keyof Crew,
-    value: string,
+    value: string
   ) => {
     setCrew((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)),
+      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c))
     );
   };
   const addCrew = () =>
@@ -272,17 +272,17 @@ export default function OKTBPage() {
     ]);
   const removeCrew = (index: number) =>
     setCrew((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
     );
 
   // Flights dynamic handlers
   const handleFlightChange = (
     index: number,
     field: keyof Flight,
-    value: string,
+    value: string
   ) => {
     setFlights((prev) =>
-      prev.map((f, i) => (i === index ? { ...f, [field]: value } : f)),
+      prev.map((f, i) => (i === index ? { ...f, [field]: value } : f))
     );
   };
   const addFlight = () =>
@@ -301,7 +301,7 @@ export default function OKTBPage() {
     ]);
   const removeFlight = (index: number) =>
     setFlights((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
     );
 
   // Form submit with token
@@ -319,13 +319,13 @@ export default function OKTBPage() {
     try {
       // Validate and sanitize date fields
       const isValidDate = (dateStr: string) => {
-        if (!dateStr || dateStr === 'Invalid date') return false;
+        if (!dateStr || dateStr === "Invalid date") return false;
         const regex = /^\d{4}-\d{2}-\d{2}$/;
         return regex.test(dateStr);
       };
 
       // Sanitize flights data - remove invalid dates and arrive_date/arrive_time fields
-      const sanitizedFlights = flights.map(flight => {
+      const sanitizedFlights = flights.map((flight) => {
         const sanitized: any = {
           flight_number: flight.flight_number,
           flight_name: flight.flight_name,
@@ -383,7 +383,7 @@ export default function OKTBPage() {
       const blobUrl = window.URL.createObjectURL(blob);
       window.open(blobUrl, "_blank");
       setSuccess(
-        "OKTB Document generated successfully! PDF should open/download automatically.",
+        "OKTB Document generated successfully! PDF should open/download automatically."
       );
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -586,10 +586,15 @@ export default function OKTBPage() {
                   </Button>
                 </div>
                 {crew.map((c, i) => (
-                  <div key={i} className="border rounded-lg p-4 mb-4 bg-muted/30">
+                  <div
+                    key={i}
+                    className="border rounded-lg p-4 mb-4 bg-muted/30"
+                  >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Name</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Name
+                        </label>
                         <Input
                           placeholder="Name"
                           value={c.name}
@@ -600,7 +605,9 @@ export default function OKTBPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Nationality</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Nationality
+                        </label>
                         <Input
                           placeholder="Nationality"
                           value={c.natinality}
@@ -611,7 +618,9 @@ export default function OKTBPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Rank</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Rank
+                        </label>
                         <Input
                           placeholder="Rank"
                           value={c.rank}
@@ -624,18 +633,26 @@ export default function OKTBPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Passport No.</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Passport No.
+                        </label>
                         <Input
                           placeholder="Passport No."
                           value={c.passport_number}
                           onChange={(e) =>
-                            handleCrewChange(i, "passport_number", e.target.value)
+                            handleCrewChange(
+                              i,
+                              "passport_number",
+                              e.target.value
+                            )
                           }
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">eTicket No.</label>
+                        <label className="block text-sm font-medium mb-1">
+                          eTicket No.
+                        </label>
                         <Input
                           placeholder="eTicket No."
                           value={c.eTicketNo}
@@ -677,21 +694,32 @@ export default function OKTBPage() {
                   </Button>
                 </div>
                 {flights.map((f, i) => (
-                  <div key={i} className="border rounded-lg p-4 mb-4 bg-muted/30">
+                  <div
+                    key={i}
+                    className="border rounded-lg p-4 mb-4 bg-muted/30"
+                  >
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Flight Number</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Flight Number
+                        </label>
                         <Input
                           placeholder="Flight Number"
                           value={f.flight_number}
                           onChange={(e) =>
-                            handleFlightChange(i, "flight_number", e.target.value)
+                            handleFlightChange(
+                              i,
+                              "flight_number",
+                              e.target.value
+                            )
                           }
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Flight Name</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Flight Name
+                        </label>
                         <Input
                           placeholder="Flight Name"
                           value={f.flight_name}
@@ -702,7 +730,9 @@ export default function OKTBPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">From</label>
+                        <label className="block text-sm font-medium mb-1">
+                          From
+                        </label>
                         <Input
                           placeholder="From"
                           value={f.flight_from}
@@ -713,7 +743,9 @@ export default function OKTBPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">To</label>
+                        <label className="block text-sm font-medium mb-1">
+                          To
+                        </label>
                         <Input
                           placeholder="To"
                           value={f.flight_to}
@@ -726,21 +758,21 @@ export default function OKTBPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Departure Date</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Departure Date
+                        </label>
                         <DatePicker
                           value={f.flight_depature_date}
                           onChange={(val) =>
-                            handleFlightChange(
-                              i,
-                              "flight_depature_date",
-                              val,
-                            )
+                            handleFlightChange(i, "flight_depature_date", val)
                           }
                           placeholder="Dep. Date"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Departure Time</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Departure Time
+                        </label>
                         <Input
                           type="time"
                           placeholder="Dep. Time"
@@ -749,14 +781,16 @@ export default function OKTBPage() {
                             handleFlightChange(
                               i,
                               "flight_depature_time",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Arrival Date</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Arrival Date
+                        </label>
                         <DatePicker
                           value={f.flight_date || ""}
                           onChange={(val) =>
@@ -766,7 +800,9 @@ export default function OKTBPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Arrival Time</label>
+                        <label className="block text-sm font-medium mb-1">
+                          Arrival Time
+                        </label>
                         <Input
                           type="time"
                           placeholder="Arr. Time"
