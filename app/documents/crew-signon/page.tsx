@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Plus, Trash2, Anchor, LogOut, ArrowLeft} from "lucide-react";
+import { Plus, Trash2, Anchor, LogOut, ArrowLeft } from "lucide-react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -42,6 +42,11 @@ type Passenger = {
 export default function CrewSignOnGeneratePage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Document type state
+  const [documentType, setDocumentType] = useState<"signon" | "signoff">(
+    "signon"
+  );
 
   // Form state
   const [VesselName, setVesselName] = useState<string>("");
@@ -146,7 +151,13 @@ export default function CrewSignOnGeneratePage() {
       return;
     }
     try {
-      const res = await fetch(`${API_BASE_URL}/documents/signon`, {
+      // Optionally, you can use documentType to determine API endpoint or body parameter
+      const url =
+        documentType === "signon"
+          ? `${API_BASE_URL}/documents/signon`
+          : `${API_BASE_URL}/documents/signoff`;
+
+      const res = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -179,7 +190,7 @@ export default function CrewSignOnGeneratePage() {
       const blobUrl = window.URL.createObjectURL(blob);
       window.open(blobUrl, "_blank");
       setSuccess(
-        "Crew Sign On Document generated successfully! PDF should open/download automatically."
+        "Document generated successfully! PDF should open/download automatically."
       );
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -219,10 +230,10 @@ export default function CrewSignOnGeneratePage() {
               </div>
               <div className="min-w-0">
                 <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  Crew Sign On Document
+                  Crew Sign On / Off Document
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                  Generate Crew Sign On Document
+                  Generate Crew Sign On / Off Document
                 </p>
               </div>
             </div>
@@ -244,11 +255,34 @@ export default function CrewSignOnGeneratePage() {
       </header>
 
       <div className="max-w-4xl mx-auto p-6">
+        {/* Document Type Heading and Dropdown */}
+        <div className="flex items-center mb-6 gap-2">
+          <h1 className="text-xl font-bold">Generate Document:</h1>
+          <Select
+            value={documentType}
+            onValueChange={(v) => setDocumentType(v as "signon" | "signoff")}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue>
+                {documentType === "signon" ? "Crew Sign On" : "Crew Sign Off"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="signon">Crew Sign On</SelectItem>
+              <SelectItem value="signoff">Crew Sign Off</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle>Generate Crew Sign On Document</CardTitle>
+            <CardTitle>
+              {documentType === "signon"
+                ? "Generate Crew Sign On Document"
+                : "Generate Crew Sign Off Document"}
+            </CardTitle>
             <CardDescription>
-              Fill the following details to generate a Crew Sign On document.
+              Fill the following details to generate a document.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -438,7 +472,11 @@ export default function CrewSignOnGeneratePage() {
             </CardContent>
             <CardFooter>
               <Button type="submit" disabled={loading}>
-                {loading ? "Submitting..." : "Generate Crew Sign On"}
+                {loading
+                  ? "Submitting..."
+                  : documentType === "signon"
+                  ? "Generate Crew Sign On"
+                  : "Generate Crew Sign Off"}
               </Button>
               <Button
                 variant="ghost"

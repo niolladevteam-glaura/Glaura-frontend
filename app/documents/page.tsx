@@ -32,7 +32,7 @@ import {
   Calendar,
   User,
   Ship,
-  ArrowLeftCircle
+  ArrowLeftCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -154,7 +154,7 @@ export default function DocumentManagement() {
     },
     {
       label: "Crew Sign On",
-      cardLabel: "Crew Sign On Documents",
+      cardLabel: "Crew Sign On / Off Documents",
       description: "Generates required document for crew sign-on.",
       color: "bg-green-100 dark:bg-green-900",
       iconColor: "text-green-600 dark:text-green-400",
@@ -223,7 +223,7 @@ export default function DocumentManagement() {
         const signOnDocs: Document[] = (signOnJson.data || []).map(
           (d: any) => ({
             id: d.signon_id,
-            name: "Crew Sign On Document",
+            name: "Crew Sign On / Off Document",
             type: "Crew Sign On",
             category: "Crew Sign On",
             vesselName: d.VesselName,
@@ -368,7 +368,6 @@ export default function DocumentManagement() {
   };
 
   const openDocumentWithToken = async (url: string) => {
-
     const token =
       typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token) {
