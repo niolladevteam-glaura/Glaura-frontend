@@ -39,6 +39,7 @@ import {
   Gauge,
   Mail,
   MessageSquareWarning,
+  Lock,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -303,6 +304,11 @@ export default function Dashboard() {
           ? [{ href: "/users", icon: Users, label: "User Management" }]
           : []),
         { href: "/pic-management", icon: UserCog, label: "PIC Management" },
+        {
+          href: "/access-level-manager",
+          icon: Lock,
+          label: "Access Levels",
+        },
       ],
     },
     {
