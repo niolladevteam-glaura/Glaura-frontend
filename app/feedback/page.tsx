@@ -810,7 +810,7 @@ export default function FeedbackManagement() {
                 </div>
               </CardContent>
             </Card>
-
+            {/* 
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
@@ -829,17 +829,28 @@ export default function FeedbackManagement() {
                   <span className="xs:hidden">Filters</span>
                 </Button>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-4 md:space-y-6">
             {/* Search and Filters */}
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base md:text-lg">
                   Feedback & Complaint Management
                 </CardTitle>
+                <Button
+                  size="sm"
+                  className="flex items-center"
+                  onClick={() => setShowNewForm(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  <span className="hidden xs:inline">
+                    New Feedback/Complaint
+                  </span>
+                  <span className="xs:hidden">New</span>
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col gap-3 md:flex-row md:gap-4">
@@ -1168,7 +1179,7 @@ export default function FeedbackManagement() {
                           >
                             {responseLoading ? "Adding..." : "Add Response"}
                           </Button>
-                          <Button variant="outline">Update Status</Button>
+                          {/* <Button variant="outline">Update Status</Button> */}
                         </div>
                       </CardContent>
                     </Card>
