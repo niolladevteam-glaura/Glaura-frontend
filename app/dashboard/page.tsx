@@ -647,22 +647,27 @@ export default function Dashboard() {
           </div>
 
           {/* SIDEBAR FOOTER (PROFILE + LOGOUT), NOT SCROLLABLE */}
-          <div className="border-t pl-4 pr-4 pt-3 pb-6">
-            {" "}
-            {/* or just p-4 for symmetry */}
+          <div className="border-t px-2 pb-4 pt-3">
             <button
               onClick={handleLogout}
               className="
-      group flex items-center gap-3 w-full
-      py-3 rounded-lg
-      text-sm font-semibold text-red-500 bg-transparent
-      hover:bg-red-500/10 hover:text-red-600
-      transition focus:outline-none focus:ring-2 focus:ring-red-400/50
+      flex items-center w-full gap-2
+      px-3 py-2
+      rounded-md
+      text-base font-medium
+      text-red-500
+      bg-transparent
+      transition
+      hover:bg-neutral-900/70 
+      hover:text-red-600
+      active:bg-neutral-800/70
+      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400/60
+      shadow-none
     "
               aria-label="Logout"
               tabIndex={0}
             >
-              <LogOut className="h-5 w-5 opacity-75 group-hover:opacity-100 transition" />
+              <LogOut className="h-[18px] w-[18px] opacity-80" />
               <span>Logout</span>
             </button>
           </div>
