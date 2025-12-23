@@ -1,3 +1,5 @@
+// [NO URL: user provided the file directly]
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -36,6 +38,7 @@ import {
   Wrench,
   Gauge,
   Mail,
+  MessageSquareWarning,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -274,6 +277,14 @@ export default function Dashboard() {
     disabled?: boolean;
   };
 
+  // Global Dashboard nav item
+  const dashboardNavItem: NavigationItem = {
+    href: "/dashboard",
+    icon: Gauge,
+    label: "Dashboard",
+    active: true,
+  };
+
   // Grouped navigation items with headings
   const navigationGroups: {
     heading: string;
@@ -282,12 +293,6 @@ export default function Dashboard() {
     {
       heading: "Management",
       items: [
-        {
-          href: "/dashboard",
-          icon: Gauge,
-          label: "Dashboard",
-          active: true,
-        },
         {
           href: "/reports",
           icon: BarChart3,
@@ -366,6 +371,16 @@ export default function Dashboard() {
       heading: "IT & Social Media Department",
       items: [
         // Add links
+      ],
+    },
+    {
+      heading: "Other",
+      items: [
+        {
+          href: "/feedback",
+          icon: MessageSquareWarning,
+          label: "Feedback & Complaints",
+        },
       ],
     },
   ];
@@ -459,6 +474,20 @@ export default function Dashboard() {
                 className="w-[300px] max-h-[90vh] overflow-y-auto"
               >
                 <nav className="space-y-6 pt-6">
+                  {/* Global Dashboard Link */}
+                  <Link
+                    href={dashboardNavItem.href}
+                    className={`nav-item animate-fade-in-left ${
+                      dashboardNavItem.active ? "active" : ""
+                    }`}
+                    style={{ animationDelay: "0s" }}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <dashboardNavItem.icon className="h-5 w-5" />
+                    <span className="font-medium">
+                      {dashboardNavItem.label}
+                    </span>
+                  </Link>
                   {navigationGroups.map((group, idx) => (
                     <div key={group.heading || idx}>
                       <h3 className="text-xs font-bold text-muted-foreground mb-2 uppercase">
@@ -470,7 +499,9 @@ export default function Dashboard() {
                             <div
                               key={item.href}
                               className="nav-item nav-item--disabled animate-fade-in-left"
-                              style={{ animationDelay: `${index * 0.05}s` }}
+                              style={{
+                                animationDelay: `${index * 0.05 + 0.05}s`,
+                              }}
                             >
                               <item.icon className="h-5 w-5" />
                               <span className="font-medium">{item.label}</span>
@@ -479,10 +510,10 @@ export default function Dashboard() {
                             <Link
                               key={item.href}
                               href={item.href}
-                              className={`nav-item animate-fade-in-left ${
-                                (item as any).active ? "active" : ""
-                              }`}
-                              style={{ animationDelay: `${index * 0.05}s` }}
+                              className={`nav-item animate-fade-in-left`}
+                              style={{
+                                animationDelay: `${index * 0.05 + 0.05}s`,
+                              }}
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
                               <item.icon className="h-5 w-5" />
@@ -490,9 +521,6 @@ export default function Dashboard() {
                             </Link>
                           )
                         )}
-
-
-
                       </div>
                     </div>
                   ))}
@@ -543,7 +571,7 @@ export default function Dashboard() {
                       dark:bg-white/20 dark:text-white dark:border-white/30
                     "
                   >
-                    Version 1.0
+                    Version 1.8
                   </Badge>
                 </h1>
                 <p className="text-sm text-muted-foreground">
@@ -566,61 +594,82 @@ export default function Dashboard() {
                 {currentUser.role}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
+            {/* <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-2" />
               Logout
-            </Button>
+            </Button> */}
           </div>
         </div>
       </header>
 
       <div className="flex">
-        {/* Enhanced Desktop Sidebar with own scroll */}
-        <aside className="hidden lg:block w-72 border-r bg-background min-h-screen sticky top-[73px]">
-          <div className="h-screen max-h-screen overflow-y-auto">
-            <nav className="p-4 space-y-6">
-              {navigationGroups.map((group, idx) => (
-                <div key={group.heading || idx}>
-                  <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase">
-                    {group.heading}
-                  </h3>
-                  <div className="space-y-2">
-                    {group.items.map((item, index) =>
-                      item.disabled ? (
-                        <div
-                          key={item.href}
-                          className="nav-item nav-item--disabled animate-fade-in-left"
-                          style={{ animationDelay: `${index * 0.05}s` }}
-                        >
-                          <item.icon className="h-5 w-5" />
-                          <span className="font-medium">{item.label}</span>
-                        </div>
-                      ) : (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={`nav-item animate-fade-in-left ${
-                            (item as any)?.active ? "active" : ""
-                          }`}
-                          style={{ animationDelay: `${index * 0.05}s` }}
-                        >
-                          <item.icon className="h-5 w-5" />
-                          <span className="font-medium">{item.label}</span>
-                        </Link>
-                      )
-                    )}
-
-
-
-                  </div>
+        {/* === DESKTOP SIDEBAR: 3-ZONE, PROFESSIONAL LAYOUT === */}
+        <aside className="w-72 bg-background border-r flex flex-col h-[calc(100vh-73px)] sticky top-[73px]">
+          {/* SCROLLABLE NAVIGATION BLOCK */}
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            <Link
+              href={dashboardNavItem.href}
+              className={`nav-item ${dashboardNavItem.active ? "active" : ""}`}
+            >
+              <dashboardNavItem.icon className="h-5 w-5" />
+              <span>Dashboard</span>
+            </Link>
+            {navigationGroups.map((group, idx) => (
+              <div key={group.heading || idx}>
+                <h3 className="text-xs font-bold text-muted-foreground mb-3 uppercase">
+                  {group.heading}
+                </h3>
+                <div className="space-y-2">
+                  {group.items.map((item) =>
+                    item.disabled ? (
+                      <div
+                        key={item.href}
+                        className="nav-item nav-item--disabled"
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </div>
+                    ) : (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="nav-item"
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                    )
+                  )}
                 </div>
-              ))}
-            </nav>
+              </div>
+            ))}
+          </div>
+
+          {/* SIDEBAR FOOTER (PROFILE + LOGOUT), NOT SCROLLABLE */}
+          <div className="border-t pl-4 pr-4 pt-3 pb-6">
+            {" "}
+            {/* or just p-4 for symmetry */}
+            <button
+              onClick={handleLogout}
+              className="
+      group flex items-center gap-3 w-full
+      py-3 rounded-lg
+      text-sm font-semibold text-red-500 bg-transparent
+      hover:bg-red-500/10 hover:text-red-600
+      transition focus:outline-none focus:ring-2 focus:ring-red-400/50
+    "
+              aria-label="Logout"
+              tabIndex={0}
+            >
+              <LogOut className="h-5 w-5 opacity-75 group-hover:opacity-100 transition" />
+              <span>Logout</span>
+            </button>
           </div>
         </aside>
+        {/* === END SIDEBAR === */}
 
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 lg:p-8 overflow-y-auto h-[calc(98vh-73px)]">
           {/* Mobile Profile Card */}
           <MobileProfileCard user={currentUser} />
 

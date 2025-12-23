@@ -21,7 +21,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import {
   User,
   Settings,
-  Palette,
   Shield,
   Camera,
   Save,
@@ -123,12 +122,8 @@ async function subscribeToPush() {
     toast.error("Notification permission not granted!");
     return false;
   }
-
-  // Register service worker and wait until it's active
   await navigator.serviceWorker.register("/worker.js");
   const registration = await navigator.serviceWorker.ready;
-
-  // Now it's safe to subscribe
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
@@ -145,6 +140,7 @@ async function subscribeToPush() {
   return true;
 }
 
+// Optional theme selector, not used in main code but retained for completeness
 const ColorThemeSelector = ({
   currentTheme,
   onThemeChange,
@@ -283,7 +279,6 @@ export default function ProfilePage() {
         const storedUserRaw = localStorage.getItem("currentUser");
         if (storedUserRaw) {
           const storedUser = JSON.parse(storedUserRaw);
-          // Update both profile_picture and avatar fields for compatibility
           storedUser.avatar = publicUrl;
           if (storedUser.personal_info)
             storedUser.personal_info.profile_picture = publicUrl;
@@ -309,7 +304,6 @@ export default function ProfilePage() {
       toast.error("Failed to upload picture.");
     } finally {
       setUploadingPic(false);
-      // Reset the input so same file can be re-uploaded if needed
       if (e.target) e.target.value = "";
     }
   };
@@ -357,13 +351,20 @@ export default function ProfilePage() {
           },
           preferences: {
             notifications: {
-              email_notifications: preferences.notifications?.email ?? false,
-              push_notifications: preferences.notifications?.push ?? false,
+              // Always cast to bool (for backend type safety)
+              email_notifications: !!(
+                preferences.notifications?.email === true ||
+                preferences.notifications?.email === "true"
+              ),
+              push_notifications: !!(
+                preferences.notifications?.push === true ||
+                preferences.notifications?.push === "true"
+              ),
             },
             theme: preferences.theme ?? "maritime",
           },
           security: {
-            twoFactorAuth: security.twoFactorAuth,
+            twoFactorAuth: !!security.twoFactorAuth,
           },
           theme: {
             theme: theme.theme,
@@ -374,9 +375,7 @@ export default function ProfilePage() {
         setCurrentUser(userProfile);
         setFormData(userProfile);
       })
-      .catch((e) => {
-        setCurrentUser(null);
-      })
+      .catch(() => setCurrentUser(null))
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -399,6 +398,12 @@ export default function ProfilePage() {
     const token = localStorage.getItem("token");
     if (!currentUser || !formData || !token) return;
 
+    // Always force booleans here (for backend)!
+    const push_notifications =
+      !!formData.preferences?.notifications?.push_notifications;
+    const email_notifications =
+      !!formData.preferences?.notifications?.email_notifications;
+
     const updateBody = {
       first_name:
         formData.personal_info?.first_name ||
@@ -415,13 +420,12 @@ export default function ProfilePage() {
         formData.personal_info?.phone || currentUser.personal_info.phone,
       dob: formData.personal_info?.dob || currentUser.personal_info.dob,
       push_notifications:
-        formData.preferences?.notifications.push_notifications ??
-        currentUser.preferences.notifications.push_notifications,
+        !!formData.preferences?.notifications?.push_notifications,
       email_notifications:
-        formData.preferences?.notifications.email_notifications ??
-        currentUser.preferences.notifications.email_notifications,
+        !!formData.preferences?.notifications?.email_notifications,
       colorTheme: formData.preferences?.theme || currentUser.preferences.theme,
     };
+    console.log("UPDATE_BODY:", updateBody);
 
     try {
       await updateUserSettings(currentUser.id, updateBody, token);
@@ -453,6 +457,7 @@ export default function ProfilePage() {
     }
   };
 
+  // Any input field handler
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => {
       if (field.includes(".")) {
@@ -469,6 +474,7 @@ export default function ProfilePage() {
     });
   };
 
+  // Always force boolean for notification prefs!
   const handlePreferenceChange = (field: string, value: any) => {
     setFormData((prev) => {
       const notificationKey =
@@ -481,14 +487,18 @@ export default function ProfilePage() {
             notifications: {
               email_notifications:
                 notificationKey === "email_notifications"
-                  ? value
-                  : prev.preferences?.notifications?.email_notifications ??
-                    false,
+                  ? !!(value === true || value === "true")
+                  : !!(
+                      prev.preferences?.notifications?.email_notifications ??
+                      false
+                    ),
               push_notifications:
                 notificationKey === "push_notifications"
-                  ? value
-                  : prev.preferences?.notifications?.push_notifications ??
-                    false,
+                  ? !!(value === true || value === "true")
+                  : !!(
+                      prev.preferences?.notifications?.push_notifications ??
+                      false
+                    ),
             },
             theme: prev.preferences?.theme,
           },
@@ -500,10 +510,12 @@ export default function ProfilePage() {
           ...prev.preferences,
           [field]: value,
           notifications: {
-            email_notifications:
-              prev.preferences?.notifications?.email_notifications ?? false,
-            push_notifications:
-              prev.preferences?.notifications?.push_notifications ?? false,
+            email_notifications: !!(
+              prev.preferences?.notifications?.email_notifications ?? false
+            ),
+            push_notifications: !!(
+              prev.preferences?.notifications?.push_notifications ?? false
+            ),
           },
         },
       };
@@ -842,24 +854,23 @@ export default function ProfilePage() {
                           Receive notifications about port calls and updates
                         </p>
                       </div>
-                      <Button
-                        onClick={handleEnablePushNotifications}
-                        disabled={
-                          pushStatus === "enabled" ||
-                          pushStatus === "loading" ||
-                          !isEditing
+                      <Switch
+                        checked={
+                          !!formData.preferences?.notifications
+                            ?.push_notifications
                         }
-                        variant={
-                          pushStatus === "enabled" ? "default" : "outline"
-                        }
-                        className="min-w-[120px]"
-                      >
-                        {pushStatus === "loading"
-                          ? "Enabling..."
-                          : pushStatus === "enabled"
-                          ? "Enabled"
-                          : "Enable"}
-                      </Button>
+                        onCheckedChange={async (checked) => {
+                          handlePreferenceChange("push", checked);
+                          if (checked) {
+                            // Optionally, trigger service worker subscription
+                            await handleEnablePushNotifications();
+                          } else {
+                            // If you wish, add unsubscribe logic here!
+                            // For now, just uncheck the value and let Save send to backend.
+                          }
+                        }}
+                        disabled={!isEditing}
+                      />
                     </div>
 
                     <Separator />
@@ -873,8 +884,8 @@ export default function ProfilePage() {
                       </div>
                       <Switch
                         checked={
-                          formData.preferences?.notifications
-                            .email_notifications || false
+                          !!formData.preferences?.notifications
+                            ?.email_notifications
                         }
                         onCheckedChange={(checked) =>
                           handlePreferenceChange("email", checked)
@@ -884,8 +895,6 @@ export default function ProfilePage() {
                     </div>
 
                     <Separator />
-
-                    {/* Language selection could go here */}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -915,7 +924,6 @@ export default function ProfilePage() {
                           Change
                         </Button>
                       </div>
-                      {/* Change Password Dialog */}
                       <ChangePasswordDialog
                         open={showPasswordDialog}
                         onClose={() => setShowPasswordDialog(false)}
