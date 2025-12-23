@@ -349,6 +349,7 @@ export default function Dashboard() {
           icon: ClipboardCheck,
           label: "Pending Inquiry",
         },
+        { href: "/emails", icon: Mail, label: "Email" },
       ],
     },
     {
