@@ -151,7 +151,6 @@ export default function CrewSignOnGeneratePage() {
       return;
     }
     try {
-      // Optionally, you can use documentType to determine API endpoint or body parameter
       const url =
         documentType === "signon"
           ? `${API_BASE_URL}/documents/signon`
@@ -167,6 +166,7 @@ export default function CrewSignOnGeneratePage() {
           VesselName,
           imo,
           port,
+          type: documentType === "signon" ? "ON" : "OFF",
           JoinDate,
           flight,
           arriveTime,
