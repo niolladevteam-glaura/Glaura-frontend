@@ -1,5 +1,3 @@
-// [NO URL: user provided the file directly]
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -56,7 +54,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
+// --- SheetContent removed, will make our custom overlay below!
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -130,7 +129,6 @@ export default function Dashboard() {
     { port: string; vessels: number }[]
   >([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -240,12 +238,23 @@ export default function Dashboard() {
     fetchBirthdaySummary();
   }, []);
 
+  // --- lock scrolling when mobile nav is open ---
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
+
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     router.push("/");
   };
 
-  // Navigation item type with optional 'disabled' property
   type NavigationItem = {
     href: string;
     icon: any;
@@ -254,7 +263,6 @@ export default function Dashboard() {
     disabled?: boolean;
   };
 
-  // Global Dashboard nav item
   const dashboardNavItem: NavigationItem = {
     href: "/dashboard",
     icon: Gauge,
@@ -262,7 +270,6 @@ export default function Dashboard() {
     active: true,
   };
 
-  // Grouped navigation items with headings
   const navigationGroups: {
     heading: string;
     items: NavigationItem[];
@@ -438,74 +445,19 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Enhanced Mobile Header */}
+      {/* MOBILE HEADER */}
       <header className="lg:hidden glass-effect border-b px-4 py-3 sticky top-0 z-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="left"
-                className="w-[300px] max-h-[90vh] overflow-y-auto"
-              >
-                <nav className="space-y-6 pt-6">
-                  {/* Global Dashboard Link */}
-                  <Link
-                    href={dashboardNavItem.href}
-                    className={`nav-item animate-fade-in-left ${
-                      dashboardNavItem.active ? "active" : ""
-                    }`}
-                    style={{ animationDelay: "0s" }}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <dashboardNavItem.icon className="h-5 w-5" />
-                    <span className="font-medium">
-                      {dashboardNavItem.label}
-                    </span>
-                  </Link>
-                  {navigationGroups.map((group, idx) => (
-                    <div key={group.heading || idx}>
-                      <h3 className="text-xs font-bold text-muted-foreground mb-2 uppercase">
-                        {group.heading}
-                      </h3>
-                      <div className="space-y-1">
-                        {group.items.map((item, index) =>
-                          item.disabled ? (
-                            <div
-                              key={item.href}
-                              className="nav-item nav-item--disabled animate-fade-in-left"
-                              style={{
-                                animationDelay: `${index * 0.05 + 0.05}s`,
-                              }}
-                            >
-                              <item.icon className="h-5 w-5" />
-                              <span className="font-medium">{item.label}</span>
-                            </div>
-                          ) : (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              className={`nav-item animate-fade-in-left`}
-                              style={{
-                                animationDelay: `${index * 0.05 + 0.05}s`,
-                              }}
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              <item.icon className="h-5 w-5" />
-                              <span className="font-medium">{item.label}</span>
-                            </Link>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </nav>
-              </SheetContent>
-            </Sheet>
+            {/* --- Hamburger Menu --- */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
             <div className="flex items-center space-x-2">
               <div className="bg-primary p-2 rounded-xl">
                 <Anchor className="h-6 w-6 text-primary-foreground" />
@@ -522,9 +474,109 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        {/* --- Custom Mobile Nav Overlay (Sheet + Mask) --- */}
+        {isMobileMenuOpen && (
+          <>
+            {/* Overlay mask */}
+            <div
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm transition-opacity"
+              aria-label="Close mobile menu"
+              tabIndex={-1}
+            />
+            {/* Sidebar */}
+            <nav
+              className={`
+                fixed top-0 left-0 z-[120] h-full w-[80vw] max-w-xs sm:max-w-sm bg-background shadow-lg flex flex-col
+                animate-slide-in-left
+                `}
+              style={{
+                minHeight: "100dvh", // support mobile 'viewport units'
+                transition: "transform 0.2s cubic-bezier(.4,0,.2,1)",
+              }}
+              aria-label="Sidebar Navigation"
+            >
+              {/* --- close button --- */}
+              <div className="flex items-center justify-between p-4 border-b">
+                <span className="text-lg font-bold">GLAURA</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  aria-label="Close menu"
+                >
+                  <span className="text-2xl" aria-hidden="true">
+                    &times;
+                  </span>
+                </Button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-3 py-2">
+                <Link
+                  href={dashboardNavItem.href}
+                  className={`nav-item animate-fade-in-left ${
+                    dashboardNavItem.active ? "active" : ""
+                  }`}
+                  style={{ animationDelay: "0s" }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <dashboardNavItem.icon className="h-5 w-5" />
+                  <span className="font-medium">{dashboardNavItem.label}</span>
+                </Link>
+                {navigationGroups.map((group, idx) => (
+                  <div key={group.heading || idx} className="mt-6">
+                    <h3 className="text-xs font-bold text-muted-foreground mb-2 uppercase">
+                      {group.heading}
+                    </h3>
+                    <div className="space-y-1">
+                      {group.items.map((item, index) =>
+                        item.disabled ? (
+                          <div
+                            key={item.href}
+                            className="nav-item nav-item--disabled animate-fade-in-left"
+                            style={{
+                              animationDelay: `${index * 0.05 + 0.05}s`,
+                            }}
+                          >
+                            <item.icon className="h-5 w-5" />
+                            <span className="font-medium">{item.label}</span>
+                          </div>
+                        ) : (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`nav-item animate-fade-in-left`}
+                            style={{
+                              animationDelay: `${index * 0.05 + 0.05}s`,
+                            }}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            <item.icon className="h-5 w-5" />
+                            <span className="font-medium">{item.label}</span>
+                          </Link>
+                        )
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t px-4 py-3">
+                <Button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-red-500"
+                  variant="ghost"
+                  aria-label="Logout"
+                >
+                  <LogOut className="h-[18px] w-[18px]" />
+                  <span>Logout</span>
+                </Button>
+              </div>
+            </nav>
+          </>
+        )}
       </header>
 
-      {/* Enhanced Desktop Header */}
+      {/* DESKTOP HEADER */}
       <header className="hidden lg:flex glass-effect border-b px-6 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center space-x-6">
@@ -573,17 +625,13 @@ export default function Dashboard() {
                 {currentUser.role}
               </p>
             </div>
-            {/* <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button> */}
           </div>
         </div>
       </header>
 
       <div className="flex">
         {/* === DESKTOP SIDEBAR: 3-ZONE, PROFESSIONAL LAYOUT === */}
-        <aside className="w-72 bg-background border-r flex flex-col h-[calc(100vh-73px)] sticky top-[73px]">
+        <aside className="hidden lg:flex w-72 bg-background border-r flex-col h-[calc(100vh-73px)] sticky top-[73px]">
           {/* SCROLLABLE NAVIGATION BLOCK */}
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
             <Link
@@ -693,17 +741,6 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground mb-2">
                   next 7 days
                 </p>
-                {/* <div className="flex gap-2 text-xs mb-2">
-                  <Badge variant="secondary" className="px-1">
-                    Today: {todayBirthdayCount}
-                  </Badge>
-                  <Badge variant="outline" className="px-1">
-                    This Week: {thisWeekBirthdayCount}
-                  </Badge>
-                  <Badge variant="outline" className="px-1">
-                    Month: {thisMonthBirthdayCount}
-                  </Badge>
-                </div> */}
                 <div>
                   <Link href="/birthdays">
                     <Button
