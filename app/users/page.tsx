@@ -1127,16 +1127,16 @@ export default function UserManagement() {
                       <div className="space-y-4 mt-4">
                         <div>
                           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-                            System Privileges
+                            Permissions for {selectedAccessLevel.name}
                           </h3>
                           <p className="text-sm text-gray-500">
                             {selectedAccessLevel.description ||
-                              "Privileges for this access level."}
+                              "Permissions for this access level."}
                           </p>
                         </div>
                         {selectedAccessLevel.Permissions?.length === 0 ? (
                           <div className="text-gray-500 text-sm">
-                            No privileges assigned.
+                            No Permissions assigned.
                           </div>
                         ) : (
                           <div className="divide-y divide-gray-200 dark:divide-gray-700 rounded-xl border border-gray-200 dark:border-gray-800 bg-background p-2">
@@ -1410,7 +1410,9 @@ export default function UserManagement() {
                 {/* System Privileges Section */}
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-medium">System Privileges</h3>
+                    <h3 className="text-lg font-medium">
+                      Permissions for {selectedAccessLevel.name}
+                    </h3>
                     <p className="text-sm text-gray-500">
                       Modify user permissions as needed
                     </p>

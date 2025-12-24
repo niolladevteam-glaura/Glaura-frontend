@@ -54,8 +54,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-
-// --- SheetContent removed, will make our custom overlay below!
+import { can, canAny } from "@/lib/permissions";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -283,22 +282,52 @@ export default function Dashboard() {
           label: "Reports",
           disabled: true,
         },
-        { href: "/users", icon: Users, label: "User Management" },
-        { href: "/pic-management", icon: UserCog, label: "PIC Management" },
-        {
+        can("management.user.view") && {
+          href: "/users",
+          icon: Users,
+          label: "User Management",
+        },
+        can("management.pic.view") && {
+          href: "/pic-management",
+          icon: UserCog,
+          label: "PIC Management",
+        },
+        can("management.access_level.view") && {
           href: "/access-level-manager",
           icon: Lock,
           label: "Access Levels",
         },
-      ],
+      ].filter(Boolean) as NavigationItem[],
     },
+
     {
       heading: "Operations Department",
       items: [
-        { href: "/port-calls", icon: Anchor, label: "Active Port Calls" },
-        { href: "/all-services", icon: ListChecks, label: "Active Services" },
-        { href: "/services", icon: Wrench, label: "Services Management" },
-        { href: "/emails", icon: Mail, label: "Email" },
+        can("operation.port_call.view") && {
+          href: "/port-calls",
+          icon: Anchor,
+          label: "Active Port Calls",
+        },
+
+        // USERS WITH ONLY THIS PERMISSION SEE ONLY THIS TAB
+        can("operation.service.view") && {
+          href: "/all-services",
+          icon: ListChecks,
+          label: "Active Services",
+        },
+
+        can("operation.service.update") && {
+          href: "/services",
+          icon: Wrench,
+          label: "Services Management",
+        },
+
+        can("operation.email.view") && {
+          href: "/emails",
+          icon: Mail,
+          label: "Email",
+        },
+
         {
           href: "/husbandry-services",
           icon: ClipboardList,
@@ -317,57 +346,96 @@ export default function Dashboard() {
           label: "Bunkering Operations",
           disabled: true,
         },
-        { href: "/documents", icon: FileText, label: "Document Management" },
-      ],
+
+        can("operation.document.view") && {
+          href: "/documents",
+          icon: FileText,
+          label: "Document Management",
+        },
+      ].filter(Boolean) as NavigationItem[],
     },
+
     {
       heading: "Disbursement Department",
       items: [
-        { href: "/port-calls/new", icon: Plus, label: "New Port Calls" },
-        { href: "/customers", icon: Building2, label: "Customers" },
-        { href: "/vessels", icon: Ship, label: "Vessel Management" },
-        { href: "/services", icon: Wrench, label: "Services Management" },
-        { href: "/tasks", icon: ListTodo, label: "Task Management" },
-        { href: "/documents", icon: FileText, label: "Document Management" },
-        {
+        can("disbursement.port_call.create") && {
+          href: "/port-calls/new",
+          icon: Plus,
+          label: "New Port Calls",
+        },
+        can("disbursement.customer.view") && {
+          href: "/customers",
+          icon: Building2,
+          label: "Customers",
+        },
+        can("disbursement.vessel.view") && {
+          href: "/vessels",
+          icon: Ship,
+          label: "Vessel Management",
+        },
+        can("disbursement.service.view") && {
+          href: "/services",
+          icon: Wrench,
+          label: "Services Management",
+        },
+        can("disbursement.task.view") && {
+          href: "/tasks",
+          icon: ListTodo,
+          label: "Task Management",
+        },
+        can("disbursement.document.view") && {
+          href: "/documents",
+          icon: FileText,
+          label: "Document Management",
+        },
+        can("disbursement.inquiry.view") && {
           href: "/pending-inquiry",
           icon: ClipboardCheck,
           label: "Pending Inquiry",
         },
-        { href: "/emails", icon: Mail, label: "Email" },
-      ],
+        can("disbursement.email.view") && {
+          href: "/emails",
+          icon: Mail,
+          label: "Email",
+        },
+      ].filter(Boolean) as NavigationItem[],
     },
+
     {
       heading: "Accounts Department",
-      items: [
-        // Add links
-      ],
+      items: [],
     },
+
     {
       heading: "HR Department",
-      items: [
-        // Add links
-      ],
+      items: [],
     },
+
     {
       heading: "Admin Department",
-      items: [{ href: "/vendors", icon: Handshake, label: "Vendors" }],
+      items: [
+        can("admin.vendor.view") && {
+          href: "/vendors",
+          icon: Handshake,
+          label: "Vendors",
+        },
+      ].filter(Boolean) as NavigationItem[],
     },
+
     {
       heading: "IT & Social Media Department",
-      items: [
-        // Add links
-      ],
+      items: [],
     },
+
     {
       heading: "Other",
       items: [
-        {
+        can("other.feedback.view") && {
           href: "/feedback",
           icon: MessageSquareWarning,
           label: "Feedback & Complaints",
         },
-      ],
+      ].filter(Boolean) as NavigationItem[],
     },
   ];
 
@@ -711,7 +779,7 @@ export default function Dashboard() {
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
-              title="Active Port Calls"
+              title="Today Added Port Calls"
               value={activePortCallsCount}
               subtitle="from yesterday"
               trend={activePortCallsTrend}
