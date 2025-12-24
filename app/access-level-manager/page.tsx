@@ -21,12 +21,7 @@ import {
   Search,
   Menu,
   ArrowLeft,
-  LogOut,
   Shield,
-  ChevronRight,
-  Users,
-  Key,
-  Filter,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -55,8 +50,8 @@ export default function AccessLevelManager() {
   const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
   const [permLoading, setPermLoading] = useState(true);
 
-  // Access Levels (initial state placeholder)
   const [accessLevels, setAccessLevels] = useState<AccessLevel[]>([]);
+  const [accessLevelsLoading, setAccessLevelsLoading] = useState(true);
 
   const [search, setSearch] = useState("");
 
@@ -78,7 +73,7 @@ export default function AccessLevelManager() {
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-  // Fetch permission list on mount
+  // Fetch permission list (for modal creation) on mount
   useEffect(() => {
     async function fetchPermissions() {
       setPermLoading(true);
@@ -103,29 +98,6 @@ export default function AccessLevelManager() {
         const data = await res.json();
         if (data.success && Array.isArray(data.permissions)) {
           setAllPermissions(data.permissions);
-          setAccessLevels([
-            {
-              id: "A001",
-              name: "Admin",
-              description: "Full access to all settings and management tools.",
-              permissions: data.permissions,
-            },
-            {
-              id: "U001",
-              name: "User",
-              description:
-                "Standard user access to perform regular operations.",
-              permissions: data.permissions.filter((p: Permission) =>
-                [
-                  "operation.port_call.view",
-                  "operation.service.view",
-                  "operation.email.view",
-                  "management.access_level.view",
-                  "management.user.view",
-                ].includes(p.key)
-              ),
-            },
-          ]);
         }
       } catch (error) {
         setAllPermissions([]);
@@ -135,6 +107,48 @@ export default function AccessLevelManager() {
     }
     fetchPermissions();
   }, []);
+
+  // Fetch access levels from backend on mount and after any CRUD
+  useEffect(() => {
+    async function fetchAccessLevels() {
+      setAccessLevelsLoading(true);
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch(`${API_BASE_URL}/permission/access-level`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch access levels");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.accessLevels)) {
+          setAccessLevels(
+            data.accessLevels.map((level: any) => ({
+              id: level.id,
+              name: level.name,
+              description: level.description,
+              permissions: Array.isArray(level.Permissions)
+                ? level.Permissions.map((perm: any) => ({
+                    id: perm.id,
+                    key: perm.key,
+                    description: perm.description,
+                    module: perm.module,
+                  }))
+                : [],
+            }))
+          );
+        } else {
+          setAccessLevels([]);
+        }
+      } catch (e: any) {
+        setAccessLevels([]);
+      } finally {
+        setAccessLevelsLoading(false);
+      }
+    }
+    fetchAccessLevels();
+  }, [API_BASE_URL]);
 
   // Filtered list (by search)
   const filteredAccessLevels = useMemo(() => {
@@ -206,27 +220,20 @@ export default function AccessLevelManager() {
           return;
         }
 
-        setAccessLevels((prev) => [
-          ...prev,
-          {
-            id: response.accessLevel.id,
-            name: response.accessLevel.name,
-            description: response.accessLevel.description,
-            permissions: modalPermissions,
-          },
-        ]);
-
         setShowModal(false);
         toast.success("Access Level created successfully!", {
           description: `Created "${response.accessLevel.name}" with ${modalPermissions.length} permissions.`,
           duration: 3500,
         });
+        // Reload access levels list from backend
+        reloadAccessLevels();
       } catch (err: any) {
         toast.error(err?.message || "Failed to create Access Level", {
           duration: 4000,
         });
       }
     } else if (modalMode === "edit" && editingLevel) {
+      // TODO: Implement edit endpoint if available, otherwise just update local for demo
       setAccessLevels((prev) =>
         prev.map((al) =>
           al.id === editingLevel.id
@@ -244,12 +251,55 @@ export default function AccessLevelManager() {
         description: `Updated "${modalName}".`,
         duration: 3000,
       });
+      // You might want to refetch here from backend if edit is implemented server-side
+      // reloadAccessLevels();
+    }
+  }
+
+  // Refetch access levels from backend (after add/delete)
+  async function reloadAccessLevels() {
+    setAccessLevelsLoading(true);
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API_BASE_URL}/permission/access-level`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      if (!res.ok) throw new Error("Failed to fetch access levels");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.accessLevels)) {
+        setAccessLevels(
+          data.accessLevels.map((level: any) => ({
+            id: level.id,
+            name: level.name,
+            description: level.description,
+            permissions: Array.isArray(level.Permissions)
+              ? level.Permissions.map((perm: any) => ({
+                  id: perm.id,
+                  key: perm.key,
+                  description: perm.description,
+                  module: perm.module,
+                }))
+              : [],
+          }))
+        );
+      } else {
+        setAccessLevels([]);
+      }
+    } catch (e: any) {
+      setAccessLevels([]);
+    } finally {
+      setAccessLevelsLoading(false);
     }
   }
 
   function handleDelete(id: string) {
+    // TODO: Replace this with a real API call to delete from server
     setAccessLevels((prev) => prev.filter((al) => al.id !== id));
     setDeleteId(null);
+    // You should probably call reloadAccessLevels() if real delete implemented
   }
 
   // Permission toggle in modal
@@ -270,10 +320,12 @@ export default function AccessLevelManager() {
     description: string;
     permissionIds: string[];
   }) {
+    const token = localStorage.getItem("token");
     const res = await fetch(`${API_BASE_URL}/permission/access-level`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
       },
       body: JSON.stringify({
         access_level_name: name,
@@ -399,7 +451,13 @@ export default function AccessLevelManager() {
         </Card>
 
         {/* Access Levels Grid */}
-        {filteredAccessLevels.length === 0 ? (
+        {accessLevelsLoading ? (
+          <Card className="border-dashed border-2 border-gray-300 dark:border-gray-700">
+            <CardContent className="py-16 text-center text-sm text-muted-foreground">
+              Loading access levels...
+            </CardContent>
+          </Card>
+        ) : filteredAccessLevels.length === 0 ? (
           <Card className="border-dashed border-2 border-gray-300 dark:border-gray-700">
             <CardContent className="py-16 text-center">
               <Shield className="h-16 w-16 mx-auto text-gray-400 mb-4" />
