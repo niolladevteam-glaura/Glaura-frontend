@@ -457,12 +457,28 @@ export default function UserManagement() {
   // Get access levels
   useEffect(() => {
     if (!API_URL) return;
-    fetch(`${API_URL}/permission/access-level`)
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setAccessLevelLoading(false);
+      return;
+    }
+
+    fetch(`${API_URL}/permission/access-level`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.accessLevels)) {
           setAccessLevels(data.accessLevels);
         }
+      })
+      .catch((err) => {
+        // handle error, optionally set error state
+        console.error("Failed to fetch access levels:", err);
       })
       .finally(() => setAccessLevelLoading(false));
   }, [API_URL]);
