@@ -421,9 +421,12 @@ export default function UserManagement() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorDialogMsg, setErrorDialogMsg] = useState("");
-
-  // Add state for privileges
+  const [accessLevels, setAccessLevels] = useState([]);
+  const [accessLevelLoading, setAccessLevelLoading] = useState(true);
+  const [selectedAccessLevelId, setSelectedAccessLevelId] =
+    useState<string>("");
   const [selectedPrivileges, setSelectedPrivileges] = useState<string[]>([]);
+  const [selectedAccessLevel, setSelectedAccessLevel] = useState<any>(null);
 
   // Add this right after the state declarations
   const handleAddUserClick = () => {
@@ -435,7 +438,10 @@ export default function UserManagement() {
 
   const router = useRouter();
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   useEffect(() => {
+    // Auth/user setup
     const userData = localStorage.getItem("currentUser");
     const token = localStorage.getItem("token");
 
@@ -446,21 +452,23 @@ export default function UserManagement() {
 
     const user = JSON.parse(userData);
     setCurrentUser(user);
+  }, [router]);
 
-    // let hasPermission = false;
-    // if (user.permissions) {
-    //   if (Array.isArray(user.permissions)) {
-    //     hasPermission = user.permissions.includes("user_management");
-    //   } else if (typeof user.permissions === "object") {
-    //     hasPermission = !!user.permissions["user_management"];
-    //   }
-    // }
+  // Get access levels
+  useEffect(() => {
+    if (!API_URL) return;
+    fetch(`${API_URL}/permission/access-level`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.accessLevels)) {
+          setAccessLevels(data.accessLevels);
+        }
+      })
+      .finally(() => setAccessLevelLoading(false));
+  }, [API_URL]);
 
-    // if (!hasPermission) {
-    //   router.push("/dashboard");
-    //   return;
-    // }
-
+  // Load users
+  useEffect(() => {
     const loadUsers = async () => {
       try {
         const response = await userApi.getAllUsers();
@@ -1078,39 +1086,26 @@ export default function UserManagement() {
                       <div>
                         <Label htmlFor="accessLevel">Access Level</Label>
                         <Select
-                          value={newUser.accessLevel || ""}
+                          value={selectedAccessLevelId}
                           onValueChange={(value) => {
-                            setNewUser({ ...newUser, accessLevel: value });
-                            const defaultPrivs = getDefaultPrivileges(value);
-                            setSelectedPrivileges(defaultPrivs);
+                            setSelectedAccessLevelId(value);
+                            setNewUser({ ...newUser, accessLevel: value }); // or use accessLevelId if backend wants
+                            const sel = accessLevels.find(
+                              (al: any) => al.id === value
+                            );
+                            setSelectedAccessLevel(sel || null);
                           }}
+                          disabled={accessLevelLoading}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select access level" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="A">
-                              A - Managing Director
-                            </SelectItem>
-                            <SelectItem value="B">
-                              B - Operations Manager
-                            </SelectItem>
-                            <SelectItem value="C">
-                              C - Disbursement Manager
-                            </SelectItem>
-                            <SelectItem value="D">
-                              D - Assistant Manager
-                            </SelectItem>
-                            <SelectItem value="E">
-                              E - Operations Executive
-                            </SelectItem>
-                            <SelectItem value="F">
-                              F - Bunkering Officer
-                            </SelectItem>
-                            <SelectItem value="G">
-                              G - Clearance Officer
-                            </SelectItem>
-                            <SelectItem value="R">R - General Staff</SelectItem>
+                            {accessLevels.map((level: any) => (
+                              <SelectItem key={level.id} value={level.id}>
+                                {level.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1128,72 +1123,50 @@ export default function UserManagement() {
                     </div>
 
                     {/* System Privileges Section */}
-                    {newUser.accessLevel && (
-                      <div className="space-y-4">
+                    {selectedAccessLevel && (
+                      <div className="space-y-4 mt-4">
                         <div>
-                          <h3 className="text-lg font-medium">
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                             System Privileges
                           </h3>
                           <p className="text-sm text-gray-500">
-                            Default privileges for {newUser.accessLevel} level
-                            are pre-selected. You can modify them as needed.
+                            {selectedAccessLevel.description ||
+                              "Privileges for this access level."}
                           </p>
                         </div>
-
-                        <div className="space-y-6">
-                          {Object.entries(
-                            ALL_PRIVILEGES.reduce((acc, privilege) => {
-                              if (!acc[privilege.category])
-                                acc[privilege.category] = [];
-                              acc[privilege.category].push(privilege);
-                              return acc;
-                            }, {} as Record<string, Privilege[]>)
-                          ).map(([category, privileges]) => (
-                            <div key={category} className="space-y-3">
-                              <h4 className="font-medium text-blue-600 text-base">
-                                {category}
-                              </h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {privileges.map((privilege) => (
-                                  <div
-                                    key={privilege.id}
-                                    className="flex items-start space-x-3"
-                                  >
-                                    <Checkbox
-                                      id={privilege.id}
-                                      checked={selectedPrivileges.includes(
-                                        privilege.id
-                                      )}
-                                      onCheckedChange={() =>
-                                        togglePrivilege(privilege.id)
-                                      }
-                                      className="mt-1"
-                                    />
-                                    <div className="flex-1">
-                                      <Label
-                                        htmlFor={privilege.id}
-                                        className="text-sm font-medium cursor-pointer"
-                                      >
-                                        {privilege.name}
-                                      </Label>
-                                      <p className="text-xs text-gray-500 mt-1">
-                                        {privilege.description}
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
+                        {selectedAccessLevel.Permissions?.length === 0 ? (
+                          <div className="text-gray-500 text-sm">
+                            No privileges assigned.
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-gray-200 dark:divide-gray-700 rounded-xl border border-gray-200 dark:border-gray-800 bg-background p-2">
+                            {[
+                              ...new Set(
+                                selectedAccessLevel.Permissions.map(
+                                  (p: any) => p.module
+                                )
+                              ),
+                            ].map((module) => (
+                              <div key={String(module)} className="py-4">
+                                <div className="font-semibold text-primary mb-2 flex items-center gap-2 text-base">
+                                  {String(module)}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {selectedAccessLevel.Permissions.filter(
+                                    (p: any) => p.module === module
+                                  ).map((perm: any) => (
+                                    <span
+                                      key={perm.id}
+                                      className=" inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 dark:bg-white/10 dark:text-white text-sm font-medium shadow-sm"
+                                    >
+                                      {perm.description}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-                          <p className="text-sm text-blue-700 dark:text-blue-300">
-                            <strong>Selected Privileges:</strong>{" "}
-                            {selectedPrivileges.length} of{" "}
-                            {ALL_PRIVILEGES.length}
-                          </p>
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1581,9 +1554,7 @@ export default function UserManagement() {
                         <Badge className={getStatusColor(user.isActive)}>
                           {user.isActive ? "Active" : "Inactive"}
                         </Badge>
-                        <Badge
-                          className={getAccessLevelColor(user.accessLevel)}
-                        >
+                        <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800">
                           Level {user.accessLevel}
                         </Badge>
                         <Badge variant="outline">{user.department}</Badge>
