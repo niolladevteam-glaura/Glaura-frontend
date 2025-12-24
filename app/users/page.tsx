@@ -109,299 +109,18 @@ interface PermissionResponse {
   userPermissions?: Record<string, boolean>;
 }
 
-// Add this constant after the User interface
-const ALL_PRIVILEGES: Privilege[] = [
-  // Management Privileges
-  {
-    id: "user_management",
-    name: "User Management",
-    description: "Create, edit, and manage user accounts",
-    category: "Management",
-  },
-  {
-    id: "system_settings",
-    name: "System Settings",
-    description: "Configure system-wide settings",
-    category: "Management",
-  },
-  {
-    id: "reports_access",
-    name: "Reports Access",
-    description: "View all system reports and analytics",
-    category: "Management",
-  },
-  {
-    id: "audit_logs",
-    name: "Audit Logs",
-    description: "View system audit logs and user activities",
-    category: "Management",
-  },
+type ApiPermission = {
+  id: string;
+  key: string;
+  description: string;
+  module: string;
+};
 
-  // Port Call Privileges
-  {
-    id: "create_port_calls",
-    name: "Create Port Calls",
-    description: "Create new port call entries",
-    category: "Port Calls",
-  },
-  {
-    id: "edit_port_calls",
-    name: "Edit Port Calls",
-    description: "Modify existing port call details",
-    category: "Port Calls",
-  },
-  {
-    id: "delete_port_calls",
-    name: "Delete Port Calls",
-    description: "Remove port call entries",
-    category: "Port Calls",
-  },
-  {
-    id: "view_port_calls",
-    name: "View Port Calls",
-    description: "Access port call information",
-    category: "Port Calls",
-  },
-  {
-    id: "assign_port_calls",
-    name: "Assign Port Calls",
-    description: "Assign port calls to staff members",
-    category: "Port Calls",
-  },
-
-  // Customer Management
-  {
-    id: "create_customers",
-    name: "Create Customers",
-    description: "Add new customer companies",
-    category: "Customers",
-  },
-  {
-    id: "edit_customers",
-    name: "Edit Customers",
-    description: "Modify customer information",
-    category: "Customers",
-  },
-  {
-    id: "view_customers",
-    name: "View Customers",
-    description: "Access customer database",
-    category: "Customers",
-  },
-  {
-    id: "delete_customers",
-    name: "Delete Customers",
-    description: "Remove customer records",
-    category: "Customers",
-  },
-
-  // Vendor Management
-  {
-    id: "create_vendors",
-    name: "Create Vendors",
-    description: "Add new vendor companies",
-    category: "Vendors",
-  },
-  {
-    id: "edit_vendors",
-    name: "Edit Vendors",
-    description: "Modify vendor information",
-    category: "Vendors",
-  },
-  {
-    id: "view_vendors",
-    name: "View Vendors",
-    description: "Access vendor database",
-    category: "Vendors",
-  },
-  {
-    id: "delete_vendors",
-    name: "Delete Vendors",
-    description: "Remove vendor records",
-    category: "Vendors",
-  },
-
-  // Document Management
-  {
-    id: "create_documents",
-    name: "Create Documents",
-    description: "Upload and create new documents",
-    category: "Documents",
-  },
-  {
-    id: "edit_documents",
-    name: "Edit Documents",
-    description: "Modify document details",
-    category: "Documents",
-  },
-  {
-    id: "view_documents",
-    name: "View Documents",
-    description: "Access document library",
-    category: "Documents",
-  },
-  {
-    id: "delete_documents",
-    name: "Delete Documents",
-    description: "Remove documents",
-    category: "Documents",
-  },
-
-  // Communication
-  {
-    id: "send_messages",
-    name: "Send Messages",
-    description: "Send internal messages",
-    category: "Communication",
-  },
-  {
-    id: "view_messages",
-    name: "View Messages",
-    description: "Access messaging system",
-    category: "Communication",
-  },
-  {
-    id: "whatsApp_access",
-    name: "WhatsApp Access",
-    description: "Use WhatsApp integration",
-    category: "Communication",
-  },
-  {
-    id: "manage_phone_book",
-    name: "Manage Phone Book",
-    description: "Add/edit/delete contacts",
-    category: "Communication",
-  },
-
-  // Operations
-  {
-    id: "manage_vessels",
-    name: "Manage Vessels",
-    description: "Add and edit vessel information",
-    category: "Operations",
-  },
-  {
-    id: "clearance_operations",
-    name: "Clearance Operations",
-    description: "Handle customs and clearance",
-    category: "Operations",
-  },
-  {
-    id: "bunkering_operations",
-    name: "Bunkering Operations",
-    description: "Manage fuel and bunkering services",
-    category: "Operations",
-  },
-
-  // Financial
-  {
-    id: "view_disbursements",
-    name: "View Disbursements",
-    description: "Access disbursement accounts",
-    category: "Financial",
-  },
-  {
-    id: "create_disbursements",
-    name: "Create Disbursements",
-    description: "Create disbursement entries",
-    category: "Financial",
-  },
-  {
-    id: "invoicing",
-    name: "invoicing",
-    description: "Generate and manage invoices",
-    category: "Financial",
-  },
-];
-
-// Add this function to get default privileges for access levels
-const getDefaultPrivileges = (accessLevel: string): string[] => {
-  switch (accessLevel) {
-    case "A": // Managing Director
-      return ALL_PRIVILEGES.map((p) => p.id);
-    case "B": // Operations Manager
-      return [
-        "create_port_calls",
-        "edit_port_calls",
-        "view_port_calls",
-        "assign_port_calls",
-        "view_customers",
-        "edit_customers",
-        "view_vendors",
-        "edit_vendors",
-        "view_documents",
-        "create_documents",
-        "edit_documents",
-        "send_messages",
-        "view_messages",
-        "manage_vessels",
-        "reports_access",
-        "clearance_operations",
-        "bunkering_operations",
-      ];
-    case "C": // Disbursement Manager
-      return [
-        "view_port_calls",
-        "edit_port_calls",
-        "view_customers",
-        "edit_customers",
-        "view_vendors",
-        "view_documents",
-        "create_documents",
-        "send_messages",
-        "view_messages",
-        "view_disbursements",
-        "create_disbursements",
-        "invoicing",
-      ];
-    case "D": // Assistant Manager
-      return [
-        "view_port_calls",
-        "edit_port_calls",
-        "view_customers",
-        "view_vendors",
-        "view_documents",
-        "create_documents",
-        "send_messages",
-        "view_messages",
-        "manage_vessels",
-        "clearance_operations",
-      ];
-    case "E": // Operations Executive
-      return [
-        "view_port_calls",
-        "view_customers",
-        "view_vendors",
-        "view_documents",
-        "create_documents",
-        "send_messages",
-        "view_messages",
-        "whatsApp_access",
-        "manage_phone_book",
-      ];
-    case "F": // Bunkering Officer
-      return [
-        "view_port_calls",
-        "view_vendors",
-        "view_documents",
-        "send_messages",
-        "view_messages",
-        "bunkering_operations",
-      ];
-    case "G": // Clearance Officer
-      return [
-        "view_port_calls",
-        "view_vendors",
-        "view_documents",
-        "send_messages",
-        "view_messages",
-        "clearance_operations",
-      ];
-    case "R": // General Staff
-      return ["view_port_calls", "view_documents", "view_messages"];
-    default:
-      return [];
-  }
+type ApiAccessLevel = {
+  id: string;
+  name: string;
+  description: string;
+  Permissions: ApiPermission[];
 };
 
 export default function UserManagement() {
@@ -421,7 +140,7 @@ export default function UserManagement() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorDialogMsg, setErrorDialogMsg] = useState("");
-  const [accessLevels, setAccessLevels] = useState([]);
+  const [accessLevels, setAccessLevels] = useState<ApiAccessLevel[]>([]);
   const [accessLevelLoading, setAccessLevelLoading] = useState(true);
   const [selectedAccessLevelId, setSelectedAccessLevelId] =
     useState<string>("");
@@ -642,50 +361,29 @@ export default function UserManagement() {
 
   const [loading, setLoading] = useState(false);
 
-  // Update the access level change handler to set default privileges
-  const handleAccessLevelChange = (value: string) => {
-    setNewUser({ ...newUser, accessLevel: value });
-    const defaultPrivs = getDefaultPrivileges(value);
-    setSelectedPrivileges(defaultPrivs);
-  };
-
-  // Add privilege toggle function
-  const togglePrivilege = (privilegeId: string) => {
-    setSelectedPrivileges((prev) =>
-      prev.includes(privilegeId)
-        ? prev.filter((id) => id !== privilegeId)
-        : [...prev, privilegeId]
-    );
-  };
-
   //  Create User
   const createUser = async () => {
-    if (!newUser.username || !newUser.name || !newUser.email) {
-      alert("Please fill in all required fields (Username, Full Name, Email)");
-      return;
-    }
-
     try {
+      if (!newUser.username || !newUser.name || !newUser.email) {
+        alert(
+          "Please fill in all required fields (Username, Full Name, Email)"
+        );
+        return;
+      }
+
       const [firstName, ...lastNameParts] = newUser.name.split(" ");
       const lastName = lastNameParts.join(" ");
-
-      const permissionsObj = ALL_PRIVILEGES.reduce((acc, privilege) => {
-        acc[privilege.id] = selectedPrivileges.includes(privilege.id);
-        return acc;
-      }, {} as Record<string, boolean>);
 
       const userData = {
         first_name: firstName,
         last_name: lastName,
-        email: newUser.email,
         contact_number: newUser.phoneNumber || "",
-        role: newUser.role || "staff",
-        access_level: newUser.accessLevel || "R",
-        department: newUser.department || "Other",
-        status: true,
-        password: "TemporaryPassword123!",
-        permissions: permissionsObj,
         dob: newUser.dob || "",
+        email: newUser.email || "",
+        password: "TemporaryPassword123!",
+        role: newUser.role || "staff",
+        access_level_id: selectedAccessLevelId, // <-- key update!
+        department: newUser.department || "",
       };
 
       const response = await userApi.createUser(userData);
@@ -703,7 +401,7 @@ export default function UserManagement() {
         email: newUser.email!,
         role: userData.role,
         department: userData.department,
-        accessLevel: userData.access_level,
+        accessLevel: userData.access_level_id,
         isActive: true,
         lastLogin: "",
         createdAt: new Date().toISOString(),
@@ -763,10 +461,10 @@ export default function UserManagement() {
       const lastName = lastNameParts.join(" ");
 
       // Build permissions object (id: boolean) from editPrivileges array
-      const permissionsObj = ALL_PRIVILEGES.reduce((acc, privilege) => {
-        acc[privilege.id] = editPrivileges.includes(privilege.id);
-        return acc;
-      }, {} as Record<string, boolean>);
+      const permissionsObj: Record<string, boolean> = {};
+      editPrivileges.forEach((key) => {
+        permissionsObj[key] = true;
+      });
 
       // Prepare API payload (matches your backend API requirements)
       const userData = {
@@ -1096,6 +794,7 @@ export default function UserManagement() {
                             </SelectItem>
                             <SelectItem value="Clearance">Clearance</SelectItem>
                             <SelectItem value="Bunkering">Bunkering</SelectItem>
+                            <SelectItem value="Supply">Supply</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1105,7 +804,7 @@ export default function UserManagement() {
                           value={selectedAccessLevelId}
                           onValueChange={(value) => {
                             setSelectedAccessLevelId(value);
-                            setNewUser({ ...newUser, accessLevel: value }); // or use accessLevelId if backend wants
+                            setNewUser({ ...newUser, accessLevel: value });
                             const sel = accessLevels.find(
                               (al: any) => al.id === value
                             );
@@ -1370,6 +1069,7 @@ export default function UserManagement() {
                         </SelectItem>
                         <SelectItem value="Clearance">Clearance</SelectItem>
                         <SelectItem value="Bunkering">Bunkering</SelectItem>
+                        <SelectItem value="Supply">Supply</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1382,8 +1082,13 @@ export default function UserManagement() {
                           ...editingUser,
                           accessLevel: value,
                         });
-                        const defaultPrivs = getDefaultPrivileges(value);
-                        setEditPrivileges(defaultPrivs);
+                        const sel = accessLevels.find(
+                          (al: any) => al.id === value
+                        );
+                        setSelectedAccessLevel(sel || null);
+                        setEditPrivileges(
+                          sel?.Permissions?.map((p: any) => p.key) || []
+                        );
                       }}
                     >
                       <SelectTrigger>
@@ -1435,65 +1140,61 @@ export default function UserManagement() {
                   </div>
 
                   <div className="space-y-6">
-                    {Object.entries(
-                      ALL_PRIVILEGES.reduce((acc, privilege) => {
-                        if (!acc[privilege.category])
-                          acc[privilege.category] = [];
-                        acc[privilege.category].push(privilege);
-                        return acc;
-                      }, {} as Record<string, Privilege[]>)
-                    ).map(([category, privileges]) => (
-                      <div key={category} className="space-y-3">
-                        <h4 className="font-medium text-blue-600 text-base">
-                          {category}
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {privileges.map((privilege) => (
-                            <div
-                              key={privilege.id}
-                              className="flex items-start space-x-3"
-                            >
-                              <Checkbox
-                                id={`edit-${privilege.id}`}
-                                checked={editPrivileges.includes(privilege.id)}
-                                onCheckedChange={() => {
-                                  if (editPrivileges.includes(privilege.id)) {
-                                    setEditPrivileges(
-                                      editPrivileges.filter(
-                                        (id) => id !== privilege.id
-                                      )
+                    {selectedAccessLevel?.Permissions &&
+                      [
+                        ...new Set(
+                          selectedAccessLevel.Permissions.map(
+                            (p: any) => p.module
+                          )
+                        ),
+                      ].map((module) => (
+                        <div key={String(module)} className="space-y-3">
+                          <h4 className="font-medium text-blue-600 text-base">
+                            {String(module)}
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {selectedAccessLevel.Permissions.filter(
+                              (p: any) => p.module === module
+                            ).map((perm: any) => (
+                              <div
+                                key={perm.key}
+                                className="flex items-start space-x-3"
+                              >
+                                <Checkbox
+                                  id={`edit-${perm.key}`}
+                                  checked={editPrivileges.includes(perm.key)}
+                                  onCheckedChange={() => {
+                                    setEditPrivileges((prev) =>
+                                      prev.includes(perm.key)
+                                        ? prev.filter((k) => k !== perm.key)
+                                        : [...prev, perm.key]
                                     );
-                                  } else {
-                                    setEditPrivileges([
-                                      ...editPrivileges,
-                                      privilege.id,
-                                    ]);
-                                  }
-                                }}
-                                className="mt-1"
-                              />
-                              <div className="flex-1">
-                                <Label
-                                  htmlFor={`edit-${privilege.id}`}
-                                  className="text-sm font-medium cursor-pointer"
-                                >
-                                  {privilege.name}
-                                </Label>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {privilege.description}
-                                </p>
+                                  }}
+                                  className="mt-1"
+                                />
+                                <div className="flex-1">
+                                  <Label
+                                    htmlFor={`edit-${perm.key}`}
+                                    className="text-sm font-medium cursor-pointer"
+                                  >
+                                    {perm.description}
+                                  </Label>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {perm.module}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
 
                   <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
                     <p className="text-sm text-blue-700 dark:text-blue-300">
                       <strong>Selected Privileges:</strong>{" "}
-                      {editPrivileges.length} of {ALL_PRIVILEGES.length}
+                      {editPrivileges.length} of{" "}
+                      {selectedAccessLevel?.Permissions?.length ?? 0}
                     </p>
                   </div>
                 </div>
