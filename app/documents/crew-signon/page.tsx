@@ -151,10 +151,7 @@ export default function CrewSignOnGeneratePage() {
       return;
     }
     try {
-      const url =
-        documentType === "signon"
-          ? `${API_BASE_URL}/documents/signon`
-          : `${API_BASE_URL}/documents/signoff`;
+      const url = `${API_BASE_URL}/documents/signon`;
 
       const res = await fetch(url, {
         method: "POST",
