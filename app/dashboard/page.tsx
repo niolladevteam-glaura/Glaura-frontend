@@ -245,30 +245,6 @@ export default function Dashboard() {
     router.push("/");
   };
 
-  const canCreatePortCall = () => {
-    return (
-      currentUser &&
-      ![
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "H",
-        "I",
-        "J",
-        "K",
-        "L",
-        "M",
-        "N",
-        "O",
-        "P",
-        "Q",
-        "R",
-      ].includes(currentUser.accessLevel)
-    );
-  };
-
   // Navigation item type with optional 'disabled' property
   type NavigationItem = {
     href: string;
@@ -300,9 +276,7 @@ export default function Dashboard() {
           label: "Reports",
           disabled: true,
         },
-        ...(currentUser?.accessLevel === "A"
-          ? [{ href: "/users", icon: Users, label: "User Management" }]
-          : []),
+        { href: "/users", icon: Users, label: "User Management" },
         { href: "/pic-management", icon: UserCog, label: "PIC Management" },
         {
           href: "/access-level-manager",
@@ -342,9 +316,7 @@ export default function Dashboard() {
     {
       heading: "Disbursement Department",
       items: [
-        ...(canCreatePortCall()
-          ? [{ href: "/port-calls/new", icon: Plus, label: "New Port Calls" }]
-          : []),
+        { href: "/port-calls/new", icon: Plus, label: "New Port Calls" },
         { href: "/customers", icon: Building2, label: "Customers" },
         { href: "/vessels", icon: Ship, label: "Vessel Management" },
         { href: "/services", icon: Wrench, label: "Services Management" },
