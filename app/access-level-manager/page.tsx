@@ -71,9 +71,31 @@ export default function AccessLevelManager() {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // User Badge
+  const [currentUser, setCurrentUser] = useState<{
+    name: string;
+    accessLevel: string;
+  } | null>(null);
+
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-  // Fetch permission list (for modal creation) on mount
+  // Load current user info from localStorage
+  useEffect(() => {
+    let user = null;
+    try {
+      const userData = localStorage.getItem("currentUser");
+      if (userData) {
+        user = JSON.parse(userData);
+      }
+    } catch (err) {}
+    setCurrentUser(
+      user && user.name && user.accessLevel
+        ? { name: user.name, accessLevel: user.accessLevel }
+        : { name: "Demo User", accessLevel: "A" }
+    );
+  }, []);
+
+  // Fetch permission list
   useEffect(() => {
     async function fetchPermissions() {
       setPermLoading(true);
@@ -233,7 +255,6 @@ export default function AccessLevelManager() {
         });
       }
     } else if (modalMode === "edit" && editingLevel) {
-      // TODO: Implement edit endpoint if available, otherwise just update local for demo
       setAccessLevels((prev) =>
         prev.map((al) =>
           al.id === editingLevel.id
@@ -251,8 +272,7 @@ export default function AccessLevelManager() {
         description: `Updated "${modalName}".`,
         duration: 3000,
       });
-      // You might want to refetch here from backend if edit is implemented server-side
-      // reloadAccessLevels();
+      // Optionally reloadAccessLevels() if API edit is supported
     }
   }
 
@@ -299,7 +319,7 @@ export default function AccessLevelManager() {
     // TODO: Replace this with a real API call to delete from server
     setAccessLevels((prev) => prev.filter((al) => al.id !== id));
     setDeleteId(null);
-    // You should probably call reloadAccessLevels() if real delete implemented
+    // Optionally reloadAccessLevels() after API delete
   }
 
   // Permission toggle in modal
@@ -339,6 +359,7 @@ export default function AccessLevelManager() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* --- HEADER --- */}
       <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* Left Section */}
@@ -384,14 +405,23 @@ export default function AccessLevelManager() {
               </div>
             </div>
           </div>
-
-          {/* Right Section */}
+          {/* Right Section (Theme + User on Desktop, User always on Mobile) */}
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <ThemeToggle />
+            <Badge
+              variant="outline"
+              className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate"
+            >
+              <span className="truncate">{currentUser?.name}</span>
+              <span className="hidden xs:inline">
+                {" "}
+                - Level {currentUser?.accessLevel}
+              </span>
+            </Badge>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
           <div className="md:hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex flex-col space-y-3">
@@ -402,13 +432,23 @@ export default function AccessLevelManager() {
                 </Button>
               </Link>
               <ThemeToggle />
+              <Badge
+                variant="outline"
+                className="bg-primary/10 text-primary border-primary/20 px-2 py-1 text-xs sm:text-sm truncate mt-2"
+              >
+                <span className="truncate">{currentUser?.name}</span>
+                <span className="hidden xs:inline">
+                  {" "}
+                  - Level {currentUser?.accessLevel}
+                </span>
+              </Badge>
             </div>
           </div>
         )}
       </header>
 
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* --- MAIN CONTENT --- */}
+      <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
         {/* Header Section with Stats */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
@@ -418,7 +458,8 @@ export default function AccessLevelManager() {
                 className="flex items-center gap-2 bg-primary hover:bg-primary/90 shadow-md"
               >
                 <Plus className="h-4 w-4" />
-                Add Access Level
+                <span className="hidden xs:inline">Add Access Level</span>
+                <span className="inline xs:hidden">Add</span>
               </Button>
             </div>
           </div>
@@ -478,63 +519,61 @@ export default function AccessLevelManager() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-6">
             {filteredAccessLevels.map((level) => (
               <Card
                 key={level.id}
-                className="group hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-800 overflow-hidden hover:border-primary/20"
+                className="group w-full hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-800 hover:border-primary/20"
               >
-                <CardHeader className="pb-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                            <Shield className="h-5 w-5 text-primary" />
-                          </div>
+                <CardHeader className="pb-4 flex flex-row items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                          <Shield className="h-5 w-5 text-primary" />
                         </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <CardTitle className="text-xl font-semibold truncate">
-                            {level.name}
-                          </CardTitle>
-                          <Badge
-                            variant="outline"
-                            className="text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                          >
-                            {level.id}
-                          </Badge>
-                        </div>
-                        <CardDescription className="line-clamp-2">
-                          {level.description}
-                        </CardDescription>
                       </div>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditModal(level)}
-                        className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button> */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteId(level.id)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CardTitle className="text-xl font-semibold truncate">
+                          {level.name}
+                        </CardTitle>
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                        >
+                          {level.id}
+                        </Badge>
+                      </div>
+                      <CardDescription className="line-clamp-2">
+                        {level.description}
+                      </CardDescription>
                     </div>
                   </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditModal(level)}
+                      className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button> */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteId(level.id)}
+                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
-
                 <CardContent>
+                  {/* The same content as before, e.g. permission groups, etc. */}
                   <div className="space-y-5">
-                    {/* Permissions Summary */}
+                    {/* Permissions Summary, Groups etc here as before */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -544,8 +583,7 @@ export default function AccessLevelManager() {
                           {level.permissions.length} permissions
                         </Badge>
                       </div>
-
-                      {/* Permission Groups */}
+                      {/* ...The permissions grouping as before... */}
                       <div className="space-y-4">
                         {Object.entries(
                           level.permissions.reduce<
@@ -588,7 +626,6 @@ export default function AccessLevelManager() {
                               </div>
                             </div>
                           ))}
-
                         {Object.entries(
                           level.permissions.reduce<
                             Record<string, Permission[]>
@@ -616,8 +653,6 @@ export default function AccessLevelManager() {
                         )}
                       </div>
                     </div>
-
-                    {/* Actions */}
                     <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-700">
                       <Button
                         variant="outline"
@@ -636,7 +671,6 @@ export default function AccessLevelManager() {
           </div>
         )}
       </main>
-
       {/* --- Add/Edit Access Level Modal --- */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
