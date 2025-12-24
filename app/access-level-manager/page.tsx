@@ -512,14 +512,14 @@ export default function AccessLevelManager() {
                       </div>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
+                      {/* <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => openEditModal(level)}
                         className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
                       >
                         <Edit2 className="h-4 w-4" />
-                      </Button>
+                      </Button> */}
                       <Button
                         variant="ghost"
                         size="sm"
