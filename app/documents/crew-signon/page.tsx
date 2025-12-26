@@ -253,7 +253,7 @@ export default function CrewSignOnGeneratePage() {
 
       <div className="max-w-4xl mx-auto p-6">
         {/* Document Type Heading and Dropdown */}
-        <div className="flex items-center mb-6 gap-2">
+        {/* <div className="flex items-center mb-6 gap-2">
           <h1 className="text-xl font-bold">Generate Document:</h1>
           <Select
             value={documentType}
@@ -269,7 +269,7 @@ export default function CrewSignOnGeneratePage() {
               <SelectItem value="signoff">Crew Sign Off</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
 
         <Card>
           <CardHeader>
