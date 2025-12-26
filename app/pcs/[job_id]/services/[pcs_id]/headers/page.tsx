@@ -499,101 +499,103 @@ export default function PCSJobPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-gray-50 dark:bg-gray-800">
-                <TableRow>
-                  <TableHead>Header Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Tasks</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {headers.length === 0 ? (
+            <div className="max-h-[400px] overflow-y-auto">
+              <Table>
+                <TableHeader className="bg-gray-50 dark:bg-gray-800">
                   <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="text-center text-muted-foreground py-8"
-                    >
-                      <div>
-                        <div className="mb-2">
-                          <Eye className="mx-auto h-10 w-10 text-gray-400" />
-                        </div>
-                        <div className="font-semibold mb-2">
-                          No headers found for this service.
-                        </div>
-                        <Button onClick={() => setAddDialogOpen(true)}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Service Task Header
-                        </Button>
-                      </div>
-                    </TableCell>
+                    <TableHead>Header Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Tasks</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  headers.map((header) => (
-                    <TableRow
-                      key={header.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800"
-                    >
-                      <TableCell className="font-medium">
-                        {header.header_name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            isHeaderCompletedByTasks(header)
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {isHeaderCompletedByTasks(header)
-                            ? "Completed"
-                            : "Pending"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {header.tasks?.filter(
-                          (t) => t.status === true || t.status === "true"
-                        ).length ?? 0}
-                        /{header.tasks?.length ?? 0}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="View header"
-                            title="View header"
-                            className="bg-blue-100 hover:bg-gray-100 focus:ring-2 focus:ring-primary focus:outline-none"
-                          >
-                            <Link
-                              href={`/pcs/${job_id}/services/${pcs_id}/headers/${
-                                header.id || header.header_id
-                              }/tasks`}
-                            >
-                              <Eye className="h-4 w-4 text-gray-700" />
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => openDeleteDialog(header)}
-                            disabled={deleting[header.id || ""]}
-                            title="Delete header"
-                          >
-                            {deleting[header.id || ""] ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
+                </TableHeader>
+                <TableBody>
+                  {headers.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center text-muted-foreground py-8"
+                      >
+                        <div>
+                          <div className="mb-2">
+                            <Eye className="mx-auto h-10 w-10 text-gray-400" />
+                          </div>
+                          <div className="font-semibold mb-2">
+                            No headers found for this service.
+                          </div>
+                          <Button onClick={() => setAddDialogOpen(true)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Service Task Header
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    headers.map((header) => (
+                      <TableRow
+                        key={header.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <TableCell className="font-medium">
+                          {header.header_name}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              isHeaderCompletedByTasks(header)
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {isHeaderCompletedByTasks(header)
+                              ? "Completed"
+                              : "Pending"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {header.tasks?.filter(
+                            (t) => t.status === true || t.status === "true"
+                          ).length ?? 0}
+                          /{header.tasks?.length ?? 0}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="View header"
+                              title="View header"
+                              className="bg-blue-100 hover:bg-gray-100 focus:ring-2 focus:ring-primary focus:outline-none"
+                            >
+                              <Link
+                                href={`/pcs/${job_id}/services/${pcs_id}/headers/${
+                                  header.id || header.header_id
+                                }/tasks`}
+                              >
+                                <Eye className="h-4 w-4 text-gray-700" />
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => openDeleteDialog(header)}
+                              disabled={deleting[header.id || ""]}
+                              title="Delete header"
+                            >
+                              {deleting[header.id || ""] ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
           <CardFooter className="bg-gray-100 dark:bg-gray-800 py-3 px-6">
             <div className="text-xs text-muted-foreground">
@@ -605,7 +607,7 @@ export default function PCSJobPage() {
 
       {/* Add Header Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Service Task Header</DialogTitle>
             <DialogDescription>

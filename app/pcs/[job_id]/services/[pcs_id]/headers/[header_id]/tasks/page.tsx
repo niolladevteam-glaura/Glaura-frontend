@@ -597,97 +597,99 @@ export default function PCSTasksPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-gray-50 dark:bg-gray-800">
-                <TableRow>
-                  <TableHead>Task Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Completed On</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tasks.map((task) => (
-                  <TableRow
-                    key={task.id || task.task_id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    <TableCell className="font-medium">
-                      {task.task_name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          isTaskCompleted(task) ? "default" : "secondary"
-                        }
-                        className="cursor-default"
-                      >
-                        {isTaskCompleted(task) ? (
-                          <Check className="h-3 w-3 mr-1" />
-                        ) : (
-                          <X className="h-3 w-3 mr-1" />
-                        )}
-                        {isTaskCompleted(task) ? "Completed" : "Pending"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {isTaskCompleted(task) ? (
-                        <>
-                          <div>
-                            {task.compleated_date
-                              ? format(
-                                  parseISO(task.compleated_date),
-                                  "MM.dd.yyyy"
-                                )
-                              : "-"}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {task.compleated_time}
-                          </div>
-                        </>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {!isTaskCompleted(task) && (
-                          <Button
-                            variant="default"
-                            size="icon"
-                            onClick={() => openCompleteDialog(task)}
-                            title="Mark as Complete"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => openEditDialog(task)}
-                          title="Edit task"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => openDeleteDialog(task)}
-                          disabled={deleting[task.id || task.task_id || ""]}
-                          title="Delete task"
-                        >
-                          {deleting[task.id || task.task_id || ""] ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="max-h-[400px] overflow-y-auto">
+              <Table>
+                <TableHeader className="bg-gray-50 dark:bg-gray-800">
+                  <TableRow>
+                    <TableHead>Task Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Completed On</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {tasks.map((task) => (
+                    <TableRow
+                      key={task.id || task.task_id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <TableCell className="font-medium">
+                        {task.task_name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            isTaskCompleted(task) ? "default" : "secondary"
+                          }
+                          className="cursor-default"
+                        >
+                          {isTaskCompleted(task) ? (
+                            <Check className="h-3 w-3 mr-1" />
+                          ) : (
+                            <X className="h-3 w-3 mr-1" />
+                          )}
+                          {isTaskCompleted(task) ? "Completed" : "Pending"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {isTaskCompleted(task) ? (
+                          <>
+                            <div>
+                              {task.compleated_date
+                                ? format(
+                                    parseISO(task.compleated_date),
+                                    "MM.dd.yyyy"
+                                  )
+                                : "-"}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {task.compleated_time}
+                            </div>
+                          </>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {!isTaskCompleted(task) && (
+                            <Button
+                              variant="default"
+                              size="icon"
+                              onClick={() => openCompleteDialog(task)}
+                              title="Mark as Complete"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openEditDialog(task)}
+                            title="Edit task"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => openDeleteDialog(task)}
+                            disabled={deleting[task.id || task.task_id || ""]}
+                            title="Delete task"
+                          >
+                            {deleting[task.id || task.task_id || ""] ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
           <CardFooter className="bg-gray-100 dark:bg-gray-800 py-3 px-6">
             <div className="text-xs text-muted-foreground">

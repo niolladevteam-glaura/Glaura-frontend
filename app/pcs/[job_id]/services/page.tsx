@@ -943,115 +943,117 @@ export default function PortCallServicesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-gray-50 dark:bg-gray-800">
-                <TableRow>
-                  <TableHead>Service Name</TableHead>
-                  <TableHead>Vendor</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pcsList.map((pcs) => {
-                  const svcName = (pcs?.service_name ?? "").trim();
-                  const nameLc = svcName.toLowerCase();
-                  const isCrewChanges = nameLc === "crew changes (on/off)";
-                  const isShipSpares = isShipSparesService(svcName);
-                  const canEdit = isCrewChanges || isShipSpares;
+            <div className="max-h-[400px] overflow-y-auto">
+              <Table>
+                <TableHeader className="bg-gray-50 dark:bg-gray-800">
+                  <TableRow>
+                    <TableHead>Service Name</TableHead>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pcsList.map((pcs) => {
+                    const svcName = (pcs?.service_name ?? "").trim();
+                    const nameLc = svcName.toLowerCase();
+                    const isCrewChanges = nameLc === "crew changes (on/off)";
+                    const isShipSpares = isShipSparesService(svcName);
+                    const canEdit = isCrewChanges || isShipSpares;
 
-                  const editOnClick = isCrewChanges
-                    ? () => openCrewChangeDialog(pcs)
-                    : isShipSpares
-                    ? () => openShipSparesDialog(pcs)
-                    : undefined;
+                    const editOnClick = isCrewChanges
+                      ? () => openCrewChangeDialog(pcs)
+                      : isShipSpares
+                      ? () => openShipSparesDialog(pcs)
+                      : undefined;
 
-                  const editClass = isCrewChanges
-                    ? "bg-green-100 hover:bg-green-200"
-                    : isShipSpares
-                    ? "bg-amber-100 hover:bg-amber-200"
-                    : "bg-gray-200 cursor-not-allowed";
-                  const editTitle = isCrewChanges
-                    ? "Edit Crew Changes"
-                    : isShipSpares
-                    ? "Enter Ship Spares details"
-                    : "Edit not available";
-                  const editIconClass = isCrewChanges
-                    ? "text-green-700"
-                    : isShipSpares
-                    ? "text-amber-700"
-                    : "text-gray-400";
+                    const editClass = isCrewChanges
+                      ? "bg-green-100 hover:bg-green-200"
+                      : isShipSpares
+                      ? "bg-amber-100 hover:bg-amber-200"
+                      : "bg-gray-200 cursor-not-allowed";
+                    const editTitle = isCrewChanges
+                      ? "Edit Crew Changes"
+                      : isShipSpares
+                      ? "Enter Ship Spares details"
+                      : "Edit not available";
+                    const editIconClass = isCrewChanges
+                      ? "text-green-700"
+                      : isShipSpares
+                      ? "text-amber-700"
+                      : "text-gray-400";
 
-                  return (
-                    <TableRow
-                      key={pcs.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800"
-                    >
-                      <TableCell className="font-medium">
-                        {svcName || "-"}
-                      </TableCell>
-                      <TableCell>{pcs?.vendor_name ?? "-"}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="bg-blue-100 hover:bg-gray-100"
-                            asChild
-                          >
-                            <Link
-                              href={`/pcs/${job_id}/services/${pcs.id}/headers`}
+                    return (
+                      <TableRow
+                        key={pcs.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <TableCell className="font-medium">
+                          {svcName || "-"}
+                        </TableCell>
+                        <TableCell>{pcs?.vendor_name ?? "-"}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="bg-blue-100 hover:bg-gray-100"
+                              asChild
                             >
-                              <Eye className="h-4 w-4 text-gray-700" />
-                            </Link>
-                          </Button>
+                              <Link
+                                href={`/pcs/${job_id}/services/${pcs.id}/headers`}
+                              >
+                                <Eye className="h-4 w-4 text-gray-700" />
+                              </Link>
+                            </Button>
 
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={editOnClick}
-                            disabled={!canEdit}
-                            className={editClass}
-                            title={editTitle}
-                          >
-                            <Pencil className={`h-4 w-4 ${editIconClass}`} />
-                          </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={editOnClick}
+                              disabled={!canEdit}
+                              className={editClass}
+                              title={editTitle}
+                            >
+                              <Pencil className={`h-4 w-4 ${editIconClass}`} />
+                            </Button>
 
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => openDeleteDialog(pcs)}
-                            disabled={deleting[pcs.id]}
-                          >
-                            {deleting[pcs.id] ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => openDeleteDialog(pcs)}
+                              disabled={deleting[pcs.id]}
+                            >
+                              {deleting[pcs.id] ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {pcsList.length === 0 && !loading && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center text-muted-foreground py-8"
+                      >
+                        No services found for this port call
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-                {pcsList.length === 0 && !loading && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center text-muted-foreground py-8"
-                    >
-                      No services found for this port call
-                    </TableCell>
-                  </TableRow>
-                )}
-                {loading && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                  {loading && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
           <CardFooter className="bg-gray-100 dark:bg-gray-800 py-3 px-6">
             <div className="text-xs text-muted-foreground">
