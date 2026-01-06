@@ -36,7 +36,7 @@ export default function OTPPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
   const [isResending, setIsResending] = useState(false);
-  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false); // Prevent double submit
+  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -248,24 +248,25 @@ export default function OTPPage() {
         </div>
       </div>
 
-      <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
-        <div className="relative w-full max-w-md">
+      <div className="relative z-10 flex items-center justify-center min-h-screen p-2 sm:p-4">
+        <div className="relative w-full max-w-xs sm:max-w-md">
           <form
             onSubmit={handleVerify}
-            className="bg-white/95 backdrop-blur-sm p-8 rounded-2xl shadow-2xl space-y-6 w-full border border-gray-100"
+            className="bg-white/95 backdrop-blur-sm p-4 sm:p-8 rounded-2xl shadow-2xl space-y-6 w-full border border-gray-100"
             style={{
               boxShadow:
                 "0 20px 60px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02)",
             }}
           >
-            <div className="text-center space-y-3">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 mb-2">
-                <Lock className="h-8 w-8 text-blue-600" />
+            {/* Header */}
+            <div className="text-center space-y-2 sm:space-y-3">
+              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 mb-2">
+                <Lock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
                 Enter Verification Code
               </h2>
-              <p className="text-gray-600 text-sm leading-relaxed">
+              <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
                 We've sent a 6-digit code to{" "}
                 <span className="font-semibold text-blue-700">
                   {maskEmail(email)}
@@ -275,43 +276,42 @@ export default function OTPPage() {
             </div>
 
             {/* OTP Input Section */}
-            <div className="space-y-5">
-              <div className="flex justify-center items-center gap-2.5">
-                {otpArray.map((digit, idx) => (
-                  <div key={idx} className="relative">
-                    <input
-                      ref={(el) => {
-                        inputRefs.current[idx] = el;
-                      }}
-                      type="text"
-                      maxLength={1}
-                      value={digit}
-                      autoFocus={idx === 0}
-                      disabled={timeLeft === 0}
-                      onChange={(e) => handleOtpChange(idx, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(idx, e)}
-                      onPaste={handlePaste}
-                      className="w-14 h-14 text-2xl font-bold text-center rounded-xl border-2 border-gray-200 
-                        focus:border-blue-500 focus:ring-3 focus:ring-blue-100 focus:outline-none transition-all duration-200
-                        bg-gray-50 hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed
-                        text-gray-900 shadow-sm"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                    />
-                    {idx < OTP_LENGTH - 1 && (
-                      <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-0.5 bg-gray-300"></div>
-                    )}
-                  </div>
-                ))}
-              </div>
+            <div className="flex justify-center items-center gap-1 sm:gap-2.5 mb-2">
+              {otpArray.map((digit, idx) => (
+                <div key={idx} className="relative">
+                  <input
+                    ref={(el) => {
+                      inputRefs.current[idx] = el;
+                    }}
+                    type="text"
+                    maxLength={1}
+                    value={digit}
+                    autoFocus={idx === 0}
+                    disabled={timeLeft === 0}
+                    onChange={(e) => handleOtpChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(idx, e)}
+                    onPaste={handlePaste}
+                    className="
+                w-10 h-10 text-lg
+                sm:w-14 sm:h-14 sm:text-2xl
+                font-bold text-center rounded-xl border-2 border-gray-200 
+                focus:border-blue-500 focus:ring-3 focus:ring-blue-100 focus:outline-none transition-all duration-200
+                bg-gray-50 hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed
+                text-gray-900 shadow-sm
+              "
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                  />
+                  {idx < OTP_LENGTH - 1 && (
+                    <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-0.5 bg-gray-300"></div>
+                  )}
+                </div>
+              ))}
             </div>
 
             {/* Error Message */}
             {error && (
-              <div
-                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-center animate-scale-in
-                flex items-center justify-center gap-2"
-              >
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-center animate-scale-in flex items-center justify-center gap-2 text-xs sm:text-sm">
                 <svg
                   className="w-4 h-4"
                   fill="currentColor"
@@ -331,9 +331,9 @@ export default function OTPPage() {
             <div className="space-y-3">
               <Button
                 type="submit"
-                className="w-full h-12 text-base font-semibold rounded-xl transition-all duration-200
-                  bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800
-                  shadow-md hover:shadow-lg active:scale-[0.99]"
+                className="w-full h-10 sm:h-12 text-base font-semibold rounded-xl transition-all duration-200
+            bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800
+            shadow-md hover:shadow-lg active:scale-[0.99]"
                 disabled={isLoading || timeLeft <= 0}
               >
                 {timeLeft <= 0 ? (
@@ -365,29 +365,6 @@ export default function OTPPage() {
                   "Verify & Continue"
                 )}
               </Button>
-              {/* <button
-                type="button"
-                className="w-full h-12 border border-gray-300 rounded-xl text-gray-700 font-semibold 
-                  bg-white hover:bg-gray-50 transition-all duration-200 hover:border-gray-400 
-                  active:scale-[0.99] flex items-center justify-center gap-2"
-                onClick={handleClearOtp}
-                disabled={otpArray.every((v) => v === "")}
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                Clear Code
-              </button> */}
             </div>
 
             {/* Timer + Resend Below Buttons */}
