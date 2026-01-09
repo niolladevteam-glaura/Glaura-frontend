@@ -33,19 +33,19 @@ export const userApi = {
     return response.data;
   },
   
-getUserPermissions: async (userId: string) => {
-    try {
-      const response = await api.get(`/permission/${userId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching permissions:", error);
-      return { 
-        success: false, 
-        message: "Failed to fetch permissions",
-        userPermissions: {} 
-      };
-    }
-  },
+// getUserPermissions: async (userId: string) => {
+//     try {
+//       const response = await api.get(`/permission/${userId}`);
+//       return response.data;
+//     } catch (error) {
+//       console.error("Error fetching permissions:", error);
+//       return { 
+//         success: false, 
+//         message: "Failed to fetch permissions",
+//         userPermissions: {} 
+//       };
+//     }
+//   },
 
   createUser: async (userData: any) => {
     const response = await api.post('/user', userData);

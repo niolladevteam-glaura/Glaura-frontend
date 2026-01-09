@@ -217,22 +217,22 @@ export default function UserManagement() {
           apiResponse.data.map(async (apiUser: ApiUser) => {
             // Fetch permissions for each user using the new endpoint
             let permissions: string[] = [];
-            try {
-              const permResponse = (await userApi.getUserPermissions(
-                apiUser.user_id
-              )) as PermissionResponse;
-              if (permResponse.success && permResponse.userPermissions) {
-                permissions = Object.entries(permResponse.userPermissions)
-                  .filter(([key, value]) => value === true)
-                  .map(([key]) => key);
-              }
-            } catch (error) {
-              console.error(
-                "Failed to load permissions for user:",
-                apiUser.user_id,
-                error
-              );
-            }
+            // try {
+            //   const permResponse = (await userApi.getUserPermissions(
+            //     apiUser.user_id
+            //   )) as PermissionResponse;
+            //   if (permResponse.success && permResponse.userPermissions) {
+            //     permissions = Object.entries(permResponse.userPermissions)
+            //       .filter(([key, value]) => value === true)
+            //       .map(([key]) => key);
+            //   }
+            // } catch (error) {
+            //   console.error(
+            //     "Failed to load permissions for user:",
+            //     apiUser.user_id,
+            //     error
+            //   );
+            // }
 
             return {
               id: apiUser.user_id,
@@ -510,10 +510,74 @@ export default function UserManagement() {
     }
   };
 
-  const handleEditClick = (user: User) => {
-    setEditingUser(user);
-    setEditPrivileges(user.permissions);
-    setIsEditDialogOpen(true);
+  const handleEditClick = async (user: User) => {
+    try {
+      const token = localStorage.getItem("token");
+      // Fetch the latest user data from the API
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/user/${user.id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const data = await res.json();
+      if (!data.success || !data.user) throw new Error("User not found");
+
+      const apiUser = data.user;
+
+      // Map API user to your User interface
+      const editingUserObj: User = {
+        id: apiUser.user_id,
+        username: apiUser.email.split("@")[0],
+        name: `${apiUser.first_name} ${apiUser.last_name}`,
+        email: apiUser.email,
+        role: apiUser.role,
+        department: apiUser.department || "Other",
+        accessLevel: apiUser.access_level_id, // use this for selection
+        isActive: apiUser.status,
+        lastLogin: apiUser.lastLogin || "",
+        createdAt: apiUser.createdAt || new Date().toISOString(),
+        permissions: [],
+        phoneNumber: apiUser.contact_number || "",
+        emergencyContact: "",
+        dob: apiUser.dob || "",
+        profilePic: apiUser.profile_picture || "",
+      };
+
+      setEditingUser(editingUserObj);
+
+      // Fetch the access level details and permissions
+      const accessLevelRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/permission/access-level/${apiUser.access_level_id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const accessLevelData = await accessLevelRes.json();
+      if (accessLevelData.success && accessLevelData.accessLevel) {
+        setSelectedAccessLevel(accessLevelData.accessLevel);
+        setEditPrivileges(
+          accessLevelData.accessLevel.Permissions.map((p: any) => p.key)
+        );
+      } else {
+        setSelectedAccessLevel(null);
+        setEditPrivileges([]);
+      }
+
+      setIsEditDialogOpen(true);
+    } catch (err) {
+      setSelectedAccessLevel(null);
+      setEditPrivileges([]);
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+      console.error("Failed to fetch user or access level details", err);
+    }
   };
 
   return (
@@ -842,7 +906,7 @@ export default function UserManagement() {
                       <div className="space-y-4 mt-4">
                         <div>
                           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-                            Permissions for {selectedAccessLevel.name}
+                            Permissions for {selectedAccessLevel?.id}
                           </h3>
                           <p className="text-sm text-gray-500">
                             {selectedAccessLevel.description ||
@@ -1090,25 +1154,17 @@ export default function UserManagement() {
                           sel?.Permissions?.map((p: any) => p.key) || []
                         );
                       }}
+                      disabled={accessLevelLoading}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select access level" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="A">A - Managing Director</SelectItem>
-                        <SelectItem value="B">
-                          B - Operations Manager
-                        </SelectItem>
-                        <SelectItem value="C">
-                          C - Disbursement Manager
-                        </SelectItem>
-                        <SelectItem value="D">D - Assistant Manager</SelectItem>
-                        <SelectItem value="E">
-                          E - Operations Executive
-                        </SelectItem>
-                        <SelectItem value="F">F - Bunkering Officer</SelectItem>
-                        <SelectItem value="G">G - Clearance Officer</SelectItem>
-                        <SelectItem value="R">R - General Staff</SelectItem>
+                        {accessLevels.map((level: any) => (
+                          <SelectItem key={level.id} value={level.id}>
+                            {level.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1132,7 +1188,7 @@ export default function UserManagement() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-lg font-medium">
-                      Permissions for {selectedAccessLevel.name}
+                      Permissions for {selectedAccessLevel?.id}
                     </h3>
                     <p className="text-sm text-gray-500">
                       Modify user permissions as needed
@@ -1160,18 +1216,6 @@ export default function UserManagement() {
                                 key={perm.key}
                                 className="flex items-start space-x-3"
                               >
-                                <Checkbox
-                                  id={`edit-${perm.key}`}
-                                  checked={editPrivileges.includes(perm.key)}
-                                  onCheckedChange={() => {
-                                    setEditPrivileges((prev) =>
-                                      prev.includes(perm.key)
-                                        ? prev.filter((k) => k !== perm.key)
-                                        : [...prev, perm.key]
-                                    );
-                                  }}
-                                  className="mt-1"
-                                />
                                 <div className="flex-1">
                                   <Label
                                     htmlFor={`edit-${perm.key}`}
@@ -1273,9 +1317,9 @@ export default function UserManagement() {
                         <Badge className={getStatusColor(user.isActive)}>
                           {user.isActive ? "Active" : "Inactive"}
                         </Badge>
-                        <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800">
+                        {/* <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800">
                           Level {user.accessLevel}
-                        </Badge>
+                        </Badge> */}
                         <Badge variant="outline">{user.department}</Badge>
                       </div>
                     </div>
@@ -1425,9 +1469,8 @@ export default function UserManagement() {
                 </div>
 
                 <Tabs defaultValue="profile">
-                  <TabsList className="w-full grid grid-cols-3">
+                  <TabsList className="w-full grid grid-cols-2">
                     <TabsTrigger value="profile">Profile</TabsTrigger>
-                    <TabsTrigger value="permissions">Permissions</TabsTrigger>
                     <TabsTrigger value="activity">Activity Log</TabsTrigger>
                   </TabsList>
 
@@ -1488,32 +1531,6 @@ export default function UserManagement() {
                                 : "Not specified"}
                             </p>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  <TabsContent value="permissions" className="mt-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>System Permissions</CardTitle>
-                        <CardDescription>
-                          User access rights and capabilities
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {selectedUser.permissions.map((permission, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center space-x-2 p-3 border rounded-lg"
-                            >
-                              <Shield className="h-4 w-4 text-green-600 flex-shrink-0" />
-                              <span className="capitalize text-sm">
-                                {permission.replace("_", " ")}
-                              </span>
-                            </div>
-                          ))}
                         </div>
                       </CardContent>
                     </Card>
