@@ -220,7 +220,7 @@ export const EditDocumentDialog = ({
   if (isUdith || isAmal) {
     approvalControls = (
       <div className="flex items-center gap-2 mt-2">
-        <Button
+        {/* <Button
           variant={approved ? "default" : "outline"}
           className={approved ? "bg-green-600 text-white" : ""}
           onClick={() => setApproved(true)}
@@ -229,8 +229,8 @@ export const EditDocumentDialog = ({
         >
           <CheckCircle className="w-4 h-4 mr-1" />
           Approve
-        </Button>
-        <Button
+        </Button> */}
+        {/* <Button
           variant={!approved ? "default" : "ghost"}
           className="text-red-600"
           onClick={() => setApproved(false)}
@@ -239,7 +239,7 @@ export const EditDocumentDialog = ({
         >
           <XCircle className="w-4 h-4 mr-1" />
           Reject
-        </Button>
+        </Button> */}
       </div>
     );
   }

@@ -266,7 +266,7 @@ export default function OTPPage() {
               <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
                 Enter Verification Code
               </h2>
-              <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              <p className="text-gray-600 text-xs sm:text-base leading-relaxed">
                 We've sent a 6-digit code to{" "}
                 <span className="font-semibold text-blue-700">
                   {maskEmail(email)}
