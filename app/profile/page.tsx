@@ -249,70 +249,56 @@ export default function ProfilePage() {
         },
         body: formDataObj,
       });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      const publicUrl = data.data?.public_url;
 
-      // Success path
-      if (res.ok) {
-        const data = await res.json();
-        const publicUrl = data.data?.public_url;
+      if (publicUrl) {
+        setFormData((prev) => ({
+          ...prev,
+          personal_info: {
+            ...(prev.personal_info ??
+              currentUser?.personal_info ?? {
+                first_name: "",
+                last_name: "",
+                email: "",
+                phone: "",
+                dob: "",
+                address: "",
+                role: "",
+                department: "",
+                joining_date: "",
+                profile_picture: "",
+                access_level: "",
+              }),
+            profile_picture: publicUrl,
+          },
+        }));
 
-        if (publicUrl) {
-          setFormData((prev) => ({
-            ...prev,
-            personal_info: {
-              ...(prev.personal_info ??
-                currentUser?.personal_info ?? {
-                  first_name: "",
-                  last_name: "",
-                  email: "",
-                  phone: "",
-                  dob: "",
-                  address: "",
-                  role: "",
-                  department: "",
-                  joining_date: "",
-                  profile_picture: "",
-                  access_level: "",
-                }),
-              profile_picture: publicUrl,
-            },
-          }));
-
-          // Update avatar in localStorage and currentUser state for dashboard/header
-          const storedUserRaw = localStorage.getItem("currentUser");
-          if (storedUserRaw) {
-            const storedUser = JSON.parse(storedUserRaw);
-            storedUser.avatar = publicUrl;
-            if (storedUser.personal_info)
-              storedUser.personal_info.profile_picture = publicUrl;
-            localStorage.setItem("currentUser", JSON.stringify(storedUser));
-            setCurrentUser((prev) => {
-              if (!prev) return prev;
-              return {
-                ...prev,
-                personal_info: {
-                  ...prev.personal_info,
-                  profile_picture: publicUrl,
-                },
-              };
-            });
-          }
-
-          toast.success("Profile picture uploaded!");
-        } else {
-          toast.error("Upload failed.");
+        // --- Update avatar in localStorage and currentUser state for dashboard/header ---
+        const storedUserRaw = localStorage.getItem("currentUser");
+        if (storedUserRaw) {
+          const storedUser = JSON.parse(storedUserRaw);
+          storedUser.avatar = publicUrl;
+          if (storedUser.personal_info)
+            storedUser.personal_info.profile_picture = publicUrl;
+          localStorage.setItem("currentUser", JSON.stringify(storedUser));
+          setCurrentUser((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              personal_info: {
+                ...prev.personal_info,
+                profile_picture: publicUrl,
+              },
+            };
+          });
         }
+        // -------------------------------------------------------------------------------
 
-        // Error path
+        toast.success("Profile picture uploaded!");
       } else {
-        // Try to parse server error as JSON
-        let errMsg = "Failed to upload picture.";
-        try {
-          const errData = await res.json();
-          if (errData.message) errMsg = errData.message;
-        } catch (jsonErr) {
-          errMsg = await res.text();
-        }
-        toast.error(errMsg);
+        toast.error("Upload failed.");
       }
     } catch (e) {
       toast.error("Failed to upload picture.");
