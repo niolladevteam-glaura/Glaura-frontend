@@ -282,12 +282,12 @@ export default function ActiveServicesPage() {
                 >
                   {sortedServices.length} services
                 </Badge>
-                <Link href="/port-calls/new" className="w-full sm:w-auto">
+                {/* <Link href="/port-calls/new" className="w-full sm:w-auto">
                   <Button size="sm" className="w-full sm:w-auto">
                     <FileText className="h-4 w-4 mr-2" />
                     New Service
                   </Button>
-                </Link>
+                </Link> */}
               </div>
             </CardTitle>
           </CardHeader>
