@@ -844,21 +844,32 @@ export default function UserManagement() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Management">
-                              Management
+                              Management Department
                             </SelectItem>
-                            <SelectItem value="Finance ">Finance</SelectItem>
+                            <SelectItem value="Finance ">
+                              Finance Department
+                            </SelectItem>
                             <SelectItem value="Operations">
-                              Operations
+                              Operations Department
                             </SelectItem>
                             <SelectItem value="Disbursement">
-                              Disbursement
+                              Disbursement Department
                             </SelectItem>
                             <SelectItem value="Communication">
-                              Communication
+                              Communication Department
                             </SelectItem>
-                            <SelectItem value="Clearance">Clearance</SelectItem>
-                            <SelectItem value="Bunkering">Bunkering</SelectItem>
-                            <SelectItem value="Supply">Supply</SelectItem>
+                            <SelectItem value="Clearance">
+                              Clearance Department
+                            </SelectItem>
+                            <SelectItem value="Bunkering">
+                              Bunkering Department
+                            </SelectItem>
+                            <SelectItem value="Supply">
+                              Supply Department
+                            </SelectItem>
+                            <SelectItem value="Marketing">
+                              Marketing Department
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1006,6 +1017,7 @@ export default function UserManagement() {
                     <SelectItem value="communication">Communication</SelectItem>
                     <SelectItem value="clearance">Clearance</SelectItem>
                     <SelectItem value="bunkering">Bunkering</SelectItem>
+                    <SelectItem value="Marketing">Marketing</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -1188,10 +1200,10 @@ export default function UserManagement() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-lg font-medium">
-                      Permissions for {selectedAccessLevel?.id}
+                      Permissions for {selectedAccessLevel?.name} Access Level
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Modify user permissions as needed
+                      See user permissions as needed
                     </p>
                   </div>
 
