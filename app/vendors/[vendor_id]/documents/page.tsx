@@ -329,9 +329,9 @@ export default function VendorDocumentsPage() {
           },
           body: JSON.stringify({
             vendorID: doc.vendorID,
-            url: doc.url,
-            expired_at: doc.expired_at,
-            remarks: doc.remarks,
+            // url: doc.url,
+            // expired_at: doc.expired_at,
+            // remarks: doc.remarks,
             approved_by_udith: isUdith ? true : doc.approved_by_udith,
             approved_by_amal: isAmal ? true : doc.approved_by_amal,
           }),
