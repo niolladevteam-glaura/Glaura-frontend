@@ -823,6 +823,7 @@ export default function VesselManagement() {
                           showPopperArrow={false}
                           wrapperClassName="w-full"
                         />
+
                         {newVessel.sscecIssued && (
                           <div className="text-xs text-muted-foreground mt-1">
                             SSCEC will expire on{" "}

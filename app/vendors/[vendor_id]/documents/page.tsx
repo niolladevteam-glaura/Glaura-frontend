@@ -374,7 +374,7 @@ export default function VendorDocumentsPage() {
       );
       const data = await res.json();
       if (data.success) {
-        toast.success("Document rejected!");
+        toast.error("Document rejected!");
         fetchDocuments();
       } else {
         toast.error(data.message || "Rejection failed.");

@@ -187,7 +187,7 @@ export const EditDocumentDialog = ({
           variant="outline"
           className="text-green-600 border-green-300 bg-green-50 px-2 py-1"
         >
-          Approved by Mr. Udith
+          Approved by MD
         </Badge>
       ) : (
         <Badge
@@ -202,7 +202,7 @@ export const EditDocumentDialog = ({
           variant="outline"
           className="text-green-600 border-green-300 bg-green-50 px-2 py-1"
         >
-          Approved by Mr. Amal
+          Approved by FD
         </Badge>
       ) : (
         <Badge
