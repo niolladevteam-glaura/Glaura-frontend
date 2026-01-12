@@ -115,7 +115,9 @@ function formatDateDMY(dateStr?: string | Date) {
 
 function getStatusBadgeColor(status: string) {
   switch (status) {
-    case "expired":
+    case "approved":
+    case "Approved":
+      return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-700";
     case "Expired":
       return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700";
     case "pending":
