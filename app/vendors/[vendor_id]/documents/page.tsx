@@ -364,7 +364,7 @@ export default function VendorDocumentsPage() {
           },
           body: JSON.stringify({
             vendorID: doc.vendorID,
-            url: doc.url,
+            //url: doc.url,
             expired_at: doc.expired_at,
             remarks: doc.remarks,
             approved_by_udith: isUdith ? false : doc.approved_by_udith,
