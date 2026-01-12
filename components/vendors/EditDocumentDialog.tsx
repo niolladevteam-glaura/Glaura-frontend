@@ -202,14 +202,14 @@ export const EditDocumentDialog = ({
           variant="outline"
           className="text-green-600 border-green-300 bg-green-50 px-2 py-1"
         >
-          Approved by FD
+          Approved by FC
         </Badge>
       ) : (
         <Badge
           variant="outline"
           className="text-red-600 border-red-300 bg-red-50 px-2 py-1"
         >
-          Pending FD Approval
+          Pending FC Approval
         </Badge>
       )}
     </div>
