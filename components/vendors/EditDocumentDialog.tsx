@@ -194,7 +194,7 @@ export const EditDocumentDialog = ({
           variant="outline"
           className="text-red-600 border-red-300 bg-red-50 px-2 py-1"
         >
-          Mr. Udith not approved
+          Pending MD Approval
         </Badge>
       )}
       {document?.approved_by_amal ? (
@@ -209,7 +209,7 @@ export const EditDocumentDialog = ({
           variant="outline"
           className="text-red-600 border-red-300 bg-red-50 px-2 py-1"
         >
-          Mr. Amal not approved
+          Pending FD Approval
         </Badge>
       )}
     </div>
