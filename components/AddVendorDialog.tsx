@@ -77,6 +77,8 @@ type DocumentType = {
   documentID: string;
   document_name: string;
   isRequired?: boolean;
+  isExpiryRequiredIfUploaded?: boolean;
+  group: "mandatory" | "optional";
 };
 
 type AddVendorDialogProps = {
@@ -90,6 +92,69 @@ type AddVendorDialogProps = {
 
 const VENDOR_FORM_DRAFT_KEY = "addVendorFormDraft";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+// Hardcoded document list as per requirements
+const HARDCODED_DOCUMENTS: DocumentType[] = [
+  // Mandatory
+  {
+    documentID: "bank_details",
+    document_name: "Bank Details",
+    isRequired: true,
+    group: "mandatory",
+  },
+  {
+    documentID: "business_registration",
+    document_name: "Business Registration Certificates",
+    isRequired: true,
+    group: "mandatory",
+  },
+  {
+    documentID: "company_profile",
+    document_name: "Company Profile",
+    isRequired: true,
+    group: "mandatory",
+  },
+  {
+    documentID: "hsq_policy",
+    document_name: "Health, Safety and quality policy doc",
+    isRequired: true,
+    group: "mandatory",
+  },
+  {
+    documentID: "directors_list",
+    document_name: "List of Directors",
+    isRequired: true,
+    group: "mandatory",
+  },
+  {
+    documentID: "key_contacts_list",
+    document_name: "List of Key contact persons",
+    isRequired: true,
+    group: "mandatory",
+  },
+  // Not Mandatory
+  {
+    documentID: "insurance_certificates",
+    document_name: "Insurance certificates",
+    isRequired: false,
+    isExpiryRequiredIfUploaded: true,
+    group: "optional",
+  },
+  {
+    documentID: "iso_industry",
+    document_name: "Relevant ISO & Industry",
+    isRequired: false,
+    isExpiryRequiredIfUploaded: true,
+    group: "optional",
+  },
+  {
+    documentID: "tax_registration",
+    document_name: "Tax Registration Certificate",
+    isRequired: false,
+    isExpiryRequiredIfUploaded: false,
+    group: "optional",
+  },
+];
 
 const blankVendorForm = (documents: DocumentType[]): VendorFormType => ({
   name: "",
@@ -144,16 +209,6 @@ async function uploadFile(file: File): Promise<string> {
   return data.data.publicUrl || data.data.public_url;
 }
 
-function isDocumentRequired(documentName: string): boolean {
-  const documentsRequiringExpiry = [
-    "Relevant ISO or industry certifications",
-    "Insurance certificates",
-  ];
-  return documentsRequiringExpiry.some((doc) =>
-    documentName.toLowerCase().includes(doc.toLowerCase())
-  );
-}
-
 export default function AddVendorDialog({
   open,
   onOpenChange,
@@ -172,33 +227,14 @@ export default function AddVendorDialog({
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const { toast } = useToast();
 
+  // Always use the hardcoded document list
   useEffect(() => {
     if (open) {
       setLoadingDocuments(true);
-      const token = localStorage.getItem("token");
-      fetch(`${API_BASE_URL}/vendor/document/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && Array.isArray(data.data)) {
-            // Add isRequired flag to each document
-            const documentsWithRequiredFlag = data.data.map(
-              (doc: DocumentType) => ({
-                ...doc,
-                isRequired: isDocumentRequired(doc.document_name),
-              })
-            );
-            setDocumentList(documentsWithRequiredFlag);
-          } else {
-            setDocumentList([]);
-          }
-        })
-        .catch(() => setDocumentList([]))
-        .finally(() => setLoadingDocuments(false));
+      setTimeout(() => {
+        setDocumentList(HARDCODED_DOCUMENTS);
+        setLoadingDocuments(false);
+      }, 100); // Simulate async for consistency
     }
   }, [open]);
 
@@ -425,10 +461,17 @@ export default function AddVendorDialog({
     // Validate required attachments
     const errors = vendorForm.attachments.map((att) => {
       const doc = documentList.find((d) => d.documentID === att.documentID);
-      if (doc?.isRequired) {
-        return !att.file || !att.expiryDate;
+      if (!doc) return false;
+      if (doc.isRequired) {
+        // Mandatory: file required
+        return !att.file;
       }
-      return !att.file;
+      if (doc.isExpiryRequiredIfUploaded) {
+        // Not mandatory, but if file uploaded, expiry required
+        return att.file ? !att.expiryDate : false;
+      }
+      // Not mandatory, no expiry required
+      return false;
     });
     setAttachmentErrors(errors);
   }, [vendorForm?.attachments, documentList]);
@@ -441,18 +484,21 @@ export default function AddVendorDialog({
     // Validate required attachments before submission
     const hasErrors = vendorForm.attachments.some((att, idx) => {
       const doc = documentList.find((d) => d.documentID === att.documentID);
-      if (doc?.isRequired) {
-        // Certifications and insurance require both file and expiry
-        return !att.file || !att.expiryDate;
+      if (!doc) return false;
+      if (doc.isRequired) {
+        return !att.file;
       }
-
-      return !att.file;
+      if (doc.isExpiryRequiredIfUploaded) {
+        return att.file ? !att.expiryDate : false;
+      }
+      return false;
     });
 
     if (hasErrors) {
       toast({
         title: "Validation Error",
-        description: "Please upload all required documents with expiry dates.",
+        description:
+          "Please upload all required documents. For Insurance and ISO/Industry, expiry date is required if file is uploaded.",
         variant: "destructive",
       });
       return;
@@ -747,7 +793,7 @@ export default function AddVendorDialog({
             <div>
               <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Required Attachments
+                Vendor Documents
               </h3>
               <p
                 className="bg-[#FA4812] isolate gap-2 relative before:absolute before:inset-0 before:rounded-[6px] before:bg-[linear-gradient(180deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0)_50%)]
@@ -772,90 +818,123 @@ export default function AddVendorDialog({
                 Max upload size is 5MB
               </p>
 
+              <div className="mb-4">
+                <div className="font-semibold mb-1">Mandatory Documents</div>
+                <ul className="list-disc ml-6 text-sm text-gray-700 dark:text-gray-200">
+                  {HARDCODED_DOCUMENTS.filter(
+                    (d) => d.group === "mandatory"
+                  ).map((doc) => (
+                    <li key={doc.documentID}>{doc.document_name}</li>
+                  ))}
+                </ul>
+                <div className="font-semibold mt-4 mb-1">
+                  Not Mandatory Documents
+                </div>
+                <ul className="list-disc ml-6 text-sm text-gray-700 dark:text-gray-200">
+                  {HARDCODED_DOCUMENTS.filter(
+                    (d) => d.group === "optional"
+                  ).map((doc) => (
+                    <li key={doc.documentID}>
+                      {doc.document_name}
+                      {doc.isExpiryRequiredIfUploaded && (
+                        <span className="text-xs text-gray-500">
+                          {" "}
+                          (Expiry date mandatory if uploaded)
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <div className="space-y-6">
-                {vendorForm.attachments.map((att, idx) => (
-                  <div
-                    key={att.documentID}
-                    className="border p-4 rounded-xl bg-muted/40"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center gap-4">
-                      <div className="flex-1">
-                        <Label className="font-semibold mb-2 block">
-                          {idx + 1}. {att.type}
-                          {documentList.find(
-                            (d) => d.documentID === att.documentID
-                          )?.isRequired && (
-                            <span className="text-red-600 ml-1">*</span>
-                          )}
-                        </Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                            onChange={(e) =>
-                              handleAttachmentFile(
-                                idx,
-                                e.target.files?.[0] || null
-                              )
-                            }
-                          />
-                          {att.file && (
-                            <Badge variant="secondary" className="text-xs">
-                              {(att.file.size / 1024).toFixed(2)} KB
-                            </Badge>
-                          )}
-                          {att.publicUrl && (
-                            <a
-                              href={att.publicUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ml-2 text-xs text-blue-600 underline"
-                            >
-                              View uploaded file
-                            </a>
+                {vendorForm.attachments.map((att, idx) => {
+                  const doc = documentList.find(
+                    (d) => d.documentID === att.documentID
+                  );
+                  return (
+                    <div
+                      key={att.documentID}
+                      className="border p-4 rounded-xl bg-muted/40"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <div className="flex-1">
+                          <Label className="font-semibold mb-2 block">
+                            {idx + 1}. {att.type}
+                            {doc?.isRequired && (
+                              <span className="text-red-600 ml-1">*</span>
+                            )}
+                          </Label>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                              onChange={(e) =>
+                                handleAttachmentFile(
+                                  idx,
+                                  e.target.files?.[0] || null
+                                )
+                              }
+                            />
+                            {att.file && (
+                              <Badge variant="secondary" className="text-xs">
+                                {(att.file.size / 1024).toFixed(2)} KB
+                              </Badge>
+                            )}
+                            {att.publicUrl && (
+                              <a
+                                href={att.publicUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-2 text-xs text-blue-600 underline"
+                              >
+                                View uploaded file
+                              </a>
+                            )}
+                          </div>
+                          {submitAttempted && attachmentErrors[idx] && (
+                            <p className="text-xs text-red-600 mt-2">
+                              {doc?.isRequired
+                                ? "File is required for this document."
+                                : doc?.isExpiryRequiredIfUploaded
+                                ? "Expiry date is required if file is uploaded."
+                                : ""}
+                            </p>
                           )}
                         </div>
-                        {submitAttempted && attachmentErrors[idx] && (
-                          <p className="text-xs text-red-600 mt-2">
-                            {documentList.find(
-                              (d) => d.documentID === att.documentID
-                            )?.isRequired
-                              ? "File and expiry date are required for this document."
-                              : "File is required for this document."}
-                          </p>
-                        )}
-                      </div>
-                      <div className="w-full md:w-40">
-                        <Label className="mb-1 block">
-                          Expiry Date
-                          {documentList.find(
-                            (d) => d.documentID === att.documentID
-                          )?.isRequired && (
-                            <span className="text-red-600 ml-1">*</span>
-                          )}
-                        </Label>
-                        <DatePicker
-                          value={att.expiryDate}
-                          onChange={(val) => handleAttachmentExpiry(idx, val)}
-                          placeholder="dd.mm.yyyy"
-                          minDate={new Date()}
-                        />
-                      </div>
-                      <div className="w-full md:w-52">
-                        <Label className="mb-1 block">Remarks</Label>
-                        <Input
-                          type="text"
-                          maxLength={60}
-                          placeholder="Enter remarks"
-                          value={att.remarks}
-                          onChange={(e) =>
-                            handleAttachmentRemarks(idx, e.target.value)
-                          }
-                        />
+                        <div className="w-full md:w-40">
+                          <Label className="mb-1 block">
+                            Expiry Date
+                            {doc?.isExpiryRequiredIfUploaded && (
+                              <span className="text-red-600 ml-1">*</span>
+                            )}
+                          </Label>
+                          <DatePicker
+                            value={att.expiryDate}
+                            onChange={(val) => handleAttachmentExpiry(idx, val)}
+                            placeholder="dd.mm.yyyy"
+                            minDate={new Date()}
+                            disabled={
+                              !(doc?.isExpiryRequiredIfUploaded && att.file)
+                            }
+                          />
+                        </div>
+                        <div className="w-full md:w-52">
+                          <Label className="mb-1 block">Remarks</Label>
+                          <Input
+                            type="text"
+                            maxLength={60}
+                            placeholder="Enter remarks"
+                            value={att.remarks}
+                            onChange={(e) =>
+                              handleAttachmentRemarks(idx, e.target.value)
+                            }
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
             {/* --- End Attachment Section --- */}
