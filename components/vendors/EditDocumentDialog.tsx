@@ -45,7 +45,7 @@ interface EditDocumentDialogProps {
   document: DocumentType | null;
   currentUser: CurrentUser | null;
   onUpdated?: (doc: DocumentType) => void;
-  documentTypes: { documentID: string; document_name: string }[]; // <-- NEW PROP
+  documentTypes: { documentID: string; document_name: string }[];
 }
 
 export const EditDocumentDialog = ({
