@@ -128,7 +128,7 @@ function getStatusBadgeColor(status: string) {
       return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700";
     case "rejected":
     case "Rejected":
-      return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:border-purple-700";
+      return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700";
     default:
       return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600";
   }
@@ -320,7 +320,14 @@ export default function VendorDocumentsPage() {
     try {
       const isUdith = currentUser?.email === "udith@greeklanka.com";
       const isAmal = currentUser?.email === "amal@greeklanka.com";
-
+      const payload: any = { vendorID: doc.vendorID };
+      if (isUdith) {
+        payload.approved_by_udith = "approved";
+        payload.approved_by_amal = doc.approved_by_amal;
+      } else if (isAmal) {
+        payload.approved_by_amal = "approved";
+        payload.approved_by_udith = doc.approved_by_udith;
+      }
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/vendor/document/${doc.documentID}`,
         {
@@ -329,14 +336,7 @@ export default function VendorDocumentsPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
           },
-          body: JSON.stringify({
-            vendorID: doc.vendorID,
-            // url: doc.url,
-            // expired_at: doc.expired_at,
-            // remarks: doc.remarks,
-            approved_by_udith: isUdith ? true : doc.approved_by_udith,
-            approved_by_amal: isAmal ? true : doc.approved_by_amal,
-          }),
+          body: JSON.stringify(payload),
         }
       );
       const data = await res.json();
@@ -355,7 +355,14 @@ export default function VendorDocumentsPage() {
     try {
       const isUdith = currentUser?.email === "udith@greeklanka.com";
       const isAmal = currentUser?.email === "amal@greeklanka.com";
-
+      const payload: any = { vendorID: doc.vendorID };
+      if (isUdith) {
+        payload.approved_by_udith = "rejected";
+        payload.approved_by_amal = doc.approved_by_amal;
+      } else if (isAmal) {
+        payload.approved_by_amal = "rejected";
+        payload.approved_by_udith = doc.approved_by_udith;
+      }
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/vendor/document/${doc.documentID}`,
         {
@@ -364,14 +371,7 @@ export default function VendorDocumentsPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
           },
-          body: JSON.stringify({
-            vendorID: doc.vendorID,
-            //url: doc.url,
-            expired_at: doc.expired_at,
-            remarks: doc.remarks,
-            approved_by_udith: isUdith ? false : doc.approved_by_udith,
-            approved_by_amal: isAmal ? false : doc.approved_by_amal,
-          }),
+          body: JSON.stringify(payload),
         }
       );
       const data = await res.json();
