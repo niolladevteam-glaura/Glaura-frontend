@@ -70,7 +70,7 @@ type AttachmentFormType = {
   fileSize: number;
   expiryDate: string;
   remarks: string;
-  publicUrl?: string; // Added for storing uploaded file URL
+  publicUrl?: string;
 };
 
 type DocumentType = {
@@ -147,9 +147,11 @@ async function uploadFile(file: File): Promise<string> {
 function isDocumentRequired(documentName: string): boolean {
   const documentsRequiringExpiry = [
     "Relevant ISO or industry certifications",
-    "Insurance certificates"
+    "Insurance certificates",
   ];
-  return documentsRequiringExpiry.some(doc => documentName.toLowerCase().includes(doc.toLowerCase()));
+  return documentsRequiringExpiry.some((doc) =>
+    documentName.toLowerCase().includes(doc.toLowerCase())
+  );
 }
 
 export default function AddVendorDialog({
@@ -184,10 +186,12 @@ export default function AddVendorDialog({
         .then((data) => {
           if (data.success && Array.isArray(data.data)) {
             // Add isRequired flag to each document
-            const documentsWithRequiredFlag = data.data.map((doc: DocumentType) => ({
-              ...doc,
-              isRequired: isDocumentRequired(doc.document_name),
-            }));
+            const documentsWithRequiredFlag = data.data.map(
+              (doc: DocumentType) => ({
+                ...doc,
+                isRequired: isDocumentRequired(doc.document_name),
+              })
+            );
             setDocumentList(documentsWithRequiredFlag);
           } else {
             setDocumentList([]);
@@ -267,7 +271,7 @@ export default function AddVendorDialog({
               },
             ],
           }
-        : prev,
+        : prev
     );
   };
 
@@ -290,7 +294,7 @@ export default function AddVendorDialog({
             ...prev,
             pics: (prev.pics || []).filter((_, i) => i !== index),
           }
-        : prev,
+        : prev
     );
   };
 
@@ -313,7 +317,7 @@ export default function AddVendorDialog({
   const updatePICContactNumber = (
     picIndex: number,
     contactIndex: number,
-    value: string,
+    value: string
   ) => {
     setVendorForm((prev) => {
       if (!prev) return prev;
@@ -332,7 +336,7 @@ export default function AddVendorDialog({
       ].contactNumbers.filter((_, i) => i !== contactIndex);
       updatedPics[picIndex].contactTypes = updatedPics[picIndex].contactTypes
         ? updatedPics[picIndex].contactTypes!.filter(
-            (_, i) => i !== contactIndex,
+            (_, i) => i !== contactIndex
           )
         : [];
       return { ...prev, pics: updatedPics };
@@ -355,7 +359,7 @@ export default function AddVendorDialog({
   const updatePICEmail = (
     picIndex: number,
     emailIndex: number,
-    value: string,
+    value: string
   ) => {
     setVendorForm((prev) => {
       if (!prev) return prev;
@@ -370,7 +374,7 @@ export default function AddVendorDialog({
       if (!prev) return prev;
       const updatedPics = [...(prev.pics || [])];
       updatedPics[picIndex].emails = updatedPics[picIndex].emails.filter(
-        (_, i) => i !== emailIndex,
+        (_, i) => i !== emailIndex
       );
       updatedPics[picIndex].emailTypes = updatedPics[picIndex].emailTypes
         ? updatedPics[picIndex].emailTypes!.filter((_, i) => i !== emailIndex)
@@ -412,7 +416,7 @@ export default function AddVendorDialog({
 
   // Service filter
   const filteredServiceCategories = serviceCategories.filter((cat) =>
-    cat.toLowerCase().includes(serviceSearchTerm.toLowerCase()),
+    cat.toLowerCase().includes(serviceSearchTerm.toLowerCase())
   );
 
   // Validation for attachments
@@ -420,7 +424,7 @@ export default function AddVendorDialog({
     if (!vendorForm) return;
     // Validate required attachments
     const errors = vendorForm.attachments.map((att) => {
-      const doc = documentList.find(d => d.documentID === att.documentID);
+      const doc = documentList.find((d) => d.documentID === att.documentID);
       if (doc?.isRequired) {
         return !att.file || !att.expiryDate;
       }
@@ -436,7 +440,7 @@ export default function AddVendorDialog({
 
     // Validate required attachments before submission
     const hasErrors = vendorForm.attachments.some((att, idx) => {
-      const doc = documentList.find(d => d.documentID === att.documentID);
+      const doc = documentList.find((d) => d.documentID === att.documentID);
       if (doc?.isRequired) {
         // Certifications and insurance require both file and expiry
         return !att.file || !att.expiryDate;
@@ -471,7 +475,7 @@ export default function AddVendorDialog({
             return att;
           }
           return att;
-        }),
+        })
       );
 
       // 2. Prepare documents array for payload
@@ -579,7 +583,7 @@ export default function AddVendorDialog({
                 value={vendorForm.name}
                 onChange={(e) =>
                   setVendorForm((prev) =>
-                    prev ? { ...prev, name: e.target.value } : prev,
+                    prev ? { ...prev, name: e.target.value } : prev
                   )
                 }
                 placeholder="Enter company name"
@@ -595,7 +599,7 @@ export default function AddVendorDialog({
                 value={vendorForm.company_type}
                 onChange={(e) =>
                   setVendorForm((prev) =>
-                    prev ? { ...prev, company_type: e.target.value } : prev,
+                    prev ? { ...prev, company_type: e.target.value } : prev
                   )
                 }
                 placeholder="e.g., Launch Boat Operator"
@@ -611,7 +615,7 @@ export default function AddVendorDialog({
                 value={vendorForm.address}
                 onChange={(e) =>
                   setVendorForm((prev) =>
-                    prev ? { ...prev, address: e.target.value } : prev,
+                    prev ? { ...prev, address: e.target.value } : prev
                   )
                 }
                 placeholder="Enter company address"
@@ -635,7 +639,7 @@ export default function AddVendorDialog({
                           ? (data as any).dialCode
                           : "");
                       setVendorForm((prev) =>
-                        prev ? { ...prev, phoneCountryCode: dial } : prev,
+                        prev ? { ...prev, phoneCountryCode: dial } : prev
                       );
                     }}
                   />
@@ -645,7 +649,7 @@ export default function AddVendorDialog({
                   value={vendorForm.phoneNumber}
                   onChange={(e) =>
                     setVendorForm((prev) =>
-                      prev ? { ...prev, phoneNumber: e.target.value } : prev,
+                      prev ? { ...prev, phoneNumber: e.target.value } : prev
                     )
                   }
                   placeholder="112223344"
@@ -662,7 +666,7 @@ export default function AddVendorDialog({
                 value={vendorForm.email}
                 onChange={(e) =>
                   setVendorForm((prev) =>
-                    prev ? { ...prev, email: e.target.value } : prev,
+                    prev ? { ...prev, email: e.target.value } : prev
                   )
                 }
                 placeholder="email@company.com"
@@ -707,14 +711,14 @@ export default function AddVendorDialog({
                               ? {
                                   ...prev,
                                   services: vendorForm.services.includes(
-                                    category,
+                                    category
                                   )
                                     ? vendorForm.services.filter(
-                                        (c) => c !== category,
+                                        (c) => c !== category
                                       )
                                     : [...vendorForm.services, category],
                                 }
-                              : prev,
+                              : prev
                           )
                         }
                         className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
@@ -768,7 +772,6 @@ export default function AddVendorDialog({
                 Max upload size is 5MB
               </p>
 
-
               <div className="space-y-6">
                 {vendorForm.attachments.map((att, idx) => (
                   <div
@@ -779,7 +782,9 @@ export default function AddVendorDialog({
                       <div className="flex-1">
                         <Label className="font-semibold mb-2 block">
                           {idx + 1}. {att.type}
-                          {documentList.find(d => d.documentID === att.documentID)?.isRequired && (
+                          {documentList.find(
+                            (d) => d.documentID === att.documentID
+                          )?.isRequired && (
                             <span className="text-red-600 ml-1">*</span>
                           )}
                         </Label>
@@ -790,7 +795,7 @@ export default function AddVendorDialog({
                             onChange={(e) =>
                               handleAttachmentFile(
                                 idx,
-                                e.target.files?.[0] || null,
+                                e.target.files?.[0] || null
                               )
                             }
                           />
@@ -812,7 +817,9 @@ export default function AddVendorDialog({
                         </div>
                         {submitAttempted && attachmentErrors[idx] && (
                           <p className="text-xs text-red-600 mt-2">
-                            {documentList.find(d => d.documentID === att.documentID)?.isRequired
+                            {documentList.find(
+                              (d) => d.documentID === att.documentID
+                            )?.isRequired
                               ? "File and expiry date are required for this document."
                               : "File is required for this document."}
                           </p>
@@ -821,7 +828,9 @@ export default function AddVendorDialog({
                       <div className="w-full md:w-40">
                         <Label className="mb-1 block">
                           Expiry Date
-                          {documentList.find(d => d.documentID === att.documentID)?.isRequired && (
+                          {documentList.find(
+                            (d) => d.documentID === att.documentID
+                          )?.isRequired && (
                             <span className="text-red-600 ml-1">*</span>
                           )}
                         </Label>
@@ -937,7 +946,7 @@ export default function AddVendorDialog({
                                 updatePIC(
                                   picIdx,
                                   "type",
-                                  val as "Primary" | "Secondary",
+                                  val as "Primary" | "Secondary"
                                 )
                               }
                             >
@@ -1045,7 +1054,7 @@ export default function AddVendorDialog({
                                   onChange={(val, data) => {
                                     const rest = num.replace(
                                       /^(\+\d+)?\s?/,
-                                      "",
+                                      ""
                                     );
                                     const dial =
                                       "+" +
@@ -1058,7 +1067,7 @@ export default function AddVendorDialog({
                                     updatePICContactNumber(
                                       picIdx,
                                       numIdx,
-                                      updatedNumber.trim(),
+                                      updatedNumber.trim()
                                     );
                                   }}
                                 />
@@ -1076,7 +1085,7 @@ export default function AddVendorDialog({
                                       numIdx,
                                       (num.startsWith("+")
                                         ? num.split(" ")[0] + " "
-                                        : "+94 ") + e.target.value,
+                                        : "+94 ") + e.target.value
                                     )
                                   }
                                   placeholder="77 123 4567"
@@ -1126,7 +1135,7 @@ export default function AddVendorDialog({
                                     updatePICEmail(
                                       picIdx,
                                       emailIdx,
-                                      e.target.value,
+                                      e.target.value
                                     )
                                   }
                                   placeholder="email@company.com"
@@ -1193,7 +1202,7 @@ export default function AddVendorDialog({
                 value={vendorForm.remark}
                 onChange={(e) =>
                   setVendorForm((prev) =>
-                    prev ? { ...prev, remark: e.target.value } : prev,
+                    prev ? { ...prev, remark: e.target.value } : prev
                   )
                 }
                 placeholder="Additional notes about the vendor"
