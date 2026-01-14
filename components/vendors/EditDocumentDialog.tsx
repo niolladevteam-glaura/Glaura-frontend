@@ -144,7 +144,7 @@ export const EditDocumentDialog = ({
 
     const payload = {
       vendorID: document.vendorID,
-      // url: fileUrl || document.url,
+      url: fileUrl || document.url,
       expired_at: expiredAt,
       remarks,
       // approved_by_udith: isUdith ? approved : document.approved_by_udith,

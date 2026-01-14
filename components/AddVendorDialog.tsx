@@ -97,58 +97,59 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const HARDCODED_DOCUMENTS: DocumentType[] = [
   // Mandatory
   {
-    documentID: "bank_details",
+    documentID: "DOC005",
     document_name: "Bank Details",
     isRequired: true,
     group: "mandatory",
   },
   {
-    documentID: "business_registration",
-    document_name: "Business Registration Certificates",
+    documentID: "DOC002",
+    document_name: "Business Registration Certificate",
     isRequired: true,
     group: "mandatory",
   },
   {
-    documentID: "company_profile",
+    documentID: "DOC001",
     document_name: "Company Profile",
     isRequired: true,
     group: "mandatory",
   },
   {
-    documentID: "hsq_policy",
-    document_name: "Health, Safety and quality policy doc",
+    documentID: "DOC008",
+    document_name: "Health, Safety and Quality Policy Documents",
     isRequired: true,
     group: "mandatory",
   },
   {
-    documentID: "directors_list",
-    document_name: "List of Directors",
+    documentID: "DOC004",
+    document_name: "List of Directors/Owners",
     isRequired: true,
     group: "mandatory",
   },
   {
-    documentID: "key_contacts_list",
-    document_name: "List of Key contact persons",
+    documentID: "DOC009",
+    document_name: "List of Key Contact Persons",
     isRequired: true,
     group: "mandatory",
   },
-  // Not Mandatory
+
+  // Optional
   {
-    documentID: "insurance_certificates",
-    document_name: "Insurance certificates",
+    documentID: "DOC007",
+    document_name: "Insurance Certificates",
     isRequired: false,
     isExpiryRequiredIfUploaded: true,
     group: "optional",
   },
   {
-    documentID: "iso_industry",
-    document_name: "Relevant ISO & Industry",
+    documentID: "DOC006",
+    document_name: "Relevant ISO or Industry Certifications",
     isRequired: false,
     isExpiryRequiredIfUploaded: true,
     group: "optional",
   },
   {
-    documentID: "tax_registration",
+    documentID: "DOC003",
     document_name: "Tax Registration Certificate",
     isRequired: false,
     isExpiryRequiredIfUploaded: false,
