@@ -363,6 +363,9 @@ export default function NewPortCall() {
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [currentService, setCurrentService] = useState("");
   const [selectedVendor, setSelectedVendor] = useState("");
+  const [showExceptionVendor, setShowExceptionVendor] = useState(false);
+  const [exceptionVendorName, setExceptionVendorName] = useState("");
+  const [exceptionVendorLoading, setExceptionVendorLoading] = useState(false);
   const [newPortName, setNewPortName] = useState("");
   const [newFormalityStatus, setNewFormalityStatus] = useState("");
   const [isAddPortOpen, setIsAddPortOpen] = useState(false);
@@ -978,7 +981,50 @@ export default function NewPortCall() {
     }
   };
 
-  const handleVendorSelection = () => {
+  const handleVendorSelection = async () => {
+    if (showExceptionVendor && exceptionVendorName.trim()) {
+      setExceptionVendorLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          "http://localhost:3080/api/exception-vendors",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ vendorName: exceptionVendorName.trim() }),
+          }
+        );
+        const data = await response.json();
+        if (!response.ok || !data.success)
+          throw new Error(data.message || "Failed to create exception vendor");
+        setSelectedServices((prev) => [
+          ...prev,
+          {
+            name: currentService,
+            vendor: data.data.vendor,
+            vendorId: data.data.vendorId,
+            isException: true,
+          },
+        ]);
+        setIsVendorModalOpen(false);
+        setSelectedVendor("");
+        setCurrentService("");
+        setShowExceptionVendor(false);
+        setExceptionVendorName("");
+      } catch (err) {
+        if (err instanceof Error) {
+          alert(err.message);
+        } else {
+          alert("Failed to create exception vendor");
+        }
+      } finally {
+        setExceptionVendorLoading(false);
+      }
+      return;
+    }
     if (selectedVendor) {
       const vendor = vendors.find((v) => v.id === selectedVendor);
       setSelectedServices((prev) => [
@@ -992,6 +1038,8 @@ export default function NewPortCall() {
       setIsVendorModalOpen(false);
       setSelectedVendor("");
       setCurrentService("");
+      setShowExceptionVendor(false);
+      setExceptionVendorName("");
     }
   };
 
@@ -2243,7 +2291,11 @@ export default function NewPortCall() {
               <Label htmlFor="vendor" className="form-label">
                 Available Vendors
               </Label>
-              <Select value={selectedVendor} onValueChange={setSelectedVendor}>
+              <Select
+                value={selectedVendor}
+                onValueChange={setSelectedVendor}
+                disabled={showExceptionVendor}
+              >
                 <SelectTrigger className="form-input">
                   <SelectValue placeholder="Select a vendor" />
                 </SelectTrigger>
@@ -2276,6 +2328,29 @@ export default function NewPortCall() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-2 mt-2">
+              <Button
+                type="button"
+                variant={showExceptionVendor ? "default" : "outline"}
+                onClick={() => {
+                  setShowExceptionVendor((v) => !v);
+                  setExceptionVendorName("");
+                  setSelectedVendor("");
+                }}
+                disabled={loading || exceptionVendorLoading}
+              >
+                Exception Vendor
+              </Button>
+              {showExceptionVendor && (
+                <Input
+                  className="w-64"
+                  placeholder="Enter Exception Vendor Name"
+                  value={exceptionVendorName}
+                  onChange={(e) => setExceptionVendorName(e.target.value)}
+                  disabled={exceptionVendorLoading}
+                />
+              )}
+            </div>
             <div className="flex justify-end space-x-2">
               <Button
                 variant="outline"
@@ -2283,17 +2358,29 @@ export default function NewPortCall() {
                   setIsVendorModalOpen(false);
                   setSelectedVendor("");
                   setCurrentService("");
+                  setShowExceptionVendor(false);
+                  setExceptionVendorName("");
                 }}
-                disabled={loading}
+                disabled={loading || exceptionVendorLoading}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleVendorSelection}
-                disabled={loading || !selectedVendor}
+                disabled={
+                  loading ||
+                  exceptionVendorLoading ||
+                  (showExceptionVendor
+                    ? !exceptionVendorName.trim()
+                    : !selectedVendor)
+                }
                 className="professional-button-primary"
               >
-                {loading ? "Adding..." : "Add Service"}
+                {loading || exceptionVendorLoading
+                  ? "Adding..."
+                  : showExceptionVendor
+                  ? "Add Exception Vendor"
+                  : "Add Service"}
               </Button>
             </div>
           </div>
