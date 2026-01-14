@@ -147,8 +147,6 @@ export const EditDocumentDialog = ({
       url: fileUrl || document.url,
       expired_at: expiredAt,
       remarks,
-      // approved_by_udith: isUdith ? approved : document.approved_by_udith,
-      // approved_by_amal: isAmal ? approved : document.approved_by_amal,
     };
 
     try {
@@ -179,39 +177,42 @@ export const EditDocumentDialog = ({
     }
   };
 
-  // Status badges for both
+  // Status badges for both (string: 'approved', 'rejected', 'pending')
+  function getStatusBadge(status: string | boolean | undefined, label: string) {
+    if (status === "approved" || status === true) {
+      return (
+        <Badge
+          variant="outline"
+          className="text-green-600 border-green-300 bg-green-50 px-2 py-1"
+        >
+          Approved by {label}
+        </Badge>
+      );
+    } else if (status === "rejected") {
+      return (
+        <Badge
+          variant="outline"
+          className="text-red-600 border-red-300 bg-red-50 px-2 py-1"
+        >
+          Rejected by {label}
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge
+          variant="outline"
+          className="text-yellow-700 border-yellow-300 bg-yellow-50 px-2 py-1"
+        >
+          Pending {label} Approval
+        </Badge>
+      );
+    }
+  }
+
   const statusBadges = (
     <div className="flex flex-row gap-3 pt-2">
-      {document?.approved_by_udith ? (
-        <Badge
-          variant="outline"
-          className="text-green-600 border-green-300 bg-green-50 px-2 py-1"
-        >
-          Approved by MD
-        </Badge>
-      ) : (
-        <Badge
-          variant="outline"
-          className="text-red-600 border-red-300 bg-red-50 px-2 py-1"
-        >
-          Pending MD Approval
-        </Badge>
-      )}
-      {document?.approved_by_amal ? (
-        <Badge
-          variant="outline"
-          className="text-green-600 border-green-300 bg-green-50 px-2 py-1"
-        >
-          Approved by FC
-        </Badge>
-      ) : (
-        <Badge
-          variant="outline"
-          className="text-red-600 border-red-300 bg-red-50 px-2 py-1"
-        >
-          Pending FC Approval
-        </Badge>
-      )}
+      {getStatusBadge(document?.approved_by_udith, "MD")}
+      {getStatusBadge(document?.approved_by_amal, "FC")}
     </div>
   );
 
