@@ -1003,26 +1003,6 @@ export default function AddVendorDialog({
                               autoCapitalize="words"
                             />
                           </div>
-                          {/* <div className="sm:col-span-2">
-                            <Label className="mb-1 block">Department</Label>
-                            <Input
-                              value={pic.department || ""}
-                              onChange={(e) =>
-                                updatePIC(picIdx, "department", e.target.value)
-                              }
-                              placeholder="Department"
-                            />
-                          </div> */}
-                          {/* <div className="sm:col-span-2">
-                            <Label className="mb-1 block">Birthday</Label>
-                            <DatePicker
-                              value={pic.birthday}
-                              onChange={(val) =>
-                                updatePIC(picIdx, "birthday", val)
-                              }
-                              placeholder="dd.mm.yyyy"
-                            />
-                          </div> */}
                         </div>
                         <Separator className="my-4" />
                         <div className="space-y-2">
