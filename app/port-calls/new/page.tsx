@@ -986,17 +986,14 @@ export default function NewPortCall() {
       setExceptionVendorLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(
-          "http://localhost:3080/api/exception-vendors",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify({ vendorName: exceptionVendorName.trim() }),
-          }
-        );
+        const response = await fetch(`${API_BASE_URL}/exception-vendors`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ vendorName: exceptionVendorName.trim() }),
+        });
         const data = await response.json();
         if (!response.ok || !data.success)
           throw new Error(data.message || "Failed to create exception vendor");
