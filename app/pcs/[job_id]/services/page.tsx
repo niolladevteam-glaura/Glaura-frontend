@@ -544,10 +544,11 @@ export default function PortCallServicesPage() {
       s.service_name.toLowerCase().includes((searchService ?? "").toLowerCase())
   );
   const filteredVendors = (vendors ?? []).filter(
-    (v): v is Vendor =>
+    (v: any): v is Vendor =>
       !!v &&
       typeof v.name === "string" &&
-      v.name.toLowerCase().includes((searchVendor ?? "").toLowerCase())
+      v.name.toLowerCase().includes((searchVendor ?? "").toLowerCase()) &&
+      v.vendorStatus?.status === true
   );
 
   const handleAddService = async () => {
