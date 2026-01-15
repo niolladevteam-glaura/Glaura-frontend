@@ -251,21 +251,9 @@ export default function ProfilePage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      const publicUrl = data.data?.public_url;
+      const s3Url = data.data?.s3_url;
 
-      // Helper to get relative path (no query params)
-      const getRelativeProfilePic = (url: string | undefined) => {
-        if (!url) return "";
-        let path = url;
-        if (url.startsWith("http")) {
-          const match = url.match(/\/uploads\/.+/);
-          path = match ? match[0].replace(/^\//, "") : url;
-        }
-        return path.split("?")[0];
-      };
-
-      if (publicUrl) {
-        const relativePic = getRelativeProfilePic(publicUrl);
+      if (s3Url) {
         setFormData((prev) => ({
           ...prev,
           personal_info: {
@@ -283,18 +271,18 @@ export default function ProfilePage() {
                 profile_picture: "",
                 access_level: "",
               }),
-            profile_picture: publicUrl,
+            profile_picture: s3Url,
           },
         }));
 
-        // --- Update avatar, profilePicture, and personal_info.profile_picture in localStorage ---
+        // --- Always store S3 URL in avatar, profilePicture, and personal_info.profile_picture ---
         const storedUserRaw = localStorage.getItem("currentUser");
         if (storedUserRaw) {
           const storedUser = JSON.parse(storedUserRaw);
-          storedUser.avatar = relativePic;
-          storedUser.profilePicture = publicUrl;
+          storedUser.avatar = s3Url;
+          storedUser.profilePicture = s3Url;
           if (storedUser.personal_info)
-            storedUser.personal_info.profile_picture = publicUrl;
+            storedUser.personal_info.profile_picture = s3Url;
           localStorage.setItem("currentUser", JSON.stringify(storedUser));
           setCurrentUser((prev) => {
             if (!prev) return prev;
@@ -302,12 +290,11 @@ export default function ProfilePage() {
               ...prev,
               personal_info: {
                 ...prev.personal_info,
-                profile_picture: publicUrl,
+                profile_picture: s3Url,
               },
             };
           });
         }
-        // -------------------------------------------------------------------------------
 
         toast.success("Profile picture uploaded!");
       } else {
@@ -417,24 +404,25 @@ export default function ProfilePage() {
     const email_notifications =
       !!formData.preferences?.notifications?.email_notifications;
 
-    // Extract only the relative path for profile_picture and remove query params
-    const getRelativeProfilePic = (url: string | undefined) => {
+    // For backend, send only the relative path for profile_picture (if S3 URL, extract path)
+    const getProfilePicturePath = (url: string) => {
       if (!url) return "";
-      let path = url;
-      // If full URL, extract /uploads/... part
-      if (url.startsWith("http")) {
-        const match = url.match(/\/uploads\/.+/);
-        path = match ? match[0].replace(/^\//, "") : url;
+      // If it's an S3 URL, extract the path after the bucket domain
+      const match = url.match(/s3\.ap-[^/]+\.amazonaws\.com\/(.+?)(\?|$)/);
+      if (match && match[1]) {
+        return match[1];
       }
-      // Remove query params if present
-      return path.split("?")[0];
+      // If it's already a relative path, return as is
+      if (!url.startsWith("http")) return url;
+      // If it's a full URL but not S3, fallback to original
+      return url;
     };
 
-    const profilePicRaw =
+    const rawProfilePicture =
       formData.personal_info?.profile_picture ||
       currentUser.personal_info.profile_picture ||
       "";
-    const profile_picture = getRelativeProfilePic(profilePicRaw);
+    const profile_picture = getProfilePicturePath(rawProfilePicture);
 
     const updateBody = {
       first_name:
@@ -462,9 +450,16 @@ export default function ProfilePage() {
       if (storedUserRaw) {
         const storedUser = JSON.parse(storedUserRaw);
 
+        // Always use the full S3 URL from formData or currentUser
+        const fullProfilePicture =
+          formData.personal_info?.profile_picture ||
+          currentUser.personal_info.profile_picture ||
+          "";
+
         storedUser.personal_info = {
           ...storedUser.personal_info,
           ...formData.personal_info,
+          profile_picture: fullProfilePicture,
         };
         if (formData.preferences) {
           storedUser.preferences = {
@@ -472,7 +467,8 @@ export default function ProfilePage() {
             ...formData.preferences,
           };
         }
-        // Update the name field in localStorage.currentUser
+        storedUser.avatar = fullProfilePicture;
+        storedUser.profilePicture = fullProfilePicture;
         const firstName =
           formData.personal_info?.first_name ||
           storedUser.personal_info?.first_name ||
