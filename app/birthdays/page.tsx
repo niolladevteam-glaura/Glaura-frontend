@@ -216,7 +216,7 @@ export default function ClientBirthdayAlertsPage() {
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Stay connected with your clients by celebrating their special
-                days 🎉
+                days
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">

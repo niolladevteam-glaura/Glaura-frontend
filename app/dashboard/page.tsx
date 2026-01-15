@@ -65,6 +65,7 @@ interface UserType {
   accessLevel: string;
   department: string;
   avatar?: string;
+  profilePicture?: string;
 }
 
 interface PortCall {
@@ -493,7 +494,7 @@ export default function Dashboard() {
       <CardContent className="flex items-center gap-4 py-4">
         <Link href="/profile">
           <Avatar className="h-14 w-14 cursor-pointer">
-            <AvatarImage src={user.avatar || "/placeholder.svg"} />
+            <AvatarImage src={user.profilePicture || "/placeholder.svg"} />
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
           </Avatar>
         </Link>
@@ -688,7 +689,9 @@ export default function Dashboard() {
             <ThemeToggle />
             <Link href="/profile">
               <Avatar className="h-8 w-8 cursor-pointer">
-                <AvatarImage src={currentUser.avatar || "/placeholder.svg"} />
+                <AvatarImage
+                  src={currentUser.profilePicture || "/placeholder.svg"}
+                />
                 <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
               </Avatar>
             </Link>

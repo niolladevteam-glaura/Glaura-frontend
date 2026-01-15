@@ -253,7 +253,19 @@ export default function ProfilePage() {
       const data = await res.json();
       const publicUrl = data.data?.public_url;
 
+      // Helper to get relative path (no query params)
+      const getRelativeProfilePic = (url: string | undefined) => {
+        if (!url) return "";
+        let path = url;
+        if (url.startsWith("http")) {
+          const match = url.match(/\/uploads\/.+/);
+          path = match ? match[0].replace(/^\//, "") : url;
+        }
+        return path.split("?")[0];
+      };
+
       if (publicUrl) {
+        const relativePic = getRelativeProfilePic(publicUrl);
         setFormData((prev) => ({
           ...prev,
           personal_info: {
@@ -275,11 +287,12 @@ export default function ProfilePage() {
           },
         }));
 
-        // --- Update avatar in localStorage and currentUser state for dashboard/header ---
+        // --- Update avatar, profilePicture, and personal_info.profile_picture in localStorage ---
         const storedUserRaw = localStorage.getItem("currentUser");
         if (storedUserRaw) {
           const storedUser = JSON.parse(storedUserRaw);
-          storedUser.avatar = publicUrl;
+          storedUser.avatar = relativePic;
+          storedUser.profilePicture = publicUrl;
           if (storedUser.personal_info)
             storedUser.personal_info.profile_picture = publicUrl;
           localStorage.setItem("currentUser", JSON.stringify(storedUser));
