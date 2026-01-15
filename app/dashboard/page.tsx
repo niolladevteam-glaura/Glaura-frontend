@@ -218,7 +218,12 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchBirthdaySummary = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/birthdays`);
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_BASE_URL}/birthdays`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
         if (!res.ok) throw new Error("Unable to fetch birthdays");
         const b = await res.json();
         setBirthdayCount(
