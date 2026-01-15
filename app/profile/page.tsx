@@ -404,6 +404,25 @@ export default function ProfilePage() {
     const email_notifications =
       !!formData.preferences?.notifications?.email_notifications;
 
+    // Extract only the relative path for profile_picture and remove query params
+    const getRelativeProfilePic = (url: string | undefined) => {
+      if (!url) return "";
+      let path = url;
+      // If full URL, extract /uploads/... part
+      if (url.startsWith("http")) {
+        const match = url.match(/\/uploads\/.+/);
+        path = match ? match[0].replace(/^\//, "") : url;
+      }
+      // Remove query params if present
+      return path.split("?")[0];
+    };
+
+    const profilePicRaw =
+      formData.personal_info?.profile_picture ||
+      currentUser.personal_info.profile_picture ||
+      "";
+    const profile_picture = getRelativeProfilePic(profilePicRaw);
+
     const updateBody = {
       first_name:
         formData.personal_info?.first_name ||
@@ -411,18 +430,13 @@ export default function ProfilePage() {
       last_name:
         formData.personal_info?.last_name ||
         currentUser.personal_info.last_name,
-      profile_picture:
-        formData.personal_info?.profile_picture ||
-        currentUser.personal_info.profile_picture ||
-        "",
+      profile_picture,
       email: formData.personal_info?.email || currentUser.personal_info.email,
       contact_number:
         formData.personal_info?.phone || currentUser.personal_info.phone,
       dob: formData.personal_info?.dob || currentUser.personal_info.dob,
-      push_notifications:
-        !!formData.preferences?.notifications?.push_notifications,
-      email_notifications:
-        !!formData.preferences?.notifications?.email_notifications,
+      push_notifications,
+      email_notifications,
       colorTheme: formData.preferences?.theme || currentUser.preferences.theme,
     };
     console.log("UPDATE_BODY:", updateBody);

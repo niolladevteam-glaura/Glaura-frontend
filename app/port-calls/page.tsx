@@ -49,8 +49,16 @@ import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/TimePicker";
 
 // Utility functions for date/time formatting -- USE UTC!
+function normalizeToUTC(dateString: string): string {
+  if (!dateString) return dateString;
+  // If already ends with Z or has timezone, return as is
+  if (/Z$|([+-]\d{2}:?\d{2})$/.test(dateString)) return dateString;
+  // Otherwise, treat as UTC by appending Z
+  return dateString + "Z";
+}
+
 function formatDate(dateString: string): string {
-  const date = new Date(dateString);
+  const date = new Date(normalizeToUTC(dateString));
   if (isNaN(date.getTime())) return "-";
   const day = String(date.getUTCDate()).padStart(2, "0");
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
@@ -59,7 +67,7 @@ function formatDate(dateString: string): string {
 }
 
 function formatTime(dateString: string): string {
-  const date = new Date(dateString);
+  const date = new Date(normalizeToUTC(dateString));
   if (isNaN(date.getTime())) return "-";
   const hours = String(date.getUTCHours()).padStart(2, "0");
   const minutes = String(date.getUTCMinutes()).padStart(2, "0");
