@@ -287,11 +287,11 @@ export const EditDocumentDialog = ({
                 {fileUploading && (
                   <Loader2 className="animate-spin w-5 h-5 ml-2" />
                 )}
-                {!fileUploading && fileUrl && (
+                {/* {!fileUploading && fileUrl && (
                   <Badge variant="outline" className="ml-1 px-2 py-1 text-xs">
                     PDF Uploaded
                   </Badge>
-                )}
+                )} */}
               </div>
               <span className="text-xs text-muted-foreground mt-1">
                 Upload a new PDF to replace the current file.

@@ -135,6 +135,8 @@ function getStatusBadgeColor(status: string) {
 }
 
 export default function VendorDocumentsPage() {
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const { vendor_id } = useParams();
   const router = useRouter();
 
@@ -315,7 +317,7 @@ export default function VendorDocumentsPage() {
     fetchDocuments();
   };
 
-  // Approve/Reject logic
+  // Approve/Reject logic (single)
   const handleApprove = async (doc: DocumentType) => {
     try {
       const isUdith = currentUser?.email === "udith@greeklanka.com";
@@ -384,6 +386,59 @@ export default function VendorDocumentsPage() {
     } catch {
       toast.error("Rejection failed.");
     }
+  };
+
+  // Bulk approve/reject
+  const handleBulkApprove = async () => {
+    if (!selectedIds.length) return;
+    const docsToApprove = documents.filter((doc) =>
+      selectedIds.includes(doc.id)
+    );
+    let successCount = 0;
+    for (const doc of docsToApprove) {
+      try {
+        await handleApprove(doc);
+        successCount++;
+      } catch {}
+    }
+    setSelectedIds([]);
+    fetchDocuments();
+    toast.success(`Approved ${successCount} document(s).`);
+  };
+
+  const handleBulkReject = async () => {
+    if (!selectedIds.length) return;
+    const docsToReject = documents.filter((doc) =>
+      selectedIds.includes(doc.id)
+    );
+    let successCount = 0;
+    for (const doc of docsToReject) {
+      try {
+        await handleReject(doc);
+        successCount++;
+      } catch {}
+    }
+    setSelectedIds([]);
+    fetchDocuments();
+    toast.success(`Rejected ${successCount} document(s).`);
+  };
+
+  // Checkbox handlers
+  const isAllSelected =
+    documents.length > 0 && selectedIds.length === documents.length;
+  const isIndeterminate =
+    selectedIds.length > 0 && selectedIds.length < documents.length;
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(documents.map((doc) => doc.id));
+    }
+  };
+  const handleSelectOne = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
+    );
   };
 
   if (!currentUser) {
@@ -605,9 +660,44 @@ export default function VendorDocumentsPage() {
                 <CardTitle>Documents</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Bulk action bar */}
+                {canApproveOrReject && selectedIds.length > 0 && (
+                  <div className="mb-4 flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="text-green-700 border-green-200"
+                      onClick={handleBulkApprove}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" /> Approve Selected
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="text-purple-700 border-purple-200"
+                      onClick={handleBulkReject}
+                    >
+                      <XCircle className="h-4 w-4 mr-1" /> Reject Selected
+                    </Button>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {selectedIds.length} selected
+                    </span>
+                  </div>
+                )}
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>
+                        {canApproveOrReject && (
+                          <input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            ref={(el) => {
+                              if (el) el.indeterminate = isIndeterminate;
+                            }}
+                            onChange={handleSelectAll}
+                            aria-label="Select all documents"
+                          />
+                        )}
+                      </TableHead>
                       <TableHead>Document Name</TableHead>
                       <TableHead>Remarks</TableHead>
                       <TableHead>Expiry Date</TableHead>
@@ -618,19 +708,31 @@ export default function VendorDocumentsPage() {
                   <TableBody>
                     {loading ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center">
+                        <TableCell colSpan={7} className="text-center">
                           Loading...
                         </TableCell>
                       </TableRow>
                     ) : documents.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center">
+                        <TableCell colSpan={7} className="text-center">
                           No documents found.
                         </TableCell>
                       </TableRow>
                     ) : (
                       documents.map((doc) => (
                         <TableRow key={doc.id}>
+                          <TableCell>
+                            {canApproveOrReject && (
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.includes(doc.id)}
+                                onChange={() => handleSelectOne(doc.id)}
+                                aria-label={`Select document ${getDocumentName(
+                                  doc.documentID
+                                )}`}
+                              />
+                            )}
+                          </TableCell>
                           <TableCell>
                             {getDocumentName(doc.documentID)}
                           </TableCell>
