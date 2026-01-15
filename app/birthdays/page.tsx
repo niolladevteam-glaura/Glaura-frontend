@@ -85,7 +85,12 @@ export default function ClientBirthdayAlertsPage() {
   useEffect(() => {
     const fetchBirthdays = async () => {
       try {
-        const resp = await fetch(`${API_BASE_URL}/birthdays`);
+        const token = localStorage.getItem("token");
+        const resp = await fetch(`${API_BASE_URL}/birthdays`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
         if (!resp.ok) throw new Error("Unable to fetch birthdays");
         const data = await resp.json();
         setBirthdays(data);
