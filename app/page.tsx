@@ -178,7 +178,7 @@ export default function LoginPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="user@greeklanka.lk"
+                      placeholder="user@greeklanka.com"
                       required
                       disabled={isLoading}
                       className="h-12 text-base border-2 border-gray-200 focus:border-blue-500 rounded-xl"
