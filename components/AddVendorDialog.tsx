@@ -463,15 +463,14 @@ export default function AddVendorDialog({
     const errors = vendorForm.attachments.map((att) => {
       const doc = documentList.find((d) => d.documentID === att.documentID);
       if (!doc) return false;
-      if (doc.isRequired) {
-        // Mandatory: file required
-        return !att.file;
+      // Only mandatory for Insurance Certificates and Relevant ISO or Industry Certifications if file is uploaded
+      if (
+        (doc.documentID === "DOC007" || doc.documentID === "DOC006") &&
+        att.file
+      ) {
+        return !att.expiryDate;
       }
-      if (doc.isExpiryRequiredIfUploaded) {
-        // Not mandatory, but if file uploaded, expiry required
-        return att.file ? !att.expiryDate : false;
-      }
-      // Not mandatory, no expiry required
+      // No other expiry date is mandatory
       return false;
     });
     setAttachmentErrors(errors);
@@ -486,12 +485,14 @@ export default function AddVendorDialog({
     const hasErrors = vendorForm.attachments.some((att, idx) => {
       const doc = documentList.find((d) => d.documentID === att.documentID);
       if (!doc) return false;
-      if (doc.isRequired) {
-        return !att.file;
+      // Only mandatory for Insurance Certificates and Relevant ISO or Industry Certifications if file is uploaded
+      if (
+        (doc.documentID === "DOC007" || doc.documentID === "DOC006") &&
+        att.file
+      ) {
+        return !att.expiryDate;
       }
-      if (doc.isExpiryRequiredIfUploaded) {
-        return att.file ? !att.expiryDate : false;
-      }
+      // No other expiry date is mandatory
       return false;
     });
 
@@ -499,7 +500,7 @@ export default function AddVendorDialog({
       toast({
         title: "Validation Error",
         description:
-          "Please upload all required documents. For Insurance and ISO/Industry, expiry date is required if file is uploaded.",
+          "For Insurance and ISO/Industry Certifications, expiry date is required if file is uploaded.",
         variant: "destructive",
       });
       return;
@@ -798,7 +799,7 @@ export default function AddVendorDialog({
               </h3>
               <p
                 className="bg-[#FA4812] isolate gap-2 relative before:absolute before:inset-0 before:rounded-[6px] before:bg-[linear-gradient(180deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0)_50%)]
-        items-center   mb-2 inline-flex  tracking-tight border border-[#FA4812] dark:border-none py-2  text-white  px-3 rounded-[6px] shadow-[0px_1px_0px_rgba(255,255,255,0.12)_inset,0px_2px_5px_rgba(0,0,0,0.20)] text-sm  "
+        items-center mb-2 inline-flex  tracking-tight border border-[#FA4812] dark:border-none py-2  text-white  px-3 rounded-[6px] shadow-[0px_1px_0px_rgba(255,255,255,0.12)_inset,0px_2px_5px_rgba(0,0,0,0.20)] text-sm  "
               >
                 <span>
                   <svg
@@ -818,35 +819,6 @@ export default function AddVendorDialog({
                 </span>
                 Max upload size is 5MB
               </p>
-
-              <div className="mb-4">
-                <div className="font-semibold mb-1">Mandatory Documents</div>
-                <ul className="list-disc ml-6 text-sm text-gray-700 dark:text-gray-200">
-                  {HARDCODED_DOCUMENTS.filter(
-                    (d) => d.group === "mandatory"
-                  ).map((doc) => (
-                    <li key={doc.documentID}>{doc.document_name}</li>
-                  ))}
-                </ul>
-                <div className="font-semibold mt-4 mb-1">
-                  Not Mandatory Documents
-                </div>
-                <ul className="list-disc ml-6 text-sm text-gray-700 dark:text-gray-200">
-                  {HARDCODED_DOCUMENTS.filter(
-                    (d) => d.group === "optional"
-                  ).map((doc) => (
-                    <li key={doc.documentID}>
-                      {doc.document_name}
-                      {doc.isExpiryRequiredIfUploaded && (
-                        <span className="text-xs text-gray-500">
-                          {" "}
-                          (Expiry date mandatory if uploaded)
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
 
               <div className="space-y-6">
                 {vendorForm.attachments.map((att, idx) => {
@@ -895,9 +867,8 @@ export default function AddVendorDialog({
                           </div>
                           {submitAttempted && attachmentErrors[idx] && (
                             <p className="text-xs text-red-600 mt-2">
-                              {doc?.isRequired
-                                ? "File is required for this document."
-                                : doc?.isExpiryRequiredIfUploaded
+                              {doc?.documentID === "DOC007" ||
+                              doc?.documentID === "DOC006"
                                 ? "Expiry date is required if file is uploaded."
                                 : ""}
                             </p>
@@ -915,9 +886,7 @@ export default function AddVendorDialog({
                             onChange={(val) => handleAttachmentExpiry(idx, val)}
                             placeholder="dd.mm.yyyy"
                             minDate={new Date()}
-                            disabled={
-                              !(doc?.isExpiryRequiredIfUploaded && att.file)
-                            }
+                            // Always enabled
                           />
                         </div>
                         <div className="w-full md:w-52">
