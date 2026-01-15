@@ -472,6 +472,17 @@ export default function ProfilePage() {
             ...formData.preferences,
           };
         }
+        // Update the name field in localStorage.currentUser
+        const firstName =
+          formData.personal_info?.first_name ||
+          storedUser.personal_info?.first_name ||
+          "";
+        const lastName =
+          formData.personal_info?.last_name ||
+          storedUser.personal_info?.last_name ||
+          "";
+        storedUser.name = `${firstName} ${lastName}`.trim();
+
         localStorage.setItem("currentUser", JSON.stringify(storedUser));
         setCurrentUser(storedUser);
       }
