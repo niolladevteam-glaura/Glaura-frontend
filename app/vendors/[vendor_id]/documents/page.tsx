@@ -465,7 +465,7 @@ export default function VendorDocumentsPage() {
         documentTypes={documentTypes}
       />
       {/* Header - same as VendorManagement */}
-      <header className="glass-effect border-b px-4 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
+      <header className="glass-effect border-b px-2 py-2 sm:px-6 sm:py-4 sticky top-0 z-50 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
             <Link href="/vendors" className="flex-shrink-0">
@@ -475,7 +475,7 @@ export default function VendorDocumentsPage() {
                 className="flex items-center px-2 py-1 text-xs sm:text-sm"
               >
                 <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden xs:inline">Back to Vendors</span>
+                <span className="inline sm:hidden"></span>
               </Button>
             </Link>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -483,7 +483,7 @@ export default function VendorDocumentsPage() {
                 <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
               <div className="min-w-0">
-                <h1 className="font-bold text-lg sm:text-xl text-gradient truncate">
+                <h1 className="font-bold text-base sm:text-xl text-gradient truncate">
                   Vendor Documents
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground truncate">
@@ -507,10 +507,10 @@ export default function VendorDocumentsPage() {
           </div>
         </div>
       </header>
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-2 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-6 order-2 lg:order-1">
             {/* Documents Expiry Alerts */}
             <Card className="professional-card">
               <CardHeader>
@@ -654,7 +654,7 @@ export default function VendorDocumentsPage() {
             </Card>
           </div>
           {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-6 order-1 lg:order-2">
             <Card className="professional-card">
               <CardHeader>
                 <CardTitle>Documents</CardTitle>
@@ -662,7 +662,7 @@ export default function VendorDocumentsPage() {
               <CardContent>
                 {/* Bulk action bar */}
                 {canApproveOrReject && selectedIds.length > 0 && (
-                  <div className="mb-4 flex gap-2">
+                  <div className="mb-4 flex flex-wrap gap-2">
                     <Button
                       variant="outline"
                       className="text-green-700 border-green-200"
@@ -682,128 +682,164 @@ export default function VendorDocumentsPage() {
                     </span>
                   </div>
                 )}
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        {canApproveOrReject && (
-                          <input
-                            type="checkbox"
-                            checked={isAllSelected}
-                            ref={(el) => {
-                              if (el) el.indeterminate = isIndeterminate;
-                            }}
-                            onChange={handleSelectAll}
-                            aria-label="Select all documents"
-                          />
-                        )}
-                      </TableHead>
-                      <TableHead>Document Name</TableHead>
-                      <TableHead>Remarks</TableHead>
-                      <TableHead>Expiry Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
+                {/* Responsive Table Wrapper */}
+                <div className="overflow-x-auto w-full">
+                  <Table className="min-w-[600px] md:min-w-full">
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center">
-                          Loading...
-                        </TableCell>
+                        <TableHead>
+                          {canApproveOrReject && (
+                            <input
+                              type="checkbox"
+                              checked={isAllSelected}
+                              ref={(el) => {
+                                if (el) el.indeterminate = isIndeterminate;
+                              }}
+                              onChange={handleSelectAll}
+                              aria-label="Select all documents"
+                            />
+                          )}
+                        </TableHead>
+                        <TableHead>Document Name</TableHead>
+                        <TableHead className="hidden xs:table-cell">
+                          Remarks
+                        </TableHead>
+                        <TableHead>Expiry Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ) : documents.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center">
-                          No documents found.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      documents.map((doc) => (
-                        <TableRow key={doc.id}>
-                          <TableCell>
-                            {canApproveOrReject && (
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.includes(doc.id)}
-                                onChange={() => handleSelectOne(doc.id)}
-                                aria-label={`Select document ${getDocumentName(
-                                  doc.documentID
-                                )}`}
-                              />
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {getDocumentName(doc.documentID)}
-                          </TableCell>
-                          <TableCell>{doc.remarks}</TableCell>
-                          <TableCell>
-                            {doc.expired_at
-                              ? formatDateDMY(doc.expired_at)
-                              : "-"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className={`text-xs ${getStatusBadgeColor(
-                                doc.status
-                              )}`}
-                            >
-                              {doc.status.charAt(0).toUpperCase() +
-                                doc.status.slice(1)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleView(doc)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEdit(doc)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              {canApproveOrReject && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleApprove(doc)}
-                                    disabled={doc.status === "valid"}
-                                    className="text-green-700 border-green-200"
-                                    title="Approve"
-                                  >
-                                    <CheckCircle className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleReject(doc)}
-                                    disabled={doc.status === "rejected"}
-                                    className="text-purple-700 border-purple-200"
-                                    title="Reject"
-                                  >
-                                    <XCircle className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center">
+                            Loading...
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      ) : documents.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center">
+                            No documents found.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        documents.map((doc) => (
+                          <TableRow key={doc.id}>
+                            <TableCell>
+                              {canApproveOrReject && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedIds.includes(doc.id)}
+                                  onChange={() => handleSelectOne(doc.id)}
+                                  aria-label={`Select document ${getDocumentName(
+                                    doc.documentID
+                                  )}`}
+                                />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {getDocumentName(doc.documentID)}
+                            </TableCell>
+                            <TableCell className="hidden xs:table-cell">
+                              {doc.remarks}
+                            </TableCell>
+                            <TableCell>
+                              {doc.expired_at
+                                ? formatDateDMY(doc.expired_at)
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                className={`text-xs ${getStatusBadgeColor(
+                                  doc.status
+                                )}`}
+                              >
+                                {doc.status.charAt(0).toUpperCase() +
+                                  doc.status.slice(1)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleView(doc)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEdit(doc)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                {canApproveOrReject && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleApprove(doc)}
+                                      disabled={doc.status === "valid"}
+                                      className="text-green-700 border-green-200"
+                                      title="Approve"
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleReject(doc)}
+                                      disabled={doc.status === "rejected"}
+                                      className="text-purple-700 border-purple-200"
+                                      title="Reject"
+                                    >
+                                      <XCircle className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+      {/* Mobile-specific styles for table and layout */}
+      <style jsx global>{`
+        @media (max-width: 640px) {
+          .professional-card {
+            padding: 0.5rem !important;
+          }
+          table {
+            font-size: 13px;
+          }
+          th,
+          td {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+          }
+          .overflow-x-auto {
+            -webkit-overflow-scrolling: touch;
+          }
+        }
+        @media (max-width: 400px) {
+          .professional-card {
+            padding: 0.25rem !important;
+          }
+          th,
+          td {
+            padding-left: 0.25rem !important;
+            padding-right: 0.25rem !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
