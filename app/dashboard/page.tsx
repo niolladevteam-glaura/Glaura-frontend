@@ -179,7 +179,7 @@ export default function Dashboard() {
           data.active_port_calls.today_count -
           data.active_port_calls.from_yesterday;
         setActivePortCallsTrend(
-          trendValue >= 0 ? `+${trendValue}` : `${trendValue}`
+          trendValue >= 0 ? `+${trendValue}` : `${trendValue}`,
         );
 
         const mappedPortCalls = data.recent_port_calls.map(
@@ -194,12 +194,12 @@ export default function Dashboard() {
             status: item.status,
             services: item.service,
             assignedPIC: "N/A",
-          })
+          }),
         );
         setActivePortCalls(mappedPortCalls);
 
         const transformedVesselVolume = Object.entries(
-          data.port_vessel_volume
+          data.port_vessel_volume,
         ).map(([port, vessels]) => ({
           port,
           vessels: vessels as number,
@@ -228,7 +228,7 @@ export default function Dashboard() {
         if (!res.ok) throw new Error("Unable to fetch birthdays");
         const b = await res.json();
         setBirthdayCount(
-          (b.todayBirthdayCount ?? 0) + (b.thisWeekBirthdayCount ?? 0)
+          (b.todayBirthdayCount ?? 0) + (b.thisWeekBirthdayCount ?? 0),
         );
         setTodayBirthdayCount(b.todayBirthdayCount ?? 0);
         setThisWeekBirthdayCount(b.thisWeekBirthdayCount ?? 0);
@@ -628,7 +628,7 @@ export default function Dashboard() {
                             <item.icon className="h-5 w-5" />
                             <span className="font-medium">{item.label}</span>
                           </Link>
-                        )
+                        ),
                       )}
                     </div>
                   </div>
@@ -687,6 +687,13 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <ThemeToggle />
+
+            <div className="text-right">
+              <p className="text-sm font-semibold">{currentUser.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {currentUser.role}
+              </p>
+            </div>
             <Link href="/profile">
               <Avatar className="h-8 w-8 cursor-pointer">
                 <AvatarImage
@@ -695,12 +702,6 @@ export default function Dashboard() {
                 <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
               </Avatar>
             </Link>
-            <div className="text-right">
-              <p className="text-sm font-semibold">{currentUser.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {currentUser.role}
-              </p>
-            </div>
           </div>
         </div>
       </header>
@@ -741,7 +742,7 @@ export default function Dashboard() {
                         <item.icon className="h-5 w-5" />
                         <span>{item.label}</span>
                       </Link>
-                    )
+                    ),
                   )}
                 </div>
               </div>
