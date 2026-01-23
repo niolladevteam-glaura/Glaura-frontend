@@ -245,10 +245,10 @@ export default function VesselManagement() {
     if (response && response.success && Array.isArray(response.data)) {
       return response.data.map((vessel: any) => {
         let sscecExpiry = formatDateDDMMYYYY(
-          vessel.SSCEC_expires || vessel.sscecExpiry || ""
+          vessel.SSCEC_expires || vessel.sscecExpiry || "",
         );
         let sscecIssued = formatDateDDMMYYYY(
-          vessel.SSCEC_issued || vessel.sscecIssued || ""
+          vessel.SSCEC_issued || vessel.sscecIssued || "",
         );
         return {
           id: vessel.vessel_id || vessel.id,
@@ -310,7 +310,7 @@ export default function VesselManagement() {
     setCurrentUser(
       user && user.name && user.accessLevel
         ? { name: user.name, accessLevel: user.accessLevel }
-        : { name: "Demo User", accessLevel: "A" }
+        : { name: "Demo User", accessLevel: "A" },
     );
 
     const loadVessels = async () => {
@@ -331,20 +331,20 @@ export default function VesselManagement() {
 
   // Helper function to calculate SSCEC status
   const calculateSSCECStatus = (
-    expiryDate: string
+    expiryDate: string,
   ): "Valid" | "Expiring" | "Expired" => {
     let [dd, mm, yyyy] = expiryDate.split(".");
     if (!dd || !mm || !yyyy) return "Expired";
     const expiry = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     const today = new Date();
     const daysUntilExpiry = Math.floor(
-      (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
     );
     return daysUntilExpiry < 0
       ? "Expired"
       : daysUntilExpiry <= 30
-      ? "Expiring"
-      : "Valid";
+        ? "Expiring"
+        : "Valid";
   };
 
   const handleAddVessel = async () => {
@@ -363,12 +363,14 @@ export default function VesselManagement() {
         });
         return;
       }
+
       const expiryISO = calcSSCECExpiryISO(newVessel.sscecIssued);
+      const issuedISO = formatDateToISO(newVessel.sscecIssued);
 
       const vesselData = {
         vessel_name: newVessel.name.toUpperCase(),
         imo_number: newVessel.imo,
-        SSCEC_issued: newVessel.sscecIssued, // assume already yyyy-mm-dd
+        SSCEC_issued: issuedISO, // always yyyy-mm-dd
         SSCEC_expires: expiryISO,
         company: newVessel.owner,
         vessel_type: newVessel.vesselType.toUpperCase(),
@@ -430,35 +432,35 @@ export default function VesselManagement() {
           vessel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           vessel.imo.includes(searchTerm) ||
           vessel.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vessel.flag.toLowerCase().includes(searchTerm.toLowerCase())
+          vessel.flag.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
     if (typeFilter !== "all") {
       filtered = filtered.filter((vessel) =>
-        vessel.vesselType.toLowerCase().includes(typeFilter.toLowerCase())
+        vessel.vesselType.toLowerCase().includes(typeFilter.toLowerCase()),
       );
     }
     if (statusFilter !== "all") {
       filtered = filtered.filter(
         (vessel) =>
-          vessel.sscecStatus.toLowerCase() === statusFilter.toLowerCase()
+          vessel.sscecStatus.toLowerCase() === statusFilter.toLowerCase(),
       );
     }
     if (selectedTab !== "all") {
       switch (selectedTab) {
         case "Valid":
           filtered = filtered.filter(
-            (vessel) => vessel.sscecStatus === "Valid"
+            (vessel) => vessel.sscecStatus === "Valid",
           );
           break;
         case "Expiring":
           filtered = filtered.filter(
-            (vessel) => vessel.sscecStatus === "Expiring"
+            (vessel) => vessel.sscecStatus === "Expiring",
           );
           break;
         case "Expired":
           filtered = filtered.filter(
-            (vessel) => vessel.sscecStatus === "Expired"
+            (vessel) => vessel.sscecStatus === "Expired",
           );
           break;
       }
@@ -962,14 +964,14 @@ export default function VesselManagement() {
                           <div className="flex items-center gap-2">
                             <Badge
                               className={getSSCECStatusColor(
-                                selectedVessel.sscecStatus
+                                selectedVessel.sscecStatus,
                               )}
                             >
                               {selectedVessel.sscecStatus}
                             </Badge>
                             <Input
                               value={formatSSCECExpiry(
-                                selectedVessel.sscecExpiry
+                                selectedVessel.sscecExpiry,
                               )}
                               readOnly
                             />
@@ -1196,7 +1198,7 @@ export default function VesselManagement() {
                           <DatePicker
                             selected={
                               toDateObj(
-                                getIssuedFromExpiry(vesselToEdit.sscecExpiry)
+                                getIssuedFromExpiry(vesselToEdit.sscecExpiry),
                               ) || null
                             }
                             dateFormat="dd.MM.yyyy"
@@ -1255,10 +1257,10 @@ export default function VesselManagement() {
                               vessel_name: vesselToEdit.name.toUpperCase(),
                               imo_number: vesselToEdit.imo,
                               SSCEC_expires: formatDateToISO(
-                                vesselToEdit.sscecExpiry
+                                vesselToEdit.sscecExpiry,
                               ),
                               SSCEC_issued: formatDateToISO(
-                                getIssuedFromExpiry(vesselToEdit.sscecExpiry)
+                                getIssuedFromExpiry(vesselToEdit.sscecExpiry),
                               ),
                               company: vesselToEdit.owner,
                               vessel_type:
@@ -1280,7 +1282,7 @@ export default function VesselManagement() {
                                       ...vesselToEdit,
                                       sscecExpiry: vesselToEdit.sscecExpiry,
                                       sscecStatus: calculateSSCECStatus(
-                                        vesselToEdit.sscecExpiry
+                                        vesselToEdit.sscecExpiry,
                                       ),
                                       name: vesselToEdit.name.toUpperCase(),
                                       vesselType:
@@ -1289,8 +1291,8 @@ export default function VesselManagement() {
                                       callSign:
                                         vesselToEdit.callSign.toUpperCase(),
                                     }
-                                  : v
-                              )
+                                  : v,
+                              ),
                             );
                             setEditDialogOpen(false);
                             toast.success("Vessel updated successfully", {
@@ -1345,12 +1347,12 @@ export default function VesselManagement() {
                       if (vesselToDelete) {
                         await deleteVessel(vesselToDelete.id);
                         setVessels(
-                          vessels.filter((v) => v.id !== vesselToDelete.id)
+                          vessels.filter((v) => v.id !== vesselToDelete.id),
                         );
                         setFilteredVessels(
                           filteredVessels.filter(
-                            (v) => v.id !== vesselToDelete.id
-                          )
+                            (v) => v.id !== vesselToDelete.id,
+                          ),
                         );
                         setDeleteDialogOpen(false);
                         toast.success("Vessel deleted successfully", {
@@ -1453,7 +1455,7 @@ export default function VesselManagement() {
                             </Badge>
                             <Badge
                               className={getSSCECStatusColor(
-                                vessel.sscecStatus
+                                vessel.sscecStatus,
                               )}
                             >
                               {getSSCECIcon(vessel.sscecStatus)}
