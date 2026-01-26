@@ -95,7 +95,7 @@ export default function LoginPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Authentication failed. Please check your credentials."
+          : "Authentication failed. Please check your credentials.",
       );
     } finally {
       setIsLoading(false);
@@ -158,7 +158,7 @@ export default function LoginPage() {
             <Card className="maritime-card border-0 shadow-2xl">
               <CardHeader className="text-center pb-8">
                 <CardTitle className="text-3xl font-bold gradient-text">
-                  Welcome Back
+                  Welcome to GLAURA
                 </CardTitle>
                 <CardDescription className="text-lg text-gray-600">
                   Access your maritime command center

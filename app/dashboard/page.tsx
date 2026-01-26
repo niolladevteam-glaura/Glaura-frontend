@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -364,45 +364,45 @@ export default function Dashboard() {
     {
       heading: "Disbursement Department",
       items: [
-        can("disbursement.port_call.create") && {
-          href: "/port-calls/new",
-          icon: Plus,
-          label: "New Port Calls",
-        },
-        can("disbursement.customer.view") && {
-          href: "/customers",
-          icon: Building2,
-          label: "Customers",
+        can("disbursement.inquiry.view") && {
+          href: "/pending-inquiry",
+          icon: ClipboardCheck,
+          label: "Pending Inquiry",
         },
         can("disbursement.vessel.view") && {
           href: "/vessels",
           icon: Ship,
           label: "Vessel Management",
         },
+        can("disbursement.customer.view") && {
+          href: "/customers",
+          icon: Building2,
+          label: "Customers",
+        },
+        can("disbursement.port_call.create") && {
+          href: "/port-calls/new",
+          icon: Plus,
+          label: "New Port Calls",
+        },
         can("disbursement.service.view") && {
           href: "/services",
           icon: Wrench,
           label: "Services Management",
         },
-        can("disbursement.task.view") && {
-          href: "/tasks",
-          icon: ListTodo,
-          label: "Task Management",
+        can("disbursement.email.view") && {
+          href: "/emails",
+          icon: Mail,
+          label: "Email",
         },
         can("disbursement.document.view") && {
           href: "/documents",
           icon: FileText,
           label: "Document Management",
         },
-        can("disbursement.inquiry.view") && {
-          href: "/pending-inquiry",
-          icon: ClipboardCheck,
-          label: "Pending Inquiry",
-        },
-        can("disbursement.email.view") && {
-          href: "/emails",
-          icon: Mail,
-          label: "Email",
+        can("disbursement.task.view") && {
+          href: "/tasks",
+          icon: ListTodo,
+          label: "Task Management",
         },
       ].filter(Boolean) as NavigationItem[],
     },
@@ -445,49 +445,59 @@ export default function Dashboard() {
     },
   ];
 
-  const WelcomeCard = ({ user }: { user: UserType }) => (
-    <Card className="welcome-card animate-fade-in-up mb-8">
-      <div className="relative z-10">
-        <div className="flex items-center justify-between">
-          <div>
-            <Badge className="bg-white/20 text-white border-white/30 mb-4">
-              Access Level: {user?.accessLevel ?? ""}
-            </Badge>
-            <h1 className="text-3xl font-bold mb-2">
-              Welcome back, {currentUser?.name ?? ""}
-            </h1>
-            <p className="text-white/90 text-lg mb-6 max-w-2xl">
-              The Aura of Excellence in Port Services
-            </p>
-            <div className="flex gap-4">
-              <Link href="/port-calls">
-                <Button
-                  variant="secondary"
-                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
-                >
-                  <Ship /> Port Calls
-                </Button>
-              </Link>
-              <Link href="/customers">
-                <Button
-                  variant="outline"
-                  className="bg-black/20 border-white/30 text-white hover:bg-white/10"
-                >
-                  <Users />
-                  Customers
-                </Button>
-              </Link>
+  const WelcomeCard = ({ user }: { user: UserType }) => {
+    // Only read the flag, do not set it here
+    const [isFirstLogin, setIsFirstLogin] = React.useState(false);
+    React.useEffect(() => {
+      const firstLoginFlag = localStorage.getItem("hasLoggedInBefore");
+      setIsFirstLogin(!firstLoginFlag);
+    }, []);
+
+    return (
+      <Card className="welcome-card animate-fade-in-up mb-8">
+        <div className="relative z-10">
+          <div className="flex items-center justify-between">
+            <div>
+              <Badge className="bg-white/20 text-white border-white/30 mb-4">
+                Access Level: {user?.accessLevel ?? ""}
+              </Badge>
+              <h1 className="text-3xl font-bold mb-2">
+                {isFirstLogin ? "Welcome" : "Welcome back"},{" "}
+                {currentUser?.name ?? ""}
+              </h1>
+              <p className="text-white/90 text-lg mb-6 max-w-2xl">
+                The Aura of Excellence in Port Services
+              </p>
+              <div className="flex gap-4">
+                <Link href="/port-calls">
+                  <Button
+                    variant="secondary"
+                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                  >
+                    <Ship /> Port Calls
+                  </Button>
+                </Link>
+                <Link href="/customers">
+                  <Button
+                    variant="outline"
+                    className="bg-black/20 border-white/30 text-white hover:bg-white/10"
+                  >
+                    <Users />
+                    Customers
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
-          <div className="hidden lg:block">
-            <div className="w-32 h-32 rounded-full bg-white/10 flex items-center justify-center">
-              <Anchor className="w-16 h-16 text-white/80" />
+            <div className="hidden lg:block">
+              <div className="w-32 h-32 rounded-full bg-white/10 flex items-center justify-center">
+                <Anchor className="w-16 h-16 text-white/80" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   const MobileProfileCard = ({ user }: { user: UserType }) => (
     <Card className="mb-6 lg:hidden">
