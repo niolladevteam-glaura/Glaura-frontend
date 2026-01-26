@@ -1,5 +1,27 @@
 "use client";
 
+// Helper: Format number with commas and decimals
+function formatNumberInput(val: string | number) {
+  if (val === null || val === undefined || val === "") return "";
+  const num =
+    typeof val === "number"
+      ? val
+      : parseFloat(val.toString().replace(/,/g, ""));
+  if (isNaN(num)) return "";
+  // Show decimals only if user entered them
+  const parts = val.toString().split(".");
+  if (parts.length === 2) {
+    return num
+      .toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 20,
+      })
+      .replace(/(\.\d*?)0+$/, "$1")
+      .replace(/\.$/, "");
+  }
+  return num.toLocaleString();
+}
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -622,6 +644,7 @@ export default function VesselManagement() {
                           }
                           required
                           className="w-full"
+                          style={{ textTransform: "uppercase" }}
                         />
                       </div>
                       <div className="space-y-2">
@@ -631,11 +654,15 @@ export default function VesselManagement() {
                           placeholder="7-digit IMO number"
                           value={newVessel.imo}
                           onChange={(e) =>
-                            setNewVessel({ ...newVessel, imo: e.target.value })
+                            setNewVessel({
+                              ...newVessel,
+                              imo: e.target.value.toUpperCase(),
+                            })
                           }
                           required
                           pattern="\d{7}"
                           title="7-digit IMO number"
+                          style={{ textTransform: "uppercase" }}
                         />
                       </div>
                       <div className="space-y-2">
@@ -684,10 +711,11 @@ export default function VesselManagement() {
                           onChange={(e) =>
                             setNewVessel({
                               ...newVessel,
-                              owner: e.target.value,
+                              owner: e.target.value.toUpperCase(),
                             })
                           }
                           required
+                          style={{ textTransform: "uppercase" }}
                         />
                       </div>
                       <div className="space-y-2">
@@ -703,6 +731,7 @@ export default function VesselManagement() {
                             })
                           }
                           required
+                          style={{ textTransform: "uppercase" }}
                         />
                       </div>
                     </div>
@@ -723,6 +752,7 @@ export default function VesselManagement() {
                             })
                           }
                           className="w-full"
+                          style={{ textTransform: "uppercase" }}
                         />
                       </div>
                       <div className="space-y-2">
@@ -746,65 +776,73 @@ export default function VesselManagement() {
                         <Label htmlFor="grt">GRT</Label>
                         <Input
                           id="grt"
-                          type="number"
+                          type="text"
                           min="0"
                           placeholder="Gross tonnage"
-                          value={newVessel.grt || ""}
-                          onChange={(e) =>
+                          value={formatNumberInput(newVessel.grt)}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/,/g, "");
                             setNewVessel({
                               ...newVessel,
-                              grt: Number(e.target.value),
-                            })
-                          }
+                              grt: raw === "" ? 0 : Number(raw),
+                            });
+                          }}
+                          inputMode="decimal"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="nrt">NRT</Label>
                         <Input
                           id="nrt"
-                          type="number"
+                          type="text"
                           min="0"
                           placeholder="Net tonnage"
-                          value={newVessel.nrt || ""}
-                          onChange={(e) =>
+                          value={formatNumberInput(newVessel.nrt)}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/,/g, "");
                             setNewVessel({
                               ...newVessel,
-                              nrt: Number(e.target.value),
-                            })
-                          }
+                              nrt: raw === "" ? 0 : Number(raw),
+                            });
+                          }}
+                          inputMode="decimal"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="loa">LOA (m)</Label>
                         <Input
                           id="loa"
-                          type="number"
+                          type="text"
                           step="0.1"
                           min="0"
                           placeholder="Length overall"
-                          value={newVessel.loa || ""}
-                          onChange={(e) =>
+                          value={formatNumberInput(newVessel.loa)}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/,/g, "");
                             setNewVessel({
                               ...newVessel,
-                              loa: Number(e.target.value),
-                            })
-                          }
+                              loa: raw === "" ? 0 : Number(raw),
+                            });
+                          }}
+                          inputMode="decimal"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="dwt">DWT</Label>
                         <Input
                           id="dwt"
-                          type="number"
+                          type="text"
                           min="0"
                           placeholder="Deadweight tonnage"
-                          value={newVessel.dwt || ""}
-                          onChange={(e) =>
+                          value={formatNumberInput(newVessel.dwt)}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/,/g, "");
                             setNewVessel({
                               ...newVessel,
-                              dwt: Number(e.target.value),
-                            })
-                          }
+                              dwt: raw === "" ? 0 : Number(raw),
+                            });
+                          }}
+                          inputMode="decimal"
                         />
                       </div>
                       {/* SSCEC Issued */}
@@ -844,9 +882,10 @@ export default function VesselManagement() {
                           onChange={(e) =>
                             setNewVessel({
                               ...newVessel,
-                              piClub: e.target.value,
+                              piClub: e.target.value.toUpperCase(),
                             })
                           }
+                          style={{ textTransform: "uppercase" }}
                         />
                       </div>
                     </div>

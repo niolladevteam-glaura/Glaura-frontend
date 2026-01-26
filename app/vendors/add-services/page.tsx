@@ -133,7 +133,7 @@ export default function ServicesManagement() {
     setCurrentUser(
       user && user.name && user.accessLevel
         ? { name: user.name, accessLevel: user.accessLevel }
-        : { name: "Demo User", accessLevel: "A" }
+        : { name: "Demo User", accessLevel: "A" },
     );
   }, []);
 
@@ -184,7 +184,7 @@ export default function ServicesManagement() {
       if (!response.ok) {
         throw new Error(
           result?.message ||
-            `Server error: ${response.status} ${response.statusText}`
+            `Server error: ${response.status} ${response.statusText}`,
         );
       }
 
@@ -259,7 +259,7 @@ export default function ServicesManagement() {
           `${API_URL}/service/${currentService.service_id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         const data = await response.json();
         return data.data;
@@ -269,8 +269,8 @@ export default function ServicesManagement() {
 
       setServices((prevServices) =>
         prevServices.map((s) =>
-          s.service_id === currentService.service_id ? updatedService : s
-        )
+          s.service_id === currentService.service_id ? updatedService : s,
+        ),
       );
 
       setIsEditing(false);
@@ -308,7 +308,7 @@ export default function ServicesManagement() {
         try {
           const errorData = await response.json();
           throw new Error(
-            errorData.message || `HTTP error! Status: ${response.status}`
+            errorData.message || `HTTP error! Status: ${response.status}`,
           );
         } catch (jsonError) {
           const text = await response.text();
@@ -317,7 +317,7 @@ export default function ServicesManagement() {
       }
 
       setServices((prevServices) =>
-        prevServices.filter((s) => s.service_id !== serviceId)
+        prevServices.filter((s) => s.service_id !== serviceId),
       );
 
       toast({
@@ -341,7 +341,7 @@ export default function ServicesManagement() {
     const date = new Date(dateString);
     const pad = (n: number) => n.toString().padStart(2, "0");
     return `${pad(date.getDate())}-${pad(
-      date.getMonth() + 1
+      date.getMonth() + 1,
     )}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
   };
 
@@ -619,9 +619,9 @@ export default function ServicesManagement() {
 
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="icon">
+                                {/* <Button variant="destructive" size="icon">
                                   <Trash2 className="h-4 w-4" />
-                                </Button>
+                                </Button> */}
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
