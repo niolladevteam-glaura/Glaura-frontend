@@ -66,6 +66,8 @@ export default function WorkDoneGeneratePage() {
   );
   const [launchTrip, setLaunchTrip] = useState<string>("");
 
+  const [remarks, setRemarks] = useState<string>("");
+
   const [medicalAssistanceStatus, setMedicalAssistanceStatus] =
     useState<boolean>(false);
   const [wasteDisposalStatus, setWasteDisposalStatus] =
@@ -73,12 +75,10 @@ export default function WorkDoneGeneratePage() {
   const [clearingAndDeliveryStatus, setClearingAndDeliveryStatus] =
     useState<boolean>(false);
 
-  // Deliveries
   const [deliveries, setDeliveries] = useState<Delivery[]>([
     { awb: "", weight: "", pcs: "" },
   ]);
 
-  // Crew
   const [SingOncrew, setSingOncrew] = useState<CrewMember[]>([
     { name: "", nationality: "", rank: "", passport_number: "" },
   ]);
@@ -86,10 +86,9 @@ export default function WorkDoneGeneratePage() {
     { name: "", nationality: "", rank: "", passport_number: "" },
   ]);
 
-  // Approver
   const [approvedBy, setApprovedBy] = useState<string>("");
+  const [preparedBy, setPreparedBy] = useState<string>("");
 
-  // Feedback
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +130,6 @@ export default function WorkDoneGeneratePage() {
     setCurrentUser(JSON.parse(userData));
   }, [router]);
 
-  // Vessel select handler: auto-fill IMO
   const handleVesselChange = (vesselName: string) => {
     setVesselName(vesselName);
     const vessel = vessels.find((v) => v.vessel_name === vesselName);
@@ -142,7 +140,7 @@ export default function WorkDoneGeneratePage() {
     }
   };
 
-  // Dynamic deliveries
+  // Deliveries
   const handleDeliveryChange = (
     index: number,
     field: keyof Delivery,
@@ -159,7 +157,7 @@ export default function WorkDoneGeneratePage() {
       prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
-  // Dynamic Crew On
+  // Crew On
   const handleSingOnCrewChange = (
     index: number,
     field: keyof CrewMember,
@@ -179,7 +177,7 @@ export default function WorkDoneGeneratePage() {
       prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
-  // Dynamic Crew Off
+  // Crew Off
   const handleSingOffCrewChange = (
     index: number,
     field: keyof CrewMember,
@@ -212,7 +210,6 @@ export default function WorkDoneGeneratePage() {
       return;
     }
 
-    // Prepare payload; exclude empty deliveries/crew
     const payload: any = {
       vesselName,
       imo,
@@ -221,12 +218,14 @@ export default function WorkDoneGeneratePage() {
       atd,
       port,
       date,
+      launchTrip,
+      remarks,
       approvedBy,
+      preparedBy,
+      medicalAssistanceStatus,
+      wasteDisposalStatus,
+      clearingAndDeliveryStatus,
     };
-    if (launchTrip) payload.launchTrip = launchTrip;
-    payload.medicalAssistanceStatus = medicalAssistanceStatus;
-    payload.wasteDisposalStatus = wasteDisposalStatus;
-    payload.clearingAndDeliveryStatus = clearingAndDeliveryStatus;
     if (deliveries.some((d) => d.awb || d.weight || d.pcs))
       payload.deliveries = deliveries.filter((d) => d.awb || d.weight || d.pcs);
     if (
@@ -247,16 +246,18 @@ export default function WorkDoneGeneratePage() {
       );
 
     try {
-      const res = await fetch(`${API_BASE_URL}/documents/work-done`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `${API_BASE_URL || "http://localhost:3080/api"}/documents/work-done`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
-      // Handle PDF response or JSON
       const contentType = res.headers.get("content-type");
       if (contentType && contentType.includes("application/pdf")) {
         const blob = await res.blob();
@@ -269,7 +270,6 @@ export default function WorkDoneGeneratePage() {
         return;
       }
 
-      // Otherwise, handle as JSON (API success/error)
       const result = await res.json();
       if (result.success && result.workDoneDoc?.id) {
         setSuccess("Work Done Certificate created successfully!");
@@ -401,7 +401,7 @@ export default function WorkDoneGeneratePage() {
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 text-sm font-medium">ETA</label>
+                  <label className="block mb-1 text-sm font-medium">ATA</label>
                   <Input
                     type="datetime-local"
                     value={eta}
@@ -705,14 +705,39 @@ export default function WorkDoneGeneratePage() {
                 ))}
               </div>
 
+              {/* Remarks Section */}
               <div>
                 <label className="block mb-1 text-sm font-medium">
-                  Approved By
+                  Remarks
                 </label>
-                <Input
-                  value={approvedBy}
-                  onChange={(e) => setApprovedBy(e.target.value)}
+                <textarea
+                  className="w-full p-2 rounded border border-gray-300 dark:bg-gray-800 dark:text-gray-100"
+                  rows={3}
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
                 />
+              </div>
+
+              {/* Prepared By and Approved By Section */}
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                {/* <div>
+                  <label className="block mb-1 text-sm font-medium">
+                    Prepared By
+                  </label>
+                  <Input
+                    value={preparedBy}
+                    onChange={(e) => setPreparedBy(e.target.value)}
+                  />
+                </div> */}
+                <div>
+                  <label className="block mb-1 text-sm font-medium">
+                    Approved By
+                  </label>
+                  <Input
+                    value={approvedBy}
+                    onChange={(e) => setApprovedBy(e.target.value)}
+                  />
+                </div>
               </div>
 
               {success && <div className="text-green-600">{success}</div>}
