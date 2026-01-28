@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus, Trash2, Anchor, ArrowLeft } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -53,12 +54,12 @@ export default function DeliveryNoteGeneratePage() {
   const [purpose, setPurpose] = useState<string>("");
   const [portCountry, setPortCountry] = useState<string>("");
   const [dateOfSupply, setDateOfSupply] = useState<string>(
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [reference, setReference] = useState<string>("");
   const [masterSignature, setMasterSignature] = useState<string>("");
   const [signatureDate, setSignatureDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [items, setItems] = useState<DeliveryItem[]>([
     { itemNumber: 1, itemDescription: "", remarks: "", quantity: 0, unit: "" },
@@ -121,12 +122,12 @@ export default function DeliveryNoteGeneratePage() {
   const handleItemChange = (
     index: number,
     field: keyof DeliveryItem,
-    value: string | number
+    value: string | number,
   ) => {
     setItems((prev) =>
       prev.map((item, i) =>
-        i === index ? { ...item, [field]: value, itemNumber: i + 1 } : item
-      )
+        i === index ? { ...item, [field]: value, itemNumber: i + 1 } : item,
+      ),
     );
   };
   const addItem = () =>
@@ -142,7 +143,7 @@ export default function DeliveryNoteGeneratePage() {
     ]);
   const removeItem = (index: number) =>
     setItems((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
   // Form submit
@@ -168,7 +169,7 @@ export default function DeliveryNoteGeneratePage() {
       masterSignature,
       signatureDate,
       items: items.filter(
-        (item) => item.itemDescription || item.quantity || item.unit
+        (item) => item.itemDescription || item.quantity || item.unit,
       ),
     };
 
@@ -189,7 +190,7 @@ export default function DeliveryNoteGeneratePage() {
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
         setSuccess(
-          "Delivery Note generated! PDF should open/download automatically."
+          "Delivery Note generated! PDF should open/download automatically.",
         );
         setLoading(false);
         return;
@@ -273,10 +274,10 @@ export default function DeliveryNoteGeneratePage() {
                   <label className="block mb-1 text-sm font-medium">
                     Date of Supply
                   </label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={dateOfSupply}
-                    onChange={(e) => setDateOfSupply(e.target.value)}
+                    onChange={setDateOfSupply}
+                    placeholder="Date of Supply"
                     required
                   />
                 </div>
@@ -354,10 +355,10 @@ export default function DeliveryNoteGeneratePage() {
                   <label className="block mb-1 text-sm font-medium">
                     Signature Date
                   </label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={signatureDate}
-                    onChange={(e) => setSignatureDate(e.target.value)}
+                    onChange={setSignatureDate}
+                    placeholder="Signature Date"
                     required
                   />
                 </div>

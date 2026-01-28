@@ -23,6 +23,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus, Trash2, Anchor, LogOut, ArrowLeft } from "lucide-react";
+import DatePicker from "@/components/ui/date-picker";
+import TimePicker from "@/components/ui/TimePicker";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -45,7 +47,7 @@ export default function CrewSignOnGeneratePage() {
 
   // Document type state
   const [documentType, setDocumentType] = useState<"signon" | "signoff">(
-    "signon"
+    "signon",
   );
 
   // Form state
@@ -57,11 +59,11 @@ export default function CrewSignOnGeneratePage() {
   const [authorizePerson, setAuthorizePerson] = useState<string>("");
   const [authorizePersonNic, setAuthorizePersonNic] = useState<string>("");
   const [date, setDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [flight, setFlight] = useState<string>("");
-  const [arriveTime, setArriveTime] = useState<string>("");
   const [arriveDate, setArriveDate] = useState<string>("");
+  const [arriveTime, setArriveTime] = useState<string>("");
   const [passengers, setPassengers] = useState<Passenger[]>([
     { name: "", nationality: "", passportNumber: "", rank: "" },
   ]);
@@ -122,10 +124,10 @@ export default function CrewSignOnGeneratePage() {
   const handlePassengerChange = (
     index: number,
     field: keyof Passenger,
-    value: string
+    value: string,
   ) => {
     setPassengers((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, [field]: value } : p))
+      prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)),
     );
   };
   const addPassenger = () =>
@@ -135,7 +137,7 @@ export default function CrewSignOnGeneratePage() {
     ]);
   const removePassenger = (index: number) =>
     setPassengers((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
   // Form submit with token
@@ -187,7 +189,7 @@ export default function CrewSignOnGeneratePage() {
       const blobUrl = window.URL.createObjectURL(blob);
       window.open(blobUrl, "_blank");
       setSuccess(
-        "Document generated successfully! PDF should open/download automatically."
+        "Document generated successfully! PDF should open/download automatically.",
       );
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -336,10 +338,10 @@ export default function CrewSignOnGeneratePage() {
                   <label className="block mb-1 text-sm font-medium">
                     Join Date
                   </label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={JoinDate}
-                    onChange={(e) => setJoinDate(e.target.value)}
+                    onChange={setJoinDate}
+                    placeholder="Join Date"
                     required
                   />
                 </div>
@@ -357,10 +359,10 @@ export default function CrewSignOnGeneratePage() {
                   <label className="block mb-1 text-sm font-medium">
                     Arrive Date
                   </label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={arriveDate}
-                    onChange={(e) => setArriveDate(e.target.value)}
+                    onChange={setArriveDate}
+                    placeholder="Arrive Date"
                     required
                   />
                 </div>
@@ -368,11 +370,10 @@ export default function CrewSignOnGeneratePage() {
                   <label className="block mb-1 text-sm font-medium">
                     Arrive Time
                   </label>
-                  <Input
-                    type="time"
+                  <TimePicker
                     value={arriveTime}
-                    onChange={(e) => setArriveTime(e.target.value)}
-                    required
+                    onChange={setArriveTime}
+                    placeholder="Arrive Time"
                   />
                 </div>
                 <div>
@@ -438,7 +439,7 @@ export default function CrewSignOnGeneratePage() {
                         handlePassengerChange(
                           i,
                           "passportNumber",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       required
@@ -472,8 +473,8 @@ export default function CrewSignOnGeneratePage() {
                 {loading
                   ? "Submitting..."
                   : documentType === "signon"
-                  ? "Generate Crew Sign On"
-                  : "Generate Crew Sign Off"}
+                    ? "Generate Crew Sign On"
+                    : "Generate Crew Sign Off"}
               </Button>
               <Button
                 variant="ghost"

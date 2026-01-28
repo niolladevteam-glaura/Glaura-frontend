@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus, Trash2, Anchor, ArrowLeft } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/TimePicker";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -87,7 +88,7 @@ export default function OKTBPage() {
 
   // Form state
   const [date, setDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [principle, setPrinciple] = useState<string>("");
   const [vessel, setVessel] = useState<string>("");
@@ -174,7 +175,7 @@ export default function OKTBPage() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {
@@ -196,7 +197,7 @@ export default function OKTBPage() {
     if (!selectedCrewServiceID) return;
     // Find the crew change in crewServices array
     const service = crewServices.find(
-      (cs) => cs.Crw_Chg_Serv_id === selectedCrewServiceID
+      (cs) => cs.Crw_Chg_Serv_id === selectedCrewServiceID,
     );
     if (!service) return;
 
@@ -220,7 +221,7 @@ export default function OKTBPage() {
               passport_number: "",
               eTicketNo: "",
             },
-          ]
+          ],
     );
     setFlights(
       service.crewFlights && service.crewFlights.length > 0
@@ -245,7 +246,7 @@ export default function OKTBPage() {
               flight_from: "",
               flight_to: "",
             },
-          ]
+          ],
     );
   }, [selectedCrewServiceID, crewServices]);
 
@@ -253,10 +254,10 @@ export default function OKTBPage() {
   const handleCrewChange = (
     index: number,
     field: keyof Crew,
-    value: string
+    value: string,
   ) => {
     setCrew((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c))
+      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)),
     );
   };
   const addCrew = () =>
@@ -272,17 +273,17 @@ export default function OKTBPage() {
     ]);
   const removeCrew = (index: number) =>
     setCrew((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
   // Flights dynamic handlers
   const handleFlightChange = (
     index: number,
     field: keyof Flight,
-    value: string
+    value: string,
   ) => {
     setFlights((prev) =>
-      prev.map((f, i) => (i === index ? { ...f, [field]: value } : f))
+      prev.map((f, i) => (i === index ? { ...f, [field]: value } : f)),
     );
   };
   const addFlight = () =>
@@ -301,7 +302,7 @@ export default function OKTBPage() {
     ]);
   const removeFlight = (index: number) =>
     setFlights((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
     );
 
   // Form submit with token
@@ -383,7 +384,7 @@ export default function OKTBPage() {
       const blobUrl = window.URL.createObjectURL(blob);
       window.open(blobUrl, "_blank");
       setSuccess(
-        "OKTB Document generated successfully! PDF should open/download automatically."
+        "OKTB Document generated successfully! PDF should open/download automatically.",
       );
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -545,10 +546,10 @@ export default function OKTBPage() {
                   <label className="block mb-1 text-sm font-medium">
                     On Board Date
                   </label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={onBoardDate}
-                    onChange={(e) => setOnBoardDate(e.target.value)}
+                    onChange={setOnBoardDate}
+                    placeholder="On Board Date"
                     required
                   />
                 </div>
@@ -643,7 +644,7 @@ export default function OKTBPage() {
                             handleCrewChange(
                               i,
                               "passport_number",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           required
@@ -710,7 +711,7 @@ export default function OKTBPage() {
                             handleFlightChange(
                               i,
                               "flight_number",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           required
@@ -773,18 +774,12 @@ export default function OKTBPage() {
                         <label className="block text-sm font-medium mb-1">
                           Departure Time
                         </label>
-                        <Input
-                          type="time"
-                          placeholder="Dep. Time"
+                        <TimePicker
                           value={f.flight_depature_time}
-                          onChange={(e) =>
-                            handleFlightChange(
-                              i,
-                              "flight_depature_time",
-                              e.target.value
-                            )
+                          onChange={(val) =>
+                            handleFlightChange(i, "flight_depature_time", val)
                           }
-                          required
+                          placeholder="Dep. Time"
                         />
                       </div>
                       <div>
@@ -803,13 +798,12 @@ export default function OKTBPage() {
                         <label className="block text-sm font-medium mb-1">
                           Arrival Time
                         </label>
-                        <Input
-                          type="time"
-                          placeholder="Arr. Time"
+                        <TimePicker
                           value={f.flight_time || ""}
-                          onChange={(e) =>
-                            handleFlightChange(i, "flight_time", e.target.value)
+                          onChange={(val) =>
+                            handleFlightChange(i, "flight_time", val)
                           }
+                          placeholder="Arr. Time"
                         />
                       </div>
                       <div className="flex items-end">

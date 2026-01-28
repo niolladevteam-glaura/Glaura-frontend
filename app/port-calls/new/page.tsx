@@ -305,13 +305,13 @@ export default function NewPortCall() {
 
   // Dynamic data
   const [selectedServices, setSelectedServices] = useState<SelectedService[]>(
-    []
+    [],
   );
   const [serviceSearch, setServiceSearch] = useState("");
   const [availableServices, setAvailableServices] = useState<Service[]>([]);
   const [ports, setPorts] = useState<{ value: string; label: string }[]>([]);
   const [clients, setClients] = useState<{ value: string; label: string }[]>(
-    []
+    [],
   );
   const [vesselTypes, setVesselTypes] = useState<string[]>([
     "Container Ship",
@@ -397,7 +397,7 @@ export default function NewPortCall() {
     if (restoredFromStorage) {
       localStorage.setItem(
         "portCallSelectedServices",
-        JSON.stringify(selectedServices)
+        JSON.stringify(selectedServices),
       );
     }
   }, [selectedServices, restoredFromStorage]);
@@ -557,7 +557,7 @@ export default function NewPortCall() {
         pics.map((pic) => ({
           value: pic.pic_id,
           label: `${pic.firstName} ${pic.lastName}`,
-        }))
+        })),
       );
     });
   }, []);
@@ -579,7 +579,7 @@ export default function NewPortCall() {
             json.data.map((u: User) => ({
               value: String(u.id),
               label: `${u.first_name} ${u.last_name} (${u.department})`,
-            }))
+            })),
           );
         }
       } catch (err) {
@@ -592,7 +592,7 @@ export default function NewPortCall() {
   // API Functions - Replace these with your actual API calls
   const apiCall = async <T = any,>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> => {
     try {
       const token = localStorage.getItem("token");
@@ -624,7 +624,7 @@ export default function NewPortCall() {
           });
         }
         throw new Error(
-          errorData?.message || `Request failed with status ${response.status}`
+          errorData?.message || `Request failed with status ${response.status}`,
         );
       }
 
@@ -687,7 +687,7 @@ export default function NewPortCall() {
   > => {
     try {
       const response = await apiCall<CustomerPicResponse>(
-        API_ENDPOINTS.CUSTOMER_PIC
+        API_ENDPOINTS.CUSTOMER_PIC,
       );
 
       if (response.success && Array.isArray(response.data)) {
@@ -750,7 +750,7 @@ export default function NewPortCall() {
   const fetchServices = async (): Promise<Service[]> => {
     try {
       const response = await apiCall<{ data: Service[] }>(
-        API_ENDPOINTS.SERVICES
+        API_ENDPOINTS.SERVICES,
       );
       return response.data || [];
     } catch (error) {
@@ -838,7 +838,7 @@ export default function NewPortCall() {
 
       console.log(
         "Sending port call data:",
-        JSON.stringify(portCallData, null, 2)
+        JSON.stringify(portCallData, null, 2),
       );
 
       const response = await fetch(API_ENDPOINTS.PORT_CALLS, {
@@ -877,7 +877,7 @@ export default function NewPortCall() {
         const apiVesselType = response.data.vessel_type || "";
         const matchedVesselType =
           vesselTypes.find(
-            (t) => t.toLowerCase() === apiVesselType.toLowerCase()
+            (t) => t.toLowerCase() === apiVesselType.toLowerCase(),
           ) || "";
 
         setFormData((prev) => ({
@@ -927,7 +927,7 @@ export default function NewPortCall() {
         pics.map((pic) => ({
           value: pic.pic_id,
           label: `${pic.firstName} ${pic.lastName}`,
-        }))
+        })),
       );
     } catch (error) {
       // already handled
@@ -1079,7 +1079,7 @@ export default function NewPortCall() {
   const filteredServices = useMemo(() => {
     if (!serviceSearch) return availableServices;
     return availableServices.filter((service) =>
-      service.service_name.toLowerCase().includes(serviceSearch.toLowerCase())
+      service.service_name.toLowerCase().includes(serviceSearch.toLowerCase()),
     );
   }, [availableServices, serviceSearch]);
 
@@ -1193,7 +1193,7 @@ export default function NewPortCall() {
           etaTime: formData.etaTime,
         });
         throw new Error(
-          "ETA Date (YYYY-MM-DD or DD-MM-YYYY) and Time (HH:mm, 24hr) are required and must be correctly formatted."
+          "ETA Date (YYYY-MM-DD or DD-MM-YYYY) and Time (HH:mm, 24hr) are required and must be correctly formatted.",
         );
       }
       console.log("Step 6: ETA validation passed");
@@ -1202,12 +1202,12 @@ export default function NewPortCall() {
       let etaIsoString = "";
       if (isoDateRegex.test(formData.etaDate)) {
         etaIsoString = new Date(
-          `${formData.etaDate}T${formData.etaTime}:00`
+          `${formData.etaDate}T${formData.etaTime}:00`,
         ).toISOString();
       } else if (dmyDateRegex.test(formData.etaDate)) {
         const [dd, mm, yyyy] = formData.etaDate.split("-");
         etaIsoString = new Date(
-          `${yyyy}-${mm}-${dd}T${formData.etaTime}:00`
+          `${yyyy}-${mm}-${dd}T${formData.etaTime}:00`,
         ).toISOString();
       }
       console.log("Step 7: ETA ISO String", etaIsoString);
@@ -1641,7 +1641,7 @@ export default function NewPortCall() {
                       onValueChange={(value) => {
                         // Find the selected user by id
                         const selectedUser = users.find(
-                          (u) => String(u.id) === value
+                          (u) => String(u.id) === value,
                         );
                         setFormData((prev) => ({
                           ...prev,
@@ -1734,7 +1734,7 @@ export default function NewPortCall() {
                                   setIsAddingPort(true);
                                   try {
                                     const newPort = await addPortToDatabase(
-                                      newPortName.trim()
+                                      newPortName.trim(),
                                     );
                                     setPorts((prevPorts) => [
                                       ...prevPorts,
@@ -1913,7 +1913,7 @@ export default function NewPortCall() {
                                   try {
                                     const newStatus =
                                       await addFormalityStatusToDatabase(
-                                        newFormalityStatus.trim()
+                                        newFormalityStatus.trim(),
                                       );
                                     setFormalityStatuses((prev) => [
                                       ...prev,
@@ -2148,7 +2148,7 @@ export default function NewPortCall() {
                         <Checkbox
                           id={service.service_id}
                           checked={selectedServices.some(
-                            (s) => s.name === service.service_name
+                            (s) => s.name === service.service_name,
                           )}
                           onCheckedChange={() =>
                             handleServiceToggle(service.service_name)
@@ -2304,7 +2304,7 @@ export default function NewPortCall() {
 
                       // Filter vendors that provide the current service
                       const providesService = vendor.vendorServices?.some(
-                        (service) => service.service_name === currentService
+                        (service) => service.service_name === currentService,
                       );
 
                       return isApproved && providesService;
@@ -2376,8 +2376,8 @@ export default function NewPortCall() {
                 {loading || exceptionVendorLoading
                   ? "Adding..."
                   : showExceptionVendor
-                  ? "Add Exception Vendor"
-                  : "Add Service"}
+                    ? "Add Exception Vendor"
+                    : "Add Service"}
               </Button>
             </div>
           </div>

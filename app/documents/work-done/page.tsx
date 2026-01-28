@@ -23,6 +23,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus, Trash2, Anchor, ArrowLeft } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/TimePicker";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -92,6 +94,16 @@ export default function WorkDoneGeneratePage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [ataDate, setAtaDate] = useState<string>("");
+  const [ataTime, setAtaTime] = useState<string>("");
+  const [atdDate, setAtdDate] = useState<string>("");
+  const [atdTime, setAtdTime] = useState<string>("");
+
+  function combineDateTime(date: string, time: string) {
+    if (!date || !time) return "";
+    return `${date}T${time}:00`; // e.g. "2024-05-18T12:34:00"
+  }
 
   // Fetch vessels with token
   useEffect(() => {
@@ -214,8 +226,8 @@ export default function WorkDoneGeneratePage() {
       vesselName,
       imo,
       voyageNo,
-      eta,
-      atd,
+      eta: combineDateTime(ataDate, ataTime),
+      atd: combineDateTime(atdDate, atdTime),
       port,
       date,
       launchTrip,
@@ -402,20 +414,35 @@ export default function WorkDoneGeneratePage() {
                 </div>
                 <div>
                   <label className="block mb-1 text-sm font-medium">ATA</label>
-                  <Input
-                    type="datetime-local"
-                    value={eta}
-                    onChange={(e) => setEta(e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <DatePicker
+                      value={ataDate}
+                      onChange={setAtaDate}
+                      placeholder="Date"
+                      required
+                    />
+                    <TimePicker
+                      value={ataTime}
+                      onChange={setAtaTime}
+                      placeholder="Time"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block mb-1 text-sm font-medium">ATD</label>
-                  <Input
-                    type="datetime-local"
-                    value={atd}
-                    onChange={(e) => setAtd(e.target.value)}
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <DatePicker
+                      value={atdDate}
+                      onChange={setAtdDate}
+                      placeholder="Date"
+                      required
+                    />
+                    <TimePicker
+                      value={atdTime}
+                      onChange={setAtdTime}
+                      placeholder="Time"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block mb-1 text-sm font-medium">

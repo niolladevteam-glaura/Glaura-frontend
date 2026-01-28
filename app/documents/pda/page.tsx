@@ -53,6 +53,8 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/TimePicker";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -260,6 +262,8 @@ export default function PdaGeneratePage() {
   const [port, setPort] = useState<string>("");
   const [arraivalDate, setArraivalDate] = useState<string>("");
   const [departureDate, setDepartureDate] = useState<string>("");
+  const [arraivalTime, setArraivalTime] = useState<string>("");
+  const [departureTime, setDepartureTime] = useState<string>("");
   const [poc, setPoc] = useState<string>("Cargo Operations");
 
   const [paymentTerms, setPaymentTerms] = useState<string>(
@@ -725,10 +729,10 @@ export default function PdaGeneratePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-1 text-sm font-medium">Date</label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
+                    onChange={setDate}
+                    placeholder="Date"
                     required
                   />
                 </div>
@@ -811,21 +815,37 @@ export default function PdaGeneratePage() {
                   <label className="block mb-1 text-sm font-medium">
                     Arrival Date & Time
                   </label>
-                  <Input
-                    type="datetime-local"
-                    value={arraivalDate}
-                    onChange={(e) => setArraivalDate(e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <DatePicker
+                      value={arraivalDate}
+                      onChange={setArraivalDate}
+                      placeholder="Arrival Date"
+                      required
+                    />
+                    <TimePicker
+                      value={arraivalTime}
+                      onChange={setArraivalTime}
+                      placeholder="Arrival Time"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block mb-1 text-sm font-medium">
                     Departure Date & Time
                   </label>
-                  <Input
-                    type="datetime-local"
-                    value={departureDate}
-                    onChange={(e) => setDepartureDate(e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <DatePicker
+                      value={departureDate}
+                      onChange={setDepartureDate}
+                      placeholder="Departure Date"
+                      required
+                    />
+                    <TimePicker
+                      value={departureTime}
+                      onChange={setDepartureTime}
+                      placeholder="Departure Time"
+                    />
+                  </div>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block mb-1 text-sm font-medium">
