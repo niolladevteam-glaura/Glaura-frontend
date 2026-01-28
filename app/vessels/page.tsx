@@ -371,12 +371,6 @@ export default function VesselManagement() {
 
   const handleAddVessel = async () => {
     try {
-      if (!newVessel.sscecIssued) {
-        toast.error("Validation Error", {
-          description: "Please enter the SSCEC Issued Date.",
-        });
-        return;
-      }
       const imoExists = vessels.some((v) => v.imo === newVessel.imo);
       if (imoExists) {
         toast.error("Duplicate IMO", {
@@ -386,13 +380,18 @@ export default function VesselManagement() {
         return;
       }
 
-      const expiryISO = calcSSCECExpiryISO(newVessel.sscecIssued);
-      const issuedISO = formatDateToISO(newVessel.sscecIssued);
+      // SSCEC fields can be empty if not provided
+      const expiryISO = newVessel.sscecIssued
+        ? calcSSCECExpiryISO(newVessel.sscecIssued)
+        : "";
+      const issuedISO = newVessel.sscecIssued
+        ? formatDateToISO(newVessel.sscecIssued)
+        : "";
 
       const vesselData = {
         vessel_name: newVessel.name.toUpperCase(),
         imo_number: newVessel.imo,
-        SSCEC_issued: issuedISO, // always yyyy-mm-dd
+        SSCEC_issued: issuedISO, // always yyyy-mm-dd or empty
         SSCEC_expires: expiryISO,
         company: newVessel.owner,
         vessel_type: newVessel.vesselType.toUpperCase(),
@@ -847,7 +846,7 @@ export default function VesselManagement() {
                       </div>
                       {/* SSCEC Issued */}
                       <div className="space-y-2">
-                        <Label htmlFor="sscecIssued">SSCEC Issued Date *</Label>
+                        <Label htmlFor="sscecIssued">SSCEC Issued Date</Label>
                         <DatePicker
                           id="sscecIssued"
                           selected={toDateObj(newVessel.sscecIssued)}
@@ -1233,7 +1232,7 @@ export default function VesselManagement() {
                       <h3 className="text-lg font-medium">Certifications</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label>SSCEC Issued Date *</Label>
+                          <Label>SSCEC Issued Date</Label>
                           <DatePicker
                             selected={
                               toDateObj(
