@@ -112,12 +112,15 @@ function formatDateDMY(dateStr?: string | Date) {
   const year = d.getFullYear();
   return `${day}.${month}.${year}`;
 }
-
+521811;
 function getStatusBadgeColor(status: string) {
   switch (status) {
     case "approved":
     case "Approved":
       return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-700";
+    case "partially_approved":
+    case "Partially Approved":
+      return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700";
     case "Expired":
       return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700";
     case "pending":
@@ -146,7 +149,7 @@ export default function VendorDocumentsPage() {
   const [expiryAlerts, setExpiryAlerts] = useState<ExpiryAlert[]>([]);
   const [editOpen, setEditOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<DocumentType | null>(
-    null
+    null,
   );
   const [documentTypes, setDocumentTypes] = useState<
     { documentID: string; document_name: string }[]
@@ -165,7 +168,7 @@ export default function VendorDocumentsPage() {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
               "Content-Type": "application/json",
             },
-          }
+          },
         );
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {
@@ -210,7 +213,7 @@ export default function VendorDocumentsPage() {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
@@ -223,7 +226,7 @@ export default function VendorDocumentsPage() {
           .map((doc: DocumentType) => {
             const expiry = new Date(doc.expired_at);
             const daysUntil = Math.ceil(
-              (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+              (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
             );
             let status: ExpiryAlert["status"] | null = null;
             if (daysUntil < 0) {
@@ -274,7 +277,7 @@ export default function VendorDocumentsPage() {
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
       const data = await res.json();
       if (data.success && data.data) {
@@ -339,7 +342,7 @@ export default function VendorDocumentsPage() {
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
       const data = await res.json();
       if (data.success) {
@@ -374,7 +377,7 @@ export default function VendorDocumentsPage() {
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
       const data = await res.json();
       if (data.success) {
@@ -392,7 +395,7 @@ export default function VendorDocumentsPage() {
   const handleBulkApprove = async () => {
     if (!selectedIds.length) return;
     const docsToApprove = documents.filter((doc) =>
-      selectedIds.includes(doc.id)
+      selectedIds.includes(doc.id),
     );
     let successCount = 0;
     for (const doc of docsToApprove) {
@@ -409,7 +412,7 @@ export default function VendorDocumentsPage() {
   const handleBulkReject = async () => {
     if (!selectedIds.length) return;
     const docsToReject = documents.filter((doc) =>
-      selectedIds.includes(doc.id)
+      selectedIds.includes(doc.id),
     );
     let successCount = 0;
     for (const doc of docsToReject) {
@@ -437,7 +440,7 @@ export default function VendorDocumentsPage() {
   };
   const handleSelectOne = (id: number) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id],
     );
   };
 
@@ -535,7 +538,7 @@ export default function VendorDocumentsPage() {
                           <Badge
                             variant="outline"
                             className={`text-xs font-semibold px-3 py-1 ${getStatusBadgeColor(
-                              alert.status
+                              alert.status,
                             )}`}
                           >
                             {alert.status === "Expired"
@@ -732,7 +735,7 @@ export default function VendorDocumentsPage() {
                                   checked={selectedIds.includes(doc.id)}
                                   onChange={() => handleSelectOne(doc.id)}
                                   aria-label={`Select document ${getDocumentName(
-                                    doc.documentID
+                                    doc.documentID,
                                   )}`}
                                 />
                               )}
@@ -750,12 +753,11 @@ export default function VendorDocumentsPage() {
                             </TableCell>
                             <TableCell>
                               <Badge
-                                className={`text-xs ${getStatusBadgeColor(
-                                  doc.status
-                                )}`}
+                                className={`text-xs ${getStatusBadgeColor(doc.status)}`}
                               >
-                                {doc.status.charAt(0).toUpperCase() +
-                                  doc.status.slice(1)}
+                                {doc.status === "partially_approved"
+                                  ? "Partially Approved"
+                                  : doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
                               </Badge>
                             </TableCell>
                             <TableCell>
