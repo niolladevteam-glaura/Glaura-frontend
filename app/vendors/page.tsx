@@ -116,6 +116,7 @@ interface Vendor {
   services?: string[];
   pics?: VendorPIC[];
   attachments?: any[]; // Add this line to fix the error
+  createdAt?: string; // Add this line to fix the error
 }
 
 function formatDateDMY(dateStr?: string) {
@@ -273,7 +274,7 @@ export default function VendorManagement() {
           throw new Error(response.statusText || "Request failed");
         }
         throw new Error(
-          errorData.message || `Request failed with status ${response.status}`
+          errorData.message || `Request failed with status ${response.status}`,
         );
       }
       try {
@@ -309,7 +310,7 @@ export default function VendorManagement() {
           let thisYearBirthday = new Date(
             today.getFullYear(),
             birthday.getMonth(),
-            birthday.getDate()
+            birthday.getDate(),
           );
           // Handle Feb 29
           if (birthday.getMonth() === 1 && birthday.getDate() === 29) {
@@ -325,7 +326,7 @@ export default function VendorManagement() {
           }
           const daysUntil = Math.ceil(
             (thisYearBirthday.getTime() - today.getTime()) /
-              (1000 * 60 * 60 * 24)
+              (1000 * 60 * 60 * 24),
           );
           if (daysUntil >= 0 && daysUntil <= 7) {
             alerts.push({
@@ -356,22 +357,32 @@ export default function VendorManagement() {
       if (!Array.isArray(response.data)) {
         throw new Error("Invalid vendors data format");
       }
-      const formattedVendors = response.data.map((vendor: any) => {
+      let formattedVendors = response.data.map((vendor: any) => {
+        // Normalize vendorPic to vendorPics array
         let vendorPics: VendorPIC[] = [];
         if (Array.isArray(vendor.vendorPics) && vendor.vendorPics.length > 0) {
           vendorPics = vendor.vendorPics;
         } else if (vendor.vendorPic) {
-          vendorPics = [vendor.vendorPic];
+          vendorPics = vendor.vendorPic ? [vendor.vendorPic] : [];
         } else if (vendor.pic) {
           vendorPics = [vendor.pic];
         }
+        // Always ensure vendorPics is an array
+        vendor.vendorPics = vendorPics;
+
         // Handle status: can be boolean (true/false) or string ("approved"/"pending"/"rejected")
         let kycStatus = "Pending";
-        if (vendor.vendorStatus?.status === true || vendor.vendorStatus?.status === "approved") {
+        if (
+          vendor.vendorStatus?.status === true ||
+          vendor.vendorStatus?.status === "approved"
+        ) {
           kycStatus = "Approved";
         } else if (vendor.vendorStatus?.status === "rejected") {
           kycStatus = "Rejected";
-        } else if (vendor.vendorStatus?.status === false || vendor.vendorStatus?.status === "pending") {
+        } else if (
+          vendor.vendorStatus?.status === false ||
+          vendor.vendorStatus?.status === "pending"
+        ) {
           kycStatus = "Pending";
         }
 
@@ -383,6 +394,17 @@ export default function VendorManagement() {
           completedJobs: 0,
           vendorPics,
         };
+      });
+      // Sort by createdAt descending, fallback to id if no createdAt
+      formattedVendors.sort((a: Vendor, b: Vendor) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (aDate && bDate) return bDate - aDate;
+        // fallback: sort by id descending if id is numeric
+        if (!isNaN(Number(a.id)) && !isNaN(Number(b.id))) {
+          return Number(b.id) - Number(a.id);
+        }
+        return 0;
       });
       setVendors(formattedVendors);
       setFilteredVendors(formattedVendors);
@@ -455,8 +477,8 @@ export default function VendorManagement() {
         new Set(
           vendors
             .map((vendor) => vendor.company_type)
-            .filter((type) => type && type.trim() !== "")
-        )
+            .filter((type) => type && type.trim() !== ""),
+        ),
       ).sort();
       setCompanyTypes(uniqueTypes);
     }
@@ -471,18 +493,19 @@ export default function VendorManagement() {
           vendor.name.toLowerCase().includes(searchLower) ||
           vendor.company_type.toLowerCase().includes(searchLower) ||
           vendor.vendorServices.some((service) =>
-            service.service_name.toLowerCase().includes(searchLower)
+            service.service_name.toLowerCase().includes(searchLower),
           ) ||
           vendor.vendorPics.some((pic) =>
             `${pic.title || ""} ${pic.firstName || ""} ${pic.lastName || ""}`
               .toLowerCase()
-              .includes(searchLower)
-          )
+              .includes(searchLower),
+          ),
       );
     }
     if (typeFilter !== "all") {
-      filtered = filtered.filter((vendor) =>
-        vendor.company_type.toLowerCase() === typeFilter.toLowerCase()
+      filtered = filtered.filter(
+        (vendor) =>
+          vendor.company_type.toLowerCase() === typeFilter.toLowerCase(),
       );
     }
     if (statusFilter !== "all") {
@@ -531,17 +554,15 @@ export default function VendorManagement() {
       };
 
       // Send create request
-      const response = await apiCall(`${API_BASE_URL}/vendor`, {
+      await apiCall(`${API_BASE_URL}/vendor`, {
         method: "POST",
         body: JSON.stringify(backendData),
       });
 
-      // Refresh vendor list in UI
+      // Refresh vendor list in UI and only then close dialog and show toast
       await loadVendors();
-
-      // Clean up and notify
       localStorage.removeItem("vendorFormDraft");
-      setIsAddVendorOpen(false); // If you use this state to control the dialog
+      setIsAddVendorOpen(false);
       toast({
         title: "Success",
         description: "Vendor created successfully!",
@@ -656,8 +677,8 @@ export default function VendorManagement() {
                 pic.contactNumbers && pic.contactNumbers.length > 0
                   ? pic.contactNumbers
                   : pic.phone_number
-                  ? [pic.phone_number]
-                  : [""],
+                    ? [pic.phone_number]
+                    : [""],
               contactTypes:
                 pic.contactTypes && pic.contactTypes.length > 0
                   ? pic.contactTypes
@@ -666,8 +687,8 @@ export default function VendorManagement() {
                 pic.emails && pic.emails.length > 0
                   ? pic.emails
                   : pic.email
-                  ? [pic.email]
-                  : [""],
+                    ? [pic.email]
+                    : [""],
               emailTypes:
                 pic.emailTypes && pic.emailTypes.length > 0
                   ? pic.emailTypes
@@ -713,10 +734,10 @@ export default function VendorManagement() {
       setLoading(true);
       await apiCall(`${API_ENDPOINTS.VENDORS}/${id}`, { method: "DELETE" });
       setVendors((prev: Vendor[]) =>
-        prev.filter((vendor) => vendor.vendor_id !== id)
+        prev.filter((vendor) => vendor.vendor_id !== id),
       );
       setFilteredVendors((prev: Vendor[]) =>
-        prev.filter((vendor) => vendor.vendor_id !== id)
+        prev.filter((vendor) => vendor.vendor_id !== id),
       );
       toast({
         title: "Success",
@@ -1048,7 +1069,7 @@ export default function VendorManagement() {
                               if (vendorToDelete) {
                                 deleteVendor(
                                   vendorToDelete.id,
-                                  vendorToDelete.name
+                                  vendorToDelete.name,
                                 );
                                 setDeleteDialogOpen(false);
                               }
@@ -1138,7 +1159,7 @@ export default function VendorManagement() {
                               </Badge>
                               <Badge
                                 className={`truncate ${getKycStatusColor(
-                                  vendor.kycStatus || "Pending"
+                                  vendor.kycStatus || "Pending",
                                 )}`}
                               >
                                 {vendor.kycStatus || "Pending"}
@@ -1374,7 +1395,7 @@ export default function VendorManagement() {
                                       <p className="text-sm mt-1" key={idx}>
                                         {num}
                                       </p>
-                                    )
+                                    ),
                                   )
                                 ) : pic.phone_number ? (
                                   <p className="text-sm mt-1">
@@ -1396,7 +1417,7 @@ export default function VendorManagement() {
                                       <p className="text-sm mt-1" key={idx}>
                                         {email}
                                       </p>
-                                    )
+                                    ),
                                   )
                                 ) : pic.email ? (
                                   <p className="text-sm mt-1">{pic.email}</p>
