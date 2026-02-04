@@ -116,7 +116,6 @@ interface Vendor {
   services?: string[];
   pics?: VendorPIC[];
   attachments?: any[]; // Add this line to fix the error
-  createdAt?: string; // Add this line to fix the error
 }
 
 function formatDateDMY(dateStr?: string) {
@@ -357,19 +356,15 @@ export default function VendorManagement() {
       if (!Array.isArray(response.data)) {
         throw new Error("Invalid vendors data format");
       }
-      let formattedVendors = response.data.map((vendor: any) => {
-        // Normalize vendorPic to vendorPics array
+      const formattedVendors = response.data.map((vendor: any) => {
         let vendorPics: VendorPIC[] = [];
         if (Array.isArray(vendor.vendorPics) && vendor.vendorPics.length > 0) {
           vendorPics = vendor.vendorPics;
         } else if (vendor.vendorPic) {
-          vendorPics = vendor.vendorPic ? [vendor.vendorPic] : [];
+          vendorPics = [vendor.vendorPic];
         } else if (vendor.pic) {
           vendorPics = [vendor.pic];
         }
-        // Always ensure vendorPics is an array
-        vendor.vendorPics = vendorPics;
-
         // Handle status: can be boolean (true/false) or string ("approved"/"pending"/"rejected")
         let kycStatus = "Pending";
         if (
@@ -394,17 +389,6 @@ export default function VendorManagement() {
           completedJobs: 0,
           vendorPics,
         };
-      });
-      // Sort by createdAt descending, fallback to id if no createdAt
-      formattedVendors.sort((a: Vendor, b: Vendor) => {
-        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        if (aDate && bDate) return bDate - aDate;
-        // fallback: sort by id descending if id is numeric
-        if (!isNaN(Number(a.id)) && !isNaN(Number(b.id))) {
-          return Number(b.id) - Number(a.id);
-        }
-        return 0;
       });
       setVendors(formattedVendors);
       setFilteredVendors(formattedVendors);
@@ -559,14 +543,21 @@ export default function VendorManagement() {
         body: JSON.stringify(backendData),
       });
 
-      // Refresh vendor list in UI and only then close dialog and show toast
-      await loadVendors();
+      // Clean up draft data BEFORE reload to avoid re-triggering dialog open
       localStorage.removeItem("vendorFormDraft");
+      localStorage.removeItem("addVendorFormDraft");
       setIsAddVendorOpen(false);
+
       toast({
         title: "Success",
         description: "Vendor created successfully!",
       });
+
+      // Delay reload so the toast is visible
+      setTimeout(() => {
+        window.location.reload();
+        // Or: router.refresh(); // if you use Next.js App Router
+      }, 850);
     } catch (error: any) {
       toast({
         title: "Error",
