@@ -86,7 +86,7 @@ type AddVendorDialogProps = {
   onOpenChange: (val: boolean) => void;
   serviceCategories: string[];
   loadingServices: boolean;
-  onVendorCreated?: () => void;
+  onVendorCreated?: (newVendor?: any) => void;
   onSaveVendor: (formData: VendorFormType) => Promise<void>;
 };
 
@@ -578,12 +578,16 @@ export default function AddVendorDialog({
       if (!res.ok) {
         throw new Error("Vendor creation failed");
       }
+      let newVendor = null;
+      try {
+        newVendor = await res.json();
+      } catch {}
 
       // Clean up
       onOpenChange(false);
       setVendorForm(blankVendorForm(documentList));
       localStorage.removeItem(VENDOR_FORM_DRAFT_KEY);
-      if (onVendorCreated) onVendorCreated();
+      if (onVendorCreated) onVendorCreated(newVendor || vendorPayload);
     } catch (err: any) {
       alert(err.message || "Error occurred while saving vendor.");
     } finally {
