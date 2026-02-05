@@ -16,13 +16,24 @@ interface Props {
   onClose: () => void;
 }
 
-
 const allDocumentOptions = [
   { label: "OKTB Documents", path: "/documents/oktb", key: "OKTB" },
-  { label: "Crew Sign On / Off Documents", path: "/documents/crew-signon", key: "Crew Sign On" },
+  {
+    label: "Crew Sign On / Off Documents",
+    path: "/documents/crew-signon",
+    key: "Crew Sign On",
+  },
   { label: "Port Disbursement Account", path: "/documents/pda", key: "PDA" },
-  { label: "Work Done Certificate", path: "/documents/work-done", key: "Work Done" },
-  { label: "Delivery Note", path: "/documents/delivery-note", key: "Delivery Note" },
+  {
+    label: "Work Done Certificate",
+    path: "/documents/work-done",
+    key: "Work Done",
+  },
+  {
+    label: "Delivery Note",
+    path: "/documents/delivery-note",
+    key: "Delivery Note",
+  },
   //{ label: "Customs Letters", path: "/documents/customs", key: "Customs Letters" },
   //{ label: "FDA Applications", path: "/documents/fda", key: "FDA" },
   //{ label: "TW Applications", path: "/documents/tw-applications", key: "TW Applications" },
@@ -48,9 +59,13 @@ export function DocumentTypeModal({ open, onClose }: Props) {
   if (department) {
     const dept = department.toLowerCase();
     if (dept === "disbursement") {
-      documentOptions = allDocumentOptions.filter((d) => ["PDA", "Delivery Note", "FDA"].includes(d.key));
+      documentOptions = allDocumentOptions.filter((d) =>
+        ["PDA", "Delivery Note", "FDA"].includes(d.key),
+      );
     } else if (dept === "operations") {
-      documentOptions = allDocumentOptions.filter((d) => ["OKTB", "Crew Sign On", "Work Done", "Delivery Note"].includes(d.key));
+      documentOptions = allDocumentOptions.filter((d) =>
+        ["OKTB", "Crew Sign On", "Work Done", "Delivery Note"].includes(d.key),
+      );
     }
     // All other departments: no restrictions
   }
