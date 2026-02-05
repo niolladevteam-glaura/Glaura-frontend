@@ -143,7 +143,7 @@ export default function DocumentManagement() {
   const router = useRouter();
 
   // Document types config
-  const docTypes = [
+  const allDocTypes = [
     {
       label: "OKTB",
       cardLabel: "OKTB Documents",
@@ -186,7 +186,29 @@ export default function DocumentManagement() {
       iconColor: "text-pink-700 dark:text-pink-400",
       route: "/documents/delivery-note",
     },
+    // FDA can be added here if needed
   ];
+
+  // Department-based document access
+  const getAllowedDocTypes = () => {
+    if (!currentUser || !currentUser.department) return allDocTypes;
+    const dept = String(currentUser.department).toLowerCase();
+    if (dept === "disbursement") {
+      // PDA, Delivery Note, FDA (if FDA is added)
+      return allDocTypes.filter((d) =>
+        ["PDA", "Delivery Note", "FDA"].includes(d.label)
+      );
+    }
+    if (dept === "operations") {
+      // OKTB, Crew Sign On, Work Done, Delivery Note
+      return allDocTypes.filter((d) =>
+        ["OKTB", "Crew Sign On", "Work Done", "Delivery Note"].includes(d.label)
+      );
+    }
+    // All other departments: no restrictions
+    return allDocTypes;
+  };
+  const docTypes = getAllowedDocTypes();
 
   // Fetch all docs on mount
   useEffect(() => {
