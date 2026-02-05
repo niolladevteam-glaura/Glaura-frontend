@@ -51,6 +51,7 @@ export default function CrewSignOnGeneratePage() {
   );
 
   // Form state
+  const [jobID, setJobID] = useState<string>("");
   const [VesselName, setVesselName] = useState<string>("");
   const [vessels, setVessels] = useState<Vessel[]>([]);
   const [imo, setImo] = useState<string>("");
@@ -163,6 +164,7 @@ export default function CrewSignOnGeneratePage() {
         },
         body: JSON.stringify({
           VesselName,
+          jobID,
           imo,
           port,
           type: documentType === "signon" ? "ON" : "OFF",
@@ -287,6 +289,17 @@ export default function CrewSignOnGeneratePage() {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1 text-sm font-medium">
+                    Job ID
+                  </label>
+                  <Input
+                    value={jobID}
+                    onChange={(e) => setJobID(e.target.value)}
+                    placeholder="Enter Job ID"
+                    required
+                  />
+                </div>
                 <div>
                   <label className="block mb-1 text-sm font-medium">Date</label>
                   <Input
