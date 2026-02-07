@@ -311,12 +311,34 @@ export default function OKTBPage() {
     setError(null);
     setSuccess(null);
     setLoading(true);
+
     const token = localStorage.getItem("token");
     if (!token) {
       setError("No authentication token found. Please login.");
       setLoading(false);
       return;
     }
+
+    // DEBUG: Check jobId value
+    console.log("jobId state value:", jobId);
+    console.log("jobId type:", typeof jobId);
+    console.log("jobId length:", jobId?.length);
+
+    // Check if jobId is provided
+    if (!jobId || jobId.trim() === "") {
+      setError("Job ID is required.");
+      setLoading(false);
+      return;
+    }
+
+    // Validate jobID format
+    const jobIdPattern = /^GLPC-\d{4}-\d{4}-\d{3}$/;
+    if (!jobIdPattern.test(jobId.trim())) {
+      setError("Invalid JOB ID format. Expected: GLPC-YYYY-XXXX-XXX");
+      setLoading(false);
+      return;
+    }
+
     try {
       // Validate and sanitize date fields
       const isValidDate = (dateStr: string) => {
@@ -325,7 +347,7 @@ export default function OKTBPage() {
         return regex.test(dateStr);
       };
 
-      // Sanitize flights data - remove invalid dates and arrive_date/arrive_time fields
+      // Sanitize flights data
       const sanitizedFlights = flights.map((flight) => {
         const sanitized: any = {
           flight_number: flight.flight_number,
@@ -334,7 +356,6 @@ export default function OKTBPage() {
           flight_to: flight.flight_to,
         };
 
-        // Only include dates if they are valid
         if (isValidDate(flight.flight_depature_date)) {
           sanitized.flight_depature_date = flight.flight_depature_date;
         }
@@ -351,35 +372,46 @@ export default function OKTBPage() {
         return sanitized;
       });
 
+      // Prepare payload - ensure jobID is always included
+      const payload: any = {
+        date: isValidDate(date) ? date : undefined,
+        jobID: jobId.trim(), // This should always have a value here
+        principle: principle,
+        vessel: vessel,
+        airline: airline,
+        onBoardDate: isValidDate(onBoardDate) ? onBoardDate : undefined,
+        crew: crew,
+        fights: sanitizedFlights,
+        bookingReference: bookingReference,
+        airLinePNR: airLinePNR,
+      };
+
+      console.log("Payload before sending:", payload);
+      console.log("Payload.jobID:", payload.jobID);
+      console.log("Stringified payload:", JSON.stringify(payload));
+
       const res = await fetch(`${API_BASE_URL}/documents/oktb`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          date: isValidDate(date) ? date : undefined,
-          principle,
-          vessel,
-          airline,
-          onBoardDate: isValidDate(onBoardDate) ? onBoardDate : undefined,
-          crew,
-          fights: sanitizedFlights,
-          bookingReference,
-          airLinePNR,
-        }),
+        body: JSON.stringify(payload),
       });
+
       if (!res.ok) {
         if (res.status === 401) {
           setError("Unauthorized. Please login again.");
         } else {
-          setError((await res.text()) || "Failed to submit");
+          const errorText = await res.text();
+          console.error("Server error response:", errorText);
+          setError(errorText || "Failed to submit");
         }
         setLoading(false);
         return;
       }
 
-      // --- PDF handling here ---
+      // PDF handling
       const blob = await res.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       window.open(blobUrl, "_blank");
@@ -387,6 +419,7 @@ export default function OKTBPage() {
         "OKTB Document generated successfully! PDF should open/download automatically.",
       );
     } catch (err: any) {
+      console.error("Error submitting form:", err);
       setError(err.message || "An error occurred");
     }
     setLoading(false);
