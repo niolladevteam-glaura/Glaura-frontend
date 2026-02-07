@@ -361,11 +361,12 @@ export default function VendorDocumentsPage() {
       const isUdith = currentUser?.email === "udith@greeklanka.com";
       const isAmal = currentUser?.email === "amal@greeklanka.com";
       const payload: any = { vendorID: doc.vendorID };
+      // Toggle rejection/approval for each approver
       if (isUdith) {
-        payload.approved_by_udith = "rejected";
+        payload.approved_by_udith = !doc.approved_by_udith;
         payload.approved_by_amal = doc.approved_by_amal;
       } else if (isAmal) {
-        payload.approved_by_amal = "rejected";
+        payload.approved_by_amal = !doc.approved_by_amal;
         payload.approved_by_udith = doc.approved_by_udith;
       }
       const res = await fetch(
@@ -381,7 +382,7 @@ export default function VendorDocumentsPage() {
       );
       const data = await res.json();
       if (data.success) {
-        toast.error("Document rejected!");
+        toast.success("Document status updated!");
         fetchDocuments();
       } else {
         toast.error(data.message || "Rejection failed.");
@@ -757,7 +758,8 @@ export default function VendorDocumentsPage() {
                               >
                                 {doc.status === "partially_approved"
                                   ? "Partially Approved"
-                                  : doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                                  : doc.status.charAt(0).toUpperCase() +
+                                    doc.status.slice(1)}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -792,7 +794,6 @@ export default function VendorDocumentsPage() {
                                       variant="outline"
                                       size="sm"
                                       onClick={() => handleReject(doc)}
-                                      disabled={doc.status === "rejected"}
                                       className="text-purple-700 border-purple-200"
                                       title="Reject"
                                     >
