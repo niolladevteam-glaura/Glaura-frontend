@@ -247,6 +247,7 @@ const ALL_CURRENCIES = [
 ];
 
 export default function PdaGeneratePage() {
+    const [jobId, setJobId] = useState("");
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -483,6 +484,7 @@ export default function PdaGeneratePage() {
 
     const payload = {
       date,
+      jobID: jobId,
       ClientName,
       ClientAddress,
       ClientRefNo,
@@ -727,6 +729,15 @@ export default function PdaGeneratePage() {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1 text-sm font-medium">Job ID</label>
+                  <Input
+                    value={jobId}
+                    onChange={(e) => setJobId(e.target.value)}
+                    placeholder="GLPC-YYYY-XXXX-XXX"
+                    required
+                  />
+                </div>
                 <div>
                   <label className="block mb-1 text-sm font-medium">Date</label>
                   <DatePicker
