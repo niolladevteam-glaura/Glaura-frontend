@@ -361,12 +361,12 @@ export default function VendorDocumentsPage() {
       const isUdith = currentUser?.email === "udith@greeklanka.com";
       const isAmal = currentUser?.email === "amal@greeklanka.com";
       const payload: any = { vendorID: doc.vendorID };
-      // Toggle rejection/approval for each approver
+      // Explicitly set rejection for each approver
       if (isUdith) {
-        payload.approved_by_udith = !doc.approved_by_udith;
+        payload.approved_by_udith = "rejected";
         payload.approved_by_amal = doc.approved_by_amal;
       } else if (isAmal) {
-        payload.approved_by_amal = !doc.approved_by_amal;
+        payload.approved_by_amal = "rejected";
         payload.approved_by_udith = doc.approved_by_udith;
       }
       const res = await fetch(
