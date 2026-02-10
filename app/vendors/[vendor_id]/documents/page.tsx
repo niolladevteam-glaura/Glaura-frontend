@@ -83,7 +83,7 @@ interface VendorStatus {
   id: number;
   status_id: string;
   vendor_id: string;
-  status: boolean;
+  status: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -635,19 +635,22 @@ export default function VendorDocumentsPage() {
                         </div>
                       </>
                     )}
-                    <div className="space-y-1">
+                    {/* <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Status</p>
                       <Badge
                         variant="outline"
                         className={
-                          vendor.vendorStatus?.status
+                          vendor.vendorStatus?.status?.toLowerCase() ===
+                          "active"
                             ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300"
                             : "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700"
                         }
                       >
-                        {vendor.vendorStatus?.status ? "Active" : "Pending"}
+                        {vendor.vendorStatus?.status?.toLowerCase() === "active"
+                          ? "Active"
+                          : "Pending"}
                       </Badge>
-                    </div>
+                    </div> */}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
