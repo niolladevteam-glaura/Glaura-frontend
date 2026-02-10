@@ -371,12 +371,7 @@ export default function VesselManagement() {
 
   const handleAddVessel = async () => {
     try {
-      if (!newVessel.sscecIssued) {
-        toast.error("Validation Error", {
-          description: "Please enter the SSCEC Issued Date.",
-        });
-        return;
-      }
+      // SSCEC Issued Date is now optional; no validation required
       const imoExists = vessels.some((v) => v.imo === newVessel.imo);
       if (imoExists) {
         toast.error("Duplicate IMO", {
@@ -389,11 +384,12 @@ export default function VesselManagement() {
       const expiryISO = calcSSCECExpiryISO(newVessel.sscecIssued);
       const issuedISO = formatDateToISO(newVessel.sscecIssued);
 
+      // Only SSCEC_issued and SSCEC_expires should be sent as null if empty
       const vesselData = {
         vessel_name: newVessel.name.toUpperCase(),
         imo_number: newVessel.imo,
-        SSCEC_issued: issuedISO, // always yyyy-mm-dd
-        SSCEC_expires: expiryISO,
+        SSCEC_issued: issuedISO === "" ? null : issuedISO,
+        SSCEC_expires: expiryISO === "" ? null : expiryISO,
         company: newVessel.owner,
         vessel_type: newVessel.vesselType.toUpperCase(),
         flag: newVessel.flag.toUpperCase(),
@@ -847,7 +843,7 @@ export default function VesselManagement() {
                       </div>
                       {/* SSCEC Issued */}
                       <div className="space-y-2">
-                        <Label htmlFor="sscecIssued">SSCEC Issued Date *</Label>
+                        <Label htmlFor="sscecIssued">SSCEC Issued Date</Label>
                         <DatePicker
                           id="sscecIssued"
                           selected={toDateObj(newVessel.sscecIssued)}
@@ -901,7 +897,9 @@ export default function VesselManagement() {
                   </Button>
                   <Button
                     type="submit"
-                    onClick={handleAddVessel}
+                    onClick={async () => {
+                      await handleAddVessel();
+                    }}
                     className="w-full sm:w-auto"
                   >
                     Save Vessel
@@ -1233,7 +1231,7 @@ export default function VesselManagement() {
                       <h3 className="text-lg font-medium">Certifications</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label>SSCEC Issued Date *</Label>
+                          <Label>SSCEC Issued Date</Label>
                           <DatePicker
                             selected={
                               toDateObj(
@@ -1292,15 +1290,20 @@ export default function VesselManagement() {
                       onClick={async () => {
                         try {
                           if (vesselToEdit) {
+                            const sscecIssued = vesselToEdit.sscecExpiry
+                              ? getIssuedFromExpiry(vesselToEdit.sscecExpiry)
+                              : null;
+                            const sscecExpiry =
+                              vesselToEdit.sscecExpiry || null;
                             const vesselData = {
                               vessel_name: vesselToEdit.name.toUpperCase(),
                               imo_number: vesselToEdit.imo,
-                              SSCEC_expires: formatDateToISO(
-                                vesselToEdit.sscecExpiry,
-                              ),
-                              SSCEC_issued: formatDateToISO(
-                                getIssuedFromExpiry(vesselToEdit.sscecExpiry),
-                              ),
+                              SSCEC_expires: sscecExpiry
+                                ? formatDateToISO(sscecExpiry)
+                                : null,
+                              SSCEC_issued: sscecIssued
+                                ? formatDateToISO(sscecIssued)
+                                : null,
                               company: vesselToEdit.owner,
                               vessel_type:
                                 vesselToEdit.vesselType.toUpperCase(),
@@ -1313,7 +1316,22 @@ export default function VesselManagement() {
                               nrt: vesselToEdit.nrt,
                               p_and_i_club: vesselToEdit.piClub,
                             };
-                            await updateVessel(vesselToEdit.id, vesselData);
+                            // Only SSCEC_issued and SSCEC_expires should be sent as null if empty
+                            const vesselDataFinal = {
+                              ...vesselData,
+                              SSCEC_issued:
+                                vesselData.SSCEC_issued === ""
+                                  ? null
+                                  : vesselData.SSCEC_issued,
+                              SSCEC_expires:
+                                vesselData.SSCEC_expires === ""
+                                  ? null
+                                  : vesselData.SSCEC_expires,
+                            };
+                            await updateVessel(
+                              vesselToEdit.id,
+                              vesselDataFinal,
+                            );
                             setVessels(
                               vessels.map((v) =>
                                 v.id === vesselToEdit.id
