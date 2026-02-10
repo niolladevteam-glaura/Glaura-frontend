@@ -462,7 +462,7 @@ export default function Dashboard() {
                 Access Level: {user?.accessLevel ?? ""}
               </Badge>
               <h1 className="text-3xl font-bold mb-2">
-                {isFirstLogin ? "Welcome" : "Welcome back"},{" "}
+                {isFirstLogin ? "Welcome to GLAURA" : "Welcome back"},{" "}
                 {currentUser?.name ?? ""}
               </h1>
               <p className="text-white/90 text-lg mb-6 max-w-2xl">
