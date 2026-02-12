@@ -121,6 +121,9 @@ function getStatusBadgeColor(status: string) {
     case "partially_approved":
     case "Partially Approved":
       return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700";
+    case "partially_rejected":
+    case "Partially Rejected":
+      return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:border-purple-700";
     case "Expired":
       return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700";
     case "pending":
@@ -635,22 +638,6 @@ export default function VendorDocumentsPage() {
                         </div>
                       </>
                     )}
-                    {/* <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Status</p>
-                      <Badge
-                        variant="outline"
-                        className={
-                          vendor.vendorStatus?.status?.toLowerCase() ===
-                          "active"
-                            ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300"
-                            : "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700"
-                        }
-                      >
-                        {vendor.vendorStatus?.status?.toLowerCase() === "active"
-                          ? "Active"
-                          : "Pending"}
-                      </Badge>
-                    </div> */}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -761,8 +748,10 @@ export default function VendorDocumentsPage() {
                               >
                                 {doc.status === "partially_approved"
                                   ? "Partially Approved"
-                                  : doc.status.charAt(0).toUpperCase() +
-                                    doc.status.slice(1)}
+                                  : doc.status === "partially_rejected"
+                                    ? "Partially Rejected"
+                                    : doc.status.charAt(0).toUpperCase() +
+                                      doc.status.slice(1)}
                               </Badge>
                             </TableCell>
                             <TableCell>
