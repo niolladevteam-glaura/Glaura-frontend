@@ -247,7 +247,7 @@ const ALL_CURRENCIES = [
 ];
 
 export default function PdaGeneratePage() {
-    const [jobId, setJobId] = useState("");
+  const [jobId, setJobId] = useState("");
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -730,7 +730,9 @@ export default function PdaGeneratePage() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1 text-sm font-medium">Job ID</label>
+                  <label className="block mb-1 text-sm font-medium">
+                    Job ID
+                  </label>
                   <Input
                     value={jobId}
                     onChange={(e) => setJobId(e.target.value)}
@@ -767,7 +769,7 @@ export default function PdaGeneratePage() {
                     required
                   />
                 </div>
-                <div>
+                {/* <div>
                   <label className="block mb-1 text-sm font-medium">
                     Client Reference No
                   </label>
@@ -776,7 +778,7 @@ export default function PdaGeneratePage() {
                     onChange={(e) => setClientRefNo(e.target.value)}
                     required
                   />
-                </div>
+                </div> */}
                 <div>
                   <label className="block mb-1 text-sm font-medium">
                     Agent Name
