@@ -46,6 +46,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
+import TimePicker from "@/components/ui/TimePicker";
 
 /* ---------------- Schema ---------------- */
 
@@ -220,7 +221,7 @@ function splitDestination(dest?: string): { from: string; to: string } {
 }
 
 function normalizeFlights(
-  flights?: any[]
+  flights?: any[],
 ): z.infer<typeof flightInputSchema>[] {
   return (flights ?? []).map((f) => {
     let from = typeof f?.from === "string" ? f.from : "";
@@ -268,7 +269,7 @@ interface CrewChangesDialogProps {
 
   onSave: (
     data: CrewChangesPayload,
-    meta: { id?: string | null }
+    meta: { id?: string | null },
   ) => boolean | Promise<boolean>;
 }
 
@@ -356,7 +357,7 @@ export default function CrewChangesDialog({
               arrivalTime: f.arriveTime ?? "",
               destination: f.destination ?? "",
             }))
-          : []
+          : [],
       ),
     });
   }, [selectedId, existingRecords, initialValues, reset]);
@@ -369,7 +370,7 @@ export default function CrewChangesDialog({
 
   const selectedRec = React.useMemo(
     () => existingRecords.find((r) => r.id === selectedId),
-    [existingRecords, selectedId]
+    [existingRecords, selectedId],
   );
 
   return (
@@ -482,7 +483,7 @@ export default function CrewChangesDialog({
                       <div className="mt-0.5 text-[11px]">
                         {field.value
                           ? `${toDisplay(field.value)} (${weekday(
-                              field.value
+                              field.value,
                             )})`
                           : ""}
                       </div>
@@ -569,7 +570,7 @@ export default function CrewChangesDialog({
                           <Input
                             placeholder="Nationality"
                             {...register(
-                              `crewList.${idx}.nationality` as const
+                              `crewList.${idx}.nationality` as const,
                             )}
                             className="h-10"
                           />
@@ -674,7 +675,7 @@ export default function CrewChangesDialog({
                             <Input
                               placeholder="e.g. QR654"
                               {...register(
-                                `flights.${idx}.flightNumber` as const
+                                `flights.${idx}.flightNumber` as const,
                               )}
                               className="h-9"
                             />
@@ -684,7 +685,7 @@ export default function CrewChangesDialog({
                             <Input
                               placeholder="Flight name"
                               {...register(
-                                `flights.${idx}.flightName` as const
+                                `flights.${idx}.flightName` as const,
                               )}
                               className="h-9"
                             />
@@ -704,14 +705,16 @@ export default function CrewChangesDialog({
                           </TableCell>
 
                           <TableCell className="py-2">
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              placeholder="HH:MM"
-                              {...register(
-                                `flights.${idx}.departureTime` as const
+                            <Controller
+                              control={control}
+                              name={`flights.${idx}.departureTime` as const}
+                              render={({ field }) => (
+                                <TimePicker
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  placeholder="HH:MM"
+                                />
                               )}
-                              className="h-9 text-center"
                             />
                             {errors.flights?.[idx]?.departureTime && (
                               <p className="text-[10px] text-destructive mt-1">
@@ -734,14 +737,16 @@ export default function CrewChangesDialog({
                           </TableCell>
 
                           <TableCell className="py-2">
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              placeholder="HH:MM"
-                              {...register(
-                                `flights.${idx}.arrivalTime` as const
+                            <Controller
+                              control={control}
+                              name={`flights.${idx}.arrivalTime` as const}
+                              render={({ field }) => (
+                                <TimePicker
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  placeholder="HH:MM"
+                                />
                               )}
-                              className="h-9 text-center"
                             />
                             {errors.flights?.[idx]?.arrivalTime && (
                               <p className="text-[10px] text-destructive mt-1">
@@ -821,12 +826,16 @@ export default function CrewChangesDialog({
                             />
                           )}
                         />
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="HH:MM"
-                          {...register(`flights.${idx}.departureTime` as const)}
-                          className="h-10 text-center"
+                        <Controller
+                          control={control}
+                          name={`flights.${idx}.departureTime` as const}
+                          render={({ field }) => (
+                            <TimePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="HH:MM"
+                            />
+                          )}
                         />
                         <Controller
                           control={control}
@@ -838,12 +847,16 @@ export default function CrewChangesDialog({
                             />
                           )}
                         />
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="HH:MM"
-                          {...register(`flights.${idx}.arrivalTime` as const)}
-                          className="h-10 text-center"
+                        <Controller
+                          control={control}
+                          name={`flights.${idx}.arrivalTime` as const}
+                          render={({ field }) => (
+                            <TimePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="HH:MM"
+                            />
+                          )}
                         />
                         <Input
                           placeholder="From"

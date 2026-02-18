@@ -149,6 +149,8 @@ export default function PortCallServicesPage() {
   const [selectedVendorId, setSelectedVendorId] = useState("");
   const [searchService, setSearchService] = useState("");
   const [searchVendor, setSearchVendor] = useState("");
+  const [serviceFocused, setServiceFocused] = useState(false);
+  const [vendorFocused, setVendorFocused] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // map: serviceId -> deleting flag (so we can show spinner on the exact row)
@@ -181,13 +183,13 @@ export default function PortCallServicesPage() {
 
   const isShipSparesService = (name: string) =>
     SHIP_SPARES_NAMES.includes(
-      name.trim().toLowerCase() as (typeof SHIP_SPARES_NAMES)[number]
+      name.trim().toLowerCase() as (typeof SHIP_SPARES_NAMES)[number],
     );
 
   const [shipDialogOpen, setShipDialogOpen] = useState(false);
   const [shipDialogPCS, setShipDialogPCS] = useState<PCS | null>(null);
   const [shipInitial, setShipInitial] = useState<ShipSparesForm | undefined>(
-    undefined
+    undefined,
   );
 
   // ───────────────── open dialog + preload existing ─────────────────
@@ -214,7 +216,7 @@ export default function PortCallServicesPage() {
         const relevant = (json.data as ApiSpare[]).filter(
           (s) =>
             s.vessel === portCall.vessel_name &&
-            String(s.imo) === String(portCall.vessel_imo)
+            String(s.imo) === String(portCall.vessel_imo),
         );
         setShipInitial(fromApiToForm(relevant));
       }
@@ -257,7 +259,7 @@ export default function PortCallServicesPage() {
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok || data?.success === false) {
           throw new Error(
-            data?.message || `Create failed (HTTP ${resp.status})`
+            data?.message || `Create failed (HTTP ${resp.status})`,
           );
         }
       }
@@ -276,7 +278,7 @@ export default function PortCallServicesPage() {
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok || data?.success === false) {
           throw new Error(
-            data?.message || `Update failed (HTTP ${resp.status})`
+            data?.message || `Update failed (HTTP ${resp.status})`,
           );
         }
       }
@@ -287,8 +289,8 @@ export default function PortCallServicesPage() {
           toCreate.length && toUpdate.length
             ? "Created and updated ship spares."
             : toCreate.length
-            ? "Ship spares created."
-            : "Ship spares updated.",
+              ? "Ship spares created."
+              : "Ship spares updated.",
       });
     } catch (e: any) {
       toast({
@@ -371,7 +373,7 @@ export default function PortCallServicesPage() {
   function toApiCreateBody(
     items: ShipSparesForm["items"],
     vessel: string,
-    imo: string
+    imo: string,
   ) {
     return items.map((i) => ({
       iteamName: i.itemName, // API field name is intentionally misspelled
@@ -388,7 +390,7 @@ export default function PortCallServicesPage() {
   function toApiUpdateBody(
     items: ShipSparesForm["items"],
     vessel: string,
-    imo: string
+    imo: string,
   ) {
     return items.map((i) => ({
       id: i.id,
@@ -504,14 +506,14 @@ export default function PortCallServicesPage() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
         const headersData = await headersRes.json();
         const headers: ServiceTaskHeader[] = Array.isArray(headersData.data)
           ? headersData.data
           : [];
         const completed = headers.filter(
-          (h: any) => h.status === true || h.status === "true"
+          (h: any) => h.status === true || h.status === "true",
         ).length;
         stats[pcs.id] = { total: headers.length, completed };
 
@@ -526,8 +528,8 @@ export default function PortCallServicesPage() {
           });
           setPCSList((oldList) =>
             oldList.map((item) =>
-              item.id === pcs.id ? { ...item, status: true } : item
-            )
+              item.id === pcs.id ? { ...item, status: true } : item,
+            ),
           );
         }
       }
@@ -541,14 +543,16 @@ export default function PortCallServicesPage() {
     (s): s is Service =>
       !!s &&
       typeof s.service_name === "string" &&
-      s.service_name.toLowerCase().includes((searchService ?? "").toLowerCase())
+      s.service_name
+        .toLowerCase()
+        .includes((searchService ?? "").toLowerCase()),
   );
   const filteredVendors = (vendors ?? []).filter(
     (v: any): v is Vendor =>
       !!v &&
       typeof v.name === "string" &&
       v.name.toLowerCase().includes((searchVendor ?? "").toLowerCase()) &&
-      v.vendorStatus?.status === true
+      v.vendorStatus?.status === true,
   );
 
   const handleAddService = async () => {
@@ -565,10 +569,10 @@ export default function PortCallServicesPage() {
     }
 
     const selectedService = (services as Service[]).find(
-      (s) => s?.service_id === selectedServiceId
+      (s) => s?.service_id === selectedServiceId,
     );
     const selectedVendor = (vendors as Vendor[]).find(
-      (v) => v?.vendor_id === selectedVendorId
+      (v) => v?.vendor_id === selectedVendorId,
     );
     if (!selectedService || !selectedVendor) {
       toast({
@@ -650,7 +654,7 @@ export default function PortCallServicesPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to delete service");
 
@@ -730,7 +734,7 @@ export default function PortCallServicesPage() {
   // CREATE / UPDATE
   const handleCrewChangeSave = async (
     data: CrewChangesPayload,
-    meta: { id?: string | null }
+    meta: { id?: string | null },
   ): Promise<boolean> => {
     const token = getTokenOrRedirect();
     if (!token) return false;
@@ -785,7 +789,7 @@ export default function PortCallServicesPage() {
         body: JSON.stringify(body),
       });
 
-      const respData = await resp.json().catch(() => ({} as any));
+      const respData = await resp.json().catch(() => ({}) as any);
 
       if (!resp.ok || respData?.success === false) {
         toast({
@@ -840,7 +844,7 @@ export default function PortCallServicesPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const json = await resp.json().catch(() => ({} as any));
+      const json = await resp.json().catch(() => ({}) as any);
       if (!resp.ok || json?.success === false) {
         toast({
           title: "Error",
@@ -964,24 +968,24 @@ export default function PortCallServicesPage() {
                     const editOnClick = isCrewChanges
                       ? () => openCrewChangeDialog(pcs)
                       : isShipSpares
-                      ? () => openShipSparesDialog(pcs)
-                      : undefined;
+                        ? () => openShipSparesDialog(pcs)
+                        : undefined;
 
                     const editClass = isCrewChanges
                       ? "bg-green-100 hover:bg-green-200"
                       : isShipSpares
-                      ? "bg-amber-100 hover:bg-amber-200"
-                      : "bg-gray-200 cursor-not-allowed";
+                        ? "bg-amber-100 hover:bg-amber-200"
+                        : "bg-gray-200 cursor-not-allowed";
                     const editTitle = isCrewChanges
                       ? "Edit Crew Changes"
                       : isShipSpares
-                      ? "Enter Ship Spares details"
-                      : "Edit not available";
+                        ? "Enter Ship Spares details"
+                        : "Edit not available";
                     const editIconClass = isCrewChanges
                       ? "text-green-700"
                       : isShipSpares
-                      ? "text-amber-700"
-                      : "text-gray-400";
+                        ? "text-amber-700"
+                        : "text-gray-400";
 
                     return (
                       <TableRow
@@ -1064,7 +1068,7 @@ export default function PortCallServicesPage() {
         </Card>
       </div>
 
-      {/* Add Service Dialog (unchanged) */}
+      {/* Add Service Dialog - Improved with searchable combobox */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
           <DialogHeader>
@@ -1073,70 +1077,103 @@ export default function PortCallServicesPage() {
               Assign a new service to this port call
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Service</Label>
-              <Input
-                placeholder="Search service..."
-                value={searchService}
-                onChange={(e) => setSearchService(e.target.value)}
-                className="mb-2"
-              />
-              <Select
-                value={selectedServiceId}
-                onValueChange={setSelectedServiceId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a service" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredServices.map((s) => (
-                    <SelectItem key={s.service_id} value={s.service_id}>
-                      {s.service_name}
-                    </SelectItem>
-                  ))}
-                  {filteredServices.length === 0 && (
-                    <SelectItem value="no-services" disabled>
-                      No services found
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+          <div className="space-y-6">
+            {/* Service Selection with Auto-suggest */}
+            <div className="space-y-2">
+              <Label htmlFor="service-search">Service *</Label>
+              <div className="relative">
+                <Input
+                  id="service-search"
+                  placeholder="Click to select service..."
+                  value={searchService}
+                  onChange={(e) => setSearchService(e.target.value)}
+                  onFocus={() => setServiceFocused(true)}
+                  onBlur={() => setTimeout(() => setServiceFocused(false), 200)}
+                  className="pr-3"
+                />
+                {serviceFocused && filteredServices.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-background shadow-lg z-50 max-h-[220px] overflow-y-auto">
+                    {filteredServices.map((s) => (
+                      <button
+                        key={s.service_id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedServiceId(s.service_id);
+                          setSearchService(s.service_name);
+                          setServiceFocused(false);
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:outline-none border-b last:border-0 transition-colors text-sm"
+                      >
+                        <div className="font-medium">{s.service_name}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {serviceFocused && filteredServices.length === 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-background shadow-lg z-50 p-3 text-sm text-muted-foreground">
+                    No services found
+                  </div>
+                )}
+              </div>
+              {selectedServiceId && (
+                <div className="text-xs text-green-600">✓ Service selected</div>
+              )}
             </div>
-            <div>
-              <Label>Vendor</Label>
-              <Input
-                placeholder="Search vendor..."
-                value={searchVendor}
-                onChange={(e) => setSearchVendor(e.target.value)}
-                className="mb-2"
-              />
-              <Select
-                value={selectedVendorId}
-                onValueChange={setSelectedVendorId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a vendor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredVendors.map((v) => (
-                    <SelectItem key={v.vendor_id} value={v.vendor_id}>
-                      {v.name}
-                    </SelectItem>
-                  ))}
-                  {filteredVendors.length === 0 && (
-                    <SelectItem value="no-vendors" disabled>
-                      No vendors found
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+
+            {/* Vendor Selection with Auto-suggest */}
+            <div className="space-y-2">
+              <Label htmlFor="vendor-search">Vendor *</Label>
+              <div className="relative">
+                <Input
+                  id="vendor-search"
+                  placeholder="Click to select vendor..."
+                  value={searchVendor}
+                  onChange={(e) => setSearchVendor(e.target.value)}
+                  onFocus={() => setVendorFocused(true)}
+                  onBlur={() => setTimeout(() => setVendorFocused(false), 200)}
+                  className="pr-3"
+                />
+                {vendorFocused && filteredVendors.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-background shadow-lg z-50 max-h-[220px] overflow-y-auto">
+                    {filteredVendors.map((v) => (
+                      <button
+                        key={v.vendor_id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedVendorId(v.vendor_id);
+                          setSearchVendor(v.name);
+                          setVendorFocused(false);
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:outline-none border-b last:border-0 transition-colors text-sm"
+                      >
+                        <div className="font-medium">{v.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {vendorFocused && filteredVendors.length === 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-background shadow-lg z-50 p-3 text-sm text-muted-foreground">
+                    No vendors available
+                  </div>
+                )}
+              </div>
+              {selectedVendorId && (
+                <div className="text-xs text-green-600">✓ Vendor selected</div>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setOpenDialog(false)}
+              onClick={() => {
+                setOpenDialog(false);
+                setSearchService("");
+                setSearchVendor("");
+                setSelectedServiceId("");
+                setSelectedVendorId("");
+                setServiceFocused(false);
+                setVendorFocused(false);
+              }}
               disabled={loading}
             >
               Cancel
