@@ -1628,7 +1628,9 @@ export default function VesselManagement() {
                           <Calendar className="h-4 w-4 text-gray-400" />
                           <span className="text-sm text-gray-600 dark:text-gray-300">
                             SSCEC Expires:{" "}
-                            {vessel.sscecExpiry ? formatSSCECExpiry(vessel.sscecExpiry) : "N/A"}
+                            {vessel.sscecExpiry
+                              ? formatSSCECExpiry(vessel.sscecExpiry)
+                              : "N/A"}
                           </span>
                         </div>
                         {/* <div className="flex items-center space-x-2">
