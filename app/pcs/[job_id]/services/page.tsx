@@ -552,7 +552,8 @@ export default function PortCallServicesPage() {
       !!v &&
       typeof v.name === "string" &&
       v.name.toLowerCase().includes((searchVendor ?? "").toLowerCase()) &&
-      v.vendorStatus?.status === true,
+      (v.vendorStatus?.status === "approved" ||
+        v.vendorStatus?.status === true),
   );
 
   const handleAddService = async () => {
