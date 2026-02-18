@@ -252,7 +252,7 @@ export default function UserManagement() {
               dob: apiUser.dob || "",
               profilePic: apiUser.profile_picture || "",
             };
-          })
+          }),
         );
 
         setUsers(transformedUsers);
@@ -276,19 +276,19 @@ export default function UserManagement() {
           user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           user?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user?.role?.toLowerCase().includes(searchTerm.toLowerCase())
+          user?.role?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
     if (departmentFilter !== "all") {
       filtered = filtered.filter(
-        (user) => user?.department?.toLowerCase() === departmentFilter
+        (user) => user?.department?.toLowerCase() === departmentFilter,
       );
     }
 
     if (statusFilter !== "all") {
       filtered = filtered.filter((user) =>
-        statusFilter === "active" ? user?.isActive : !user?.isActive
+        statusFilter === "active" ? user?.isActive : !user?.isActive,
       );
     }
 
@@ -314,7 +314,7 @@ export default function UserManagement() {
       }
 
       setUsers(
-        users.map((u) => (u.id === userId ? { ...u, isActive: newStatus } : u))
+        users.map((u) => (u.id === userId ? { ...u, isActive: newStatus } : u)),
       );
     } catch (error) {
       console.error("Failed to toggle user status:", error);
@@ -367,7 +367,7 @@ export default function UserManagement() {
     try {
       if (!newUser.username || !newUser.name || !newUser.email) {
         alert(
-          "Please fill in all required fields (Username, Full Name, Email)"
+          "Please fill in all required fields (Username, Full Name, Email)",
         );
         return;
       }
@@ -493,7 +493,7 @@ export default function UserManagement() {
       const updatedUsers = users.map((u) =>
         u.id === editingUser.id
           ? { ...editingUser, permissions: editPrivileges }
-          : u
+          : u,
       );
 
       setUsers(updatedUsers);
@@ -505,7 +505,7 @@ export default function UserManagement() {
     } catch (error: any) {
       setErrorDialogMsg(
         error?.message ||
-          (error instanceof Error ? error.message : "Unknown error")
+          (error instanceof Error ? error.message : "Unknown error"),
       );
       setErrorDialogOpen(true);
     }
@@ -522,7 +522,7 @@ export default function UserManagement() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       const data = await res.json();
       if (!data.success || !data.user) throw new Error("User not found");
@@ -558,13 +558,13 @@ export default function UserManagement() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       const accessLevelData = await accessLevelRes.json();
       if (accessLevelData.success && accessLevelData.accessLevel) {
         setSelectedAccessLevel(accessLevelData.accessLevel);
         setEditPrivileges(
-          accessLevelData.accessLevel.Permissions.map((p: any) => p.key)
+          accessLevelData.accessLevel.Permissions.map((p: any) => p.key),
         );
       } else {
         setSelectedAccessLevel(null);
@@ -882,7 +882,7 @@ export default function UserManagement() {
                             setSelectedAccessLevelId(value);
                             setNewUser({ ...newUser, accessLevel: value });
                             const sel = accessLevels.find(
-                              (al: any) => al.id === value
+                              (al: any) => al.id === value,
                             );
                             setSelectedAccessLevel(sel || null);
                           }}
@@ -934,8 +934,8 @@ export default function UserManagement() {
                             {[
                               ...new Set(
                                 selectedAccessLevel.Permissions.map(
-                                  (p: any) => p.module
-                                )
+                                  (p: any) => p.module,
+                                ),
                               ),
                             ].map((module) => (
                               <div key={String(module)} className="py-4">
@@ -944,7 +944,7 @@ export default function UserManagement() {
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                   {selectedAccessLevel.Permissions.filter(
-                                    (p: any) => p.module === module
+                                    (p: any) => p.module === module,
                                   ).map((perm: any) => (
                                     <span
                                       key={perm.id}
@@ -1160,11 +1160,11 @@ export default function UserManagement() {
                           accessLevel: value,
                         });
                         const sel = accessLevels.find(
-                          (al: any) => al.id === value
+                          (al: any) => al.id === value,
                         );
                         setSelectedAccessLevel(sel || null);
                         setEditPrivileges(
-                          sel?.Permissions?.map((p: any) => p.key) || []
+                          sel?.Permissions?.map((p: any) => p.key) || [],
                         );
                       }}
                       disabled={accessLevelLoading}
@@ -1213,8 +1213,8 @@ export default function UserManagement() {
                       [
                         ...new Set(
                           selectedAccessLevel.Permissions.map(
-                            (p: any) => p.module
-                          )
+                            (p: any) => p.module,
+                          ),
                         ),
                       ].map((module) => (
                         <div key={String(module)} className="space-y-3">
@@ -1223,7 +1223,7 @@ export default function UserManagement() {
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {selectedAccessLevel.Permissions.filter(
-                              (p: any) => p.module === module
+                              (p: any) => p.module === module,
                             ).map((perm: any) => (
                               <div
                                 key={perm.key}
@@ -1423,12 +1423,12 @@ export default function UserManagement() {
                         Created: {new Date(user.createdAt).toLocaleDateString()}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    {/* <div className="flex items-center space-x-2">
                       <Shield className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-600 dark:text-gray-300">
                         Permissions: {user.permissions.length}
                       </span>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </CardContent>
@@ -1539,7 +1539,7 @@ export default function UserManagement() {
                             <p>
                               {selectedUser?.dob
                                 ? new Date(
-                                    selectedUser.dob
+                                    selectedUser.dob,
                                   ).toLocaleDateString()
                                 : "Not specified"}
                             </p>
@@ -1565,7 +1565,7 @@ export default function UserManagement() {
                               <p className="text-sm text-gray-500 dark:text-gray-400">
                                 {selectedUser.lastLogin
                                   ? new Date(
-                                      selectedUser.lastLogin
+                                      selectedUser.lastLogin,
                                     ).toLocaleString()
                                   : "Never"}
                               </p>
@@ -1577,7 +1577,7 @@ export default function UserManagement() {
                               <p className="font-medium">Account Created</p>
                               <p className="text-sm text-gray-500 dark:text-gray-400">
                                 {new Date(
-                                  selectedUser.createdAt
+                                  selectedUser.createdAt,
                                 ).toLocaleString()}
                               </p>
                             </div>
