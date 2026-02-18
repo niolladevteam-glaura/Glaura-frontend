@@ -85,14 +85,23 @@ function isTaskCompleted(task: ServiceTask) {
 }
 
 function compareCompletedTasks(a: ServiceTask, b: ServiceTask) {
-  const dateA = a.compleated_date
-    ? new Date(a.compleated_date.replace(" ", "T"))
-    : new Date(0);
-  const dateB = b.compleated_date
-    ? new Date(b.compleated_date.replace(" ", "T"))
-    : new Date(0);
-  return dateB.getTime() - dateA.getTime();
+  // Handle missing date/time
+  if (!a.compleated_date || !a.compleated_time) return 1;
+  if (!b.compleated_date || !b.compleated_time) return -1;
+
+  // Parse dates more robustly
+  // Extract date from ISO format "2026-02-18T12:27:08.000Z" -> "2026-02-18"
+  const dateOnlyA = a.compleated_date.split("T")[0];
+  const dateOnlyB = b.compleated_date.split("T")[0];
+
+  // Create full datetime strings
+  const dateTimeA = new Date(`${dateOnlyA}T${a.compleated_time}`);
+  const dateTimeB = new Date(`${dateOnlyB}T${b.compleated_time}`);
+
+  // Sort descending (newest first)
+  return dateTimeB.getTime() - dateTimeA.getTime();
 }
+
 function comparePendingTasks(a: ServiceTask, b: ServiceTask) {
   const dateA = a.createdAt
     ? new Date(a.createdAt.replace(" ", "T"))
@@ -116,7 +125,7 @@ export default function PCSTasksPage() {
   const [newTaskName, setNewTaskName] = useState("");
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [completingTask, setCompletingTask] = useState<ServiceTask | null>(
-    null
+    null,
   );
   const [completeDate, setCompleteDate] = useState("");
   const [completeTime, setCompleteTime] = useState("");
@@ -202,7 +211,7 @@ export default function PCSTasksPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (tasksRes.status === 401) {
@@ -229,7 +238,7 @@ export default function PCSTasksPage() {
         .filter(isTaskCompleted)
         .sort(compareCompletedTasks);
 
-      const sortedTasks = [...pendingTasks, ...completedTasks];
+      const sortedTasks = [...completedTasks, ...pendingTasks];
 
       setTasks(sortedTasks);
 
@@ -472,7 +481,7 @@ export default function PCSTasksPage() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ task_name: editTaskName }),
-        }
+        },
       );
       const data = await response.json();
       if (response.ok || data.success) {
@@ -638,7 +647,7 @@ export default function PCSTasksPage() {
                               {task.compleated_date
                                 ? format(
                                     parseISO(task.compleated_date),
-                                    "MM.dd.yyyy"
+                                    "dd.MM.yyyy",
                                   )
                                 : "-"}
                             </div>
