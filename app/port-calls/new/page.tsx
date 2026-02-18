@@ -252,7 +252,7 @@ interface VendorStatus {
   id: number;
   status_id: string;
   vendor_id: string;
-  status: boolean;
+  status: string | boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -263,7 +263,7 @@ interface Vendor {
   name: string;
   category: string;
   vendorServices?: VendorService[];
-  vendorStatus?: VendorStatus;
+  vendorStatus?: VendorStatus | VendorStatus[];
 }
 
 export default function NewPortCall() {
@@ -2299,8 +2299,17 @@ export default function NewPortCall() {
                 <SelectContent>
                   {vendors
                     .filter((vendor) => {
-                      // Filter vendors that are approved (status === true)
-                      const isApproved = vendor.vendorStatus?.status === true;
+                      // Filter vendors that are approved (string or boolean, object or array)
+                      const isApproved = Array.isArray(vendor.vendorStatus)
+                        ? vendor.vendorStatus.some((status) =>
+                            typeof status.status === "string"
+                              ? status.status.toLowerCase() === "approved"
+                              : status.status === true,
+                          )
+                        : typeof vendor.vendorStatus?.status === "string"
+                          ? vendor.vendorStatus.status.toLowerCase() ===
+                            "approved"
+                          : vendor.vendorStatus?.status === true;
 
                       // Filter vendors that provide the current service
                       const providesService = vendor.vendorServices?.some(
