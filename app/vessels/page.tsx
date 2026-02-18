@@ -88,7 +88,7 @@ interface Vessel {
   callSign: string;
   sscecExpiry: string;
   sscecIssued: string;
-  sscecStatus:
+  sscecStatus?:
     | "valid"
     | "expiring"
     | "expired"
@@ -290,7 +290,7 @@ export default function VesselManagement() {
           callSign: (vessel.call_sign || vessel.callSign || "").toUpperCase(),
           sscecExpiry,
           sscecIssued,
-          sscecStatus: vessel.sscec_status || calculateSSCECStatus(sscecExpiry),
+          sscecStatus: vessel.sscec_status,
           owner: vessel.company || vessel.owner,
           manager: vessel.manager || vessel.company || vessel.owner,
           piClub: vessel.p_and_i_club || vessel.piClub,
@@ -354,9 +354,9 @@ export default function VesselManagement() {
   // Helper function to calculate SSCEC status
   const calculateSSCECStatus = (
     expiryDate: string,
-  ): "Valid" | "Expiring" | "Expired" => {
+  ): "Valid" | "Expiring" | "Expired" | undefined => {
     let [dd, mm, yyyy] = expiryDate.split(".");
-    if (!dd || !mm || !yyyy) return "Expired";
+    if (!dd || !mm || !yyyy) return undefined;
     const expiry = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     const today = new Date();
     const daysUntilExpiry = Math.floor(
@@ -461,7 +461,7 @@ export default function VesselManagement() {
     if (statusFilter !== "all") {
       filtered = filtered.filter(
         (vessel) =>
-          vessel.sscecStatus.toLowerCase() === statusFilter.toLowerCase(),
+          vessel.sscecStatus?.toLowerCase() === statusFilter.toLowerCase(),
       );
     }
     if (selectedTab !== "all") {
@@ -999,13 +999,15 @@ export default function VesselManagement() {
                         <div>
                           <Label>SSCEC Status</Label>
                           <div className="flex items-center gap-2">
-                            <Badge
-                              className={getSSCECStatusColor(
-                                selectedVessel.sscecStatus,
-                              )}
-                            >
-                              {selectedVessel.sscecStatus}
-                            </Badge>
+                            {selectedVessel.sscecStatus && (
+                              <Badge
+                                className={getSSCECStatusColor(
+                                  selectedVessel.sscecStatus,
+                                )}
+                              >
+                                {selectedVessel.sscecStatus}
+                              </Badge>
+                            )}
                             <Input
                               value={formatSSCECExpiry(
                                 selectedVessel.sscecExpiry,
@@ -1245,7 +1247,6 @@ export default function VesselManagement() {
                               setVesselToEdit({
                                 ...vesselToEdit,
                                 sscecExpiry: expiry,
-                                sscecStatus: calculateSSCECStatus(expiry),
                                 lastUpdated: new Date().toISOString(),
                               });
                             }}
@@ -1338,9 +1339,6 @@ export default function VesselManagement() {
                                   ? {
                                       ...vesselToEdit,
                                       sscecExpiry: vesselToEdit.sscecExpiry,
-                                      sscecStatus: calculateSSCECStatus(
-                                        vesselToEdit.sscecExpiry,
-                                      ),
                                       name: vesselToEdit.name.toUpperCase(),
                                       vesselType:
                                         vesselToEdit.vesselType.toUpperCase(),
@@ -1510,14 +1508,18 @@ export default function VesselManagement() {
                             <Badge variant="outline">
                               {vessel.vesselType.toUpperCase()}
                             </Badge>
-                            <Badge
-                              className={getSSCECStatusColor(
-                                vessel.sscecStatus,
-                              )}
-                            >
-                              {getSSCECIcon(vessel.sscecStatus)}
-                              <span className="ml-1">{vessel.sscecStatus}</span>
-                            </Badge>
+                            {vessel.sscecStatus && (
+                              <Badge
+                                className={getSSCECStatusColor(
+                                  vessel.sscecStatus,
+                                )}
+                              >
+                                {getSSCECIcon(vessel.sscecStatus)}
+                                <span className="ml-1">
+                                  {vessel.sscecStatus}
+                                </span>
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
