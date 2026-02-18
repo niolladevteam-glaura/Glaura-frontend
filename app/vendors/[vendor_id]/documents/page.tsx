@@ -410,7 +410,7 @@ export default function VendorDocumentsPage() {
     }
     setSelectedIds([]);
     fetchDocuments();
-    toast.success(`Approved ${successCount} document(s).`);
+    toast.error(`Approved ${successCount} document(s).`);
   };
 
   const handleBulkReject = async () => {
