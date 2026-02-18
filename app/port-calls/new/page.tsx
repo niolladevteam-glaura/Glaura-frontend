@@ -674,10 +674,10 @@ export default function NewPortCall() {
       }
       return [];
     } catch (error) {
-      toast.error("Error", {
-        description: "Failed to load formality statuses",
-        duration: 3000,
-      });
+      // toast.error("Error", {
+      //   description: "Failed to load formality statuses",
+      //   duration: 3000,
+      // });
       return [];
     }
   };
