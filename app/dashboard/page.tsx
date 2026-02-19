@@ -453,6 +453,12 @@ export default function Dashboard() {
       setIsFirstLogin(!firstLoginFlag);
     }, []);
 
+    // Determine button states based on department
+    const isOperationsDept = user?.department?.toLowerCase() === "operations";
+    const isDisbursementDept =
+      user?.department?.toLowerCase() === "disbursement";
+    const isManagementDept = user?.department?.toLowerCase() === "management";
+
     return (
       <Card className="welcome-card animate-fade-in-up mb-8">
         <div className="relative z-10">
@@ -469,23 +475,47 @@ export default function Dashboard() {
                 The Aura of Excellence in Port Services
               </p>
               <div className="flex gap-4">
-                <Link href="/port-calls">
+                {/* Port Calls Button */}
+                {isOperationsDept || isManagementDept ? (
+                  <Link href="/port-calls">
+                    <Button
+                      variant="secondary"
+                      className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    >
+                      <Ship /> Port Calls
+                    </Button>
+                  </Link>
+                ) : (
                   <Button
                     variant="secondary"
-                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    disabled
+                    className="bg-gray-400/30 border-gray-400/30 text-gray-300 cursor-not-allowed"
                   >
                     <Ship /> Port Calls
                   </Button>
-                </Link>
-                <Link href="/customers">
+                )}
+
+                {/* Customers Button */}
+                {isDisbursementDept || isManagementDept ? (
+                  <Link href="/customers">
+                    <Button
+                      variant="outline"
+                      className="bg-black/20 border-white/30 text-white hover:bg-white/10"
+                    >
+                      <Users />
+                      Customers
+                    </Button>
+                  </Link>
+                ) : (
                   <Button
                     variant="outline"
-                    className="bg-black/20 border-white/30 text-white hover:bg-white/10"
+                    disabled
+                    className="bg-gray-400/30 border-gray-400/30 text-gray-300 cursor-not-allowed"
                   >
                     <Users />
                     Customers
                   </Button>
-                </Link>
+                )}
               </div>
             </div>
             <div className="hidden lg:block">
