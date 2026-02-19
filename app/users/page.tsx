@@ -378,8 +378,7 @@ export default function UserManagement() {
       const lastName = lastNameParts.join(" ");
 
       const userData = {
-        UserName: (newUser.UserName ?? "").trim(), // <-- backend expects this
-        // username: (newUser.UserName ?? "").trim(), // (optional) keep if backend still supports old key
+        username: (newUser.UserName ?? "").trim(), // <-- backend expects this
         first_name: firstName,
         last_name: lastName,
         contact_number: newUser.phoneNumber || "",
