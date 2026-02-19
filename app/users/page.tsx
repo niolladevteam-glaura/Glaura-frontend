@@ -56,7 +56,7 @@ import DatePicker from "@/components/ui/date-picker";
 
 interface User {
   id: string;
-  username: string;
+  UserName?: string;
   name: string;
   email: string;
   role: string;
@@ -81,6 +81,8 @@ interface ApiResponse<T> {
 
 interface ApiUser {
   user_id: string;
+  UserName?: string;
+  username?: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -237,7 +239,7 @@ export default function UserManagement() {
 
             return {
               id: apiUser.user_id,
-              username: apiUser.email.split("@")[0],
+              UserName: (apiUser.UserName ?? apiUser.username ?? "").trim(),
               name: `${apiUser.first_name} ${apiUser.last_name}`,
               email: apiUser.email,
               role: apiUser.role,
@@ -274,7 +276,7 @@ export default function UserManagement() {
       filtered = filtered.filter(
         (user) =>
           user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user?.UserName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           user?.role?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
@@ -342,7 +344,7 @@ export default function UserManagement() {
 
       setSelectedUser({
         id: apiUser.user_id,
-        username: apiUser.email.split("@")[0],
+        UserName: (apiUser.UserName ?? apiUser.username ?? "").trim(),
         name: `${apiUser.first_name} ${apiUser.last_name}`,
         email: apiUser.email,
         role: apiUser.role,
@@ -365,7 +367,7 @@ export default function UserManagement() {
   //  Create User
   const createUser = async () => {
     try {
-      if (!newUser.username || !newUser.name || !newUser.email) {
+      if (!newUser.UserName || !newUser.name || !newUser.email) {
         alert(
           "Please fill in all required fields (Username, Full Name, Email)",
         );
@@ -376,6 +378,8 @@ export default function UserManagement() {
       const lastName = lastNameParts.join(" ");
 
       const userData = {
+        UserName: (newUser.UserName ?? "").trim(), // <-- backend expects this
+        // username: (newUser.UserName ?? "").trim(), // (optional) keep if backend still supports old key
         first_name: firstName,
         last_name: lastName,
         contact_number: newUser.phoneNumber || "",
@@ -383,7 +387,7 @@ export default function UserManagement() {
         email: newUser.email || "",
         password: "TemporaryPassword123!",
         role: newUser.role || "staff",
-        access_level_id: selectedAccessLevelId, // <-- key update!
+        access_level_id: selectedAccessLevelId,
         department: newUser.department || "",
       };
 
@@ -397,7 +401,7 @@ export default function UserManagement() {
       const apiUser = apiResponse.data;
       const createdUser: User = {
         id: apiUser.user_id,
-        username: newUser.username!,
+        UserName: (newUser.UserName ?? "").trim(),
         name: newUser.name!,
         email: newUser.email!,
         role: userData.role,
@@ -411,7 +415,6 @@ export default function UserManagement() {
         emergencyContact: newUser.emergencyContact || "",
         dob: newUser.dob,
       };
-
       setUsers([...users, createdUser]);
       setFilteredUsers([...filteredUsers, createdUser]);
       setNewUser({});
@@ -429,23 +432,6 @@ export default function UserManagement() {
     return isActive
       ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-700"
       : "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700";
-  };
-
-  const getAccessLevelColor = (level: string) => {
-    switch (level) {
-      case "A":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
-      case "B":
-      case "C":
-      case "D":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "E":
-      case "F":
-      case "G":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-    }
   };
 
   if (!currentUser) {
@@ -469,6 +455,7 @@ export default function UserManagement() {
 
       // Prepare API payload (matches your backend API requirements)
       const userData = {
+        username: editingUser.UserName,
         first_name: firstName,
         last_name: lastName,
         email: editingUser.email,
@@ -530,14 +517,15 @@ export default function UserManagement() {
       const apiUser = data.user;
 
       // Map API user to your User interface
+      // Map API user to your User interface
       const editingUserObj: User = {
         id: apiUser.user_id,
-        username: apiUser.email.split("@")[0],
+        UserName: (apiUser.UserName ?? apiUser.username ?? "").trim(),
         name: `${apiUser.first_name} ${apiUser.last_name}`,
         email: apiUser.email,
         role: apiUser.role,
         department: apiUser.department || "Other",
-        accessLevel: apiUser.access_level_id, // use this for selection
+        accessLevel: apiUser.access_level_id,
         isActive: apiUser.status,
         lastLogin: apiUser.lastLogin || "",
         createdAt: apiUser.createdAt || new Date().toISOString(),
@@ -777,9 +765,9 @@ export default function UserManagement() {
                         <Label htmlFor="username">Username</Label>
                         <Input
                           id="username"
-                          value={newUser.username || ""}
+                          value={newUser.UserName || ""}
                           onChange={(e) =>
-                            setNewUser({ ...newUser, username: e.target.value })
+                            setNewUser({ ...newUser, UserName: e.target.value })
                           }
                           placeholder="john.doe"
                         />
@@ -977,7 +965,7 @@ export default function UserManagement() {
                     <Button
                       onClick={createUser}
                       disabled={
-                        !newUser.username || !newUser.name || !newUser.email
+                        !newUser.UserName || !newUser.name || !newUser.email
                       }
                       className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
                     >
@@ -1054,11 +1042,11 @@ export default function UserManagement() {
                     <Label htmlFor="edit-username">Username</Label>
                     <Input
                       id="edit-username"
-                      value={editingUser.username}
+                      value={editingUser.UserName}
                       onChange={(e) =>
                         setEditingUser({
                           ...editingUser,
-                          username: e.target.value,
+                          UserName: e.target.value,
                         })
                       }
                       placeholder="john.doe"
@@ -1273,7 +1261,7 @@ export default function UserManagement() {
               <Button
                 onClick={updateUser}
                 disabled={
-                  !editingUser?.username ||
+                  !editingUser?.UserName ||
                   !editingUser?.name ||
                   !editingUser?.email
                 }
@@ -1324,15 +1312,13 @@ export default function UserManagement() {
                     <div>
                       <h3 className="font-semibold text-lg">{user.name}</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        @{user.username}
+                        @{user.UserName}
                       </p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <Badge className={getStatusColor(user.isActive)}>
                           {user.isActive ? "Active" : "Inactive"}
                         </Badge>
-                        {/* <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800">
-                          Level {user.accessLevel}
-                        </Badge> */}
+
                         <Badge variant="outline">{user.department}</Badge>
                       </div>
                     </div>
@@ -1498,7 +1484,7 @@ export default function UserManagement() {
                             <Label className="text-sm font-medium">
                               Username
                             </Label>
-                            <p>{selectedUser.username}</p>
+                            <p>{selectedUser.UserName}</p>
                           </div>
                           <div>
                             <Label className="text-sm font-medium">
