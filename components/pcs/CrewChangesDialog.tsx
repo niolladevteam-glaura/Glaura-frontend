@@ -642,258 +642,173 @@ export default function CrewChangesDialog({
               </div>
 
               {isMdUp ? (
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[1180px]">
-                    <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur">
-                      <TableRow>
-                        <TableHead className="w-[120px]">Number</TableHead>
-                        <TableHead className="w-[200px]">Name</TableHead>
-                        <TableHead className="w-[140px]">Dep. Date</TableHead>
-                        <TableHead className="w-[120px]">Dep. Time</TableHead>
-                        <TableHead className="w-[140px]">Arr. Date</TableHead>
-                        <TableHead className="w-[120px]">Arr. Time</TableHead>
-                        <TableHead className="w-[140px]">From</TableHead>
-                        <TableHead className="w-[140px]">To</TableHead>
-                        <TableHead className="w-[44px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {flightFields.fields.length === 0 && (
-                        <TableRow>
-                          <TableCell
-                            colSpan={9}
-                            className="text-muted-foreground text-center py-6"
-                          >
-                            No flights added yet
-                          </TableCell>
-                        </TableRow>
-                      )}
+  <div className="overflow-x-auto">
+    <Table className="min-w-[900px]">
+      <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur">
+        <TableRow>
+          <TableHead className="w-[140px]">Number</TableHead>
+          <TableHead className="w-[220px]">Name</TableHead>
+          <TableHead className="w-[160px]">Dep. Date</TableHead>
+          <TableHead className="w-[140px]">Dep. Time</TableHead>
+          <TableHead className="w-[44px]"></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {flightFields.fields.length === 0 && (
+          <TableRow>
+            <TableCell
+              colSpan={5}
+              className="text-muted-foreground text-center py-6"
+            >
+              No flights added yet
+            </TableCell>
+          </TableRow>
+        )}
 
-                      {flightFields.fields.map((field, idx) => (
-                        <TableRow key={field.id} className="align-middle">
-                          <TableCell className="py-2">
-                            <Input
-                              placeholder="e.g. QR654"
-                              {...register(
-                                `flights.${idx}.flightNumber` as const,
-                              )}
-                              className="h-9"
-                            />
-                          </TableCell>
+        {flightFields.fields.map((field, idx) => (
+          <React.Fragment key={field.id}>
+            {/* First Row: Number, Name, Departure */}
+            <TableRow className="align-middle border-b-0">
+              <TableCell className="py-2">
+                <Input
+                  placeholder="e.g. QR654"
+                  {...register(`flights.${idx}.flightNumber` as const)}
+                  className="h-9"
+                />
+              </TableCell>
 
-                          <TableCell className="py-2">
-                            <Input
-                              placeholder="Flight name"
-                              {...register(
-                                `flights.${idx}.flightName` as const,
-                              )}
-                              className="h-9"
-                            />
-                          </TableCell>
+              <TableCell className="py-2">
+                <Input
+                  placeholder="Flight name"
+                  {...register(`flights.${idx}.flightName` as const)}
+                  className="h-9"
+                />
+              </TableCell>
 
-                          <TableCell className="py-2">
-                            <Controller
-                              control={control}
-                              name={`flights.${idx}.departureDate` as const}
-                              render={({ field }) => (
-                                <InlineDatePicker
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                />
-                              )}
-                            />
-                          </TableCell>
-
-                          <TableCell className="py-2">
-                            <Controller
-                              control={control}
-                              name={`flights.${idx}.departureTime` as const}
-                              render={({ field }) => (
-                                <TimePicker
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  placeholder="HH:MM"
-                                />
-                              )}
-                            />
-                            {errors.flights?.[idx]?.departureTime && (
-                              <p className="text-[10px] text-destructive mt-1">
-                                {errors.flights[idx]?.departureTime?.message}
-                              </p>
-                            )}
-                          </TableCell>
-
-                          <TableCell className="py-2">
-                            <Controller
-                              control={control}
-                              name={`flights.${idx}.arrivalDate` as const}
-                              render={({ field }) => (
-                                <InlineDatePicker
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                />
-                              )}
-                            />
-                          </TableCell>
-
-                          <TableCell className="py-2">
-                            <Controller
-                              control={control}
-                              name={`flights.${idx}.arrivalTime` as const}
-                              render={({ field }) => (
-                                <TimePicker
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  placeholder="HH:MM"
-                                />
-                              )}
-                            />
-                            {errors.flights?.[idx]?.arrivalTime && (
-                              <p className="text-[10px] text-destructive mt-1">
-                                {errors.flights[idx]?.arrivalTime?.message}
-                              </p>
-                            )}
-                          </TableCell>
-
-                          <TableCell className="py-2">
-                            <Input
-                              placeholder="From"
-                              {...register(`flights.${idx}.from` as const, {
-                                setValueAs: (v) =>
-                                  typeof v === "string" ? v.trim() : "",
-                              })}
-                              className="h-9"
-                            />
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <Input
-                              placeholder="To"
-                              {...register(`flights.${idx}.to` as const, {
-                                setValueAs: (v) =>
-                                  typeof v === "string" ? v.trim() : "",
-                              })}
-                              className="h-9"
-                            />
-                          </TableCell>
-
-                          <TableCell className="py-2 text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              type="button"
-                              onClick={() => flightFields.remove(idx)}
-                              aria-label={`Remove flight row ${idx + 1}`}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {flightFields.fields.length === 0 && (
-                    <div className="text-muted-foreground text-sm text-center py-4">
-                      No flights added yet
-                    </div>
+              <TableCell className="py-2">
+                <Controller
+                  control={control}
+                  name={`flights.${idx}.departureDate` as const}
+                  render={({ field }) => (
+                    <InlineDatePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   )}
+                />
+              </TableCell>
 
-                  {flightFields.fields.map((field, idx) => (
-                    <div
-                      key={field.id}
-                      className="rounded-lg border p-3 space-y-3"
-                    >
-                      <div className="grid grid-cols-2 gap-3">
-                        <Input
-                          placeholder="Number"
-                          {...register(`flights.${idx}.flightNumber` as const)}
-                          className="h-10"
-                        />
-                        <Input
-                          placeholder="Name"
-                          {...register(`flights.${idx}.flightName` as const)}
-                          className="h-10"
-                        />
-                        <Controller
-                          control={control}
-                          name={`flights.${idx}.departureDate` as const}
-                          render={({ field }) => (
-                            <InlineDatePicker
-                              value={field.value}
-                              onChange={field.onChange}
-                            />
-                          )}
-                        />
-                        <Controller
-                          control={control}
-                          name={`flights.${idx}.departureTime` as const}
-                          render={({ field }) => (
-                            <TimePicker
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="HH:MM"
-                            />
-                          )}
-                        />
-                        <Controller
-                          control={control}
-                          name={`flights.${idx}.arrivalDate` as const}
-                          render={({ field }) => (
-                            <InlineDatePicker
-                              value={field.value}
-                              onChange={field.onChange}
-                            />
-                          )}
-                        />
-                        <Controller
-                          control={control}
-                          name={`flights.${idx}.arrivalTime` as const}
-                          render={({ field }) => (
-                            <TimePicker
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="HH:MM"
-                            />
-                          )}
-                        />
-                        <Input
-                          placeholder="From"
-                          {...register(`flights.${idx}.from` as const, {
-                            setValueAs: (v) =>
-                              typeof v === "string" ? v.trim() : "",
-                          })}
-                          className="h-10"
-                        />
-                        <Input
-                          placeholder="To"
-                          {...register(`flights.${idx}.to` as const, {
-                            setValueAs: (v) =>
-                              typeof v === "string" ? v.trim() : "",
-                          })}
-                          className="h-10"
-                        />
-                      </div>
+              <TableCell className="py-2">
+                <Controller
+                  control={control}
+                  name={`flights.${idx}.departureTime` as const}
+                  render={({ field }) => (
+                    <TimePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="HH:MM"
+                    />
+                  )}
+                />
+                {errors.flights?.[idx]?.departureTime && (
+                  <p className="text-[10px] text-destructive mt-1">
+                    {errors.flights[idx]?.departureTime?.message}
+                  </p>
+                )}
+              </TableCell>
 
-                      <div className="flex justify-end">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          type="button"
-                          onClick={() => flightFields.remove(idx)}
-                          aria-label={`Remove flight row ${idx + 1}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+              <TableCell className="py-2" rowSpan={2}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  onClick={() => flightFields.remove(idx)}
+                  aria-label={`Remove flight row ${idx + 1}`}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </TableCell>
+            </TableRow>
+
+            {/* Second Row: Arrival, From, To */}
+            <TableRow className="align-middle">
+              <TableCell className="py-2">
+                <div className="text-xs text-muted-foreground mb-1">
+                  Arr. Date
                 </div>
-              )}
-            </div>
+                <Controller
+                  control={control}
+                  name={`flights.${idx}.arrivalDate` as const}
+                  render={({ field }) => (
+                    <InlineDatePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+              </TableCell>
 
-            {/* Simple top-level array error helper after a failed submit */}
+              <TableCell className="py-2">
+                <div className="text-xs text-muted-foreground mb-1">
+                  Arr. Time
+                </div>
+                <Controller
+                  control={control}
+                  name={`flights.${idx}.arrivalTime` as const}
+                  render={({ field }) => (
+                    <TimePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="HH:MM"
+                    />
+                  )}
+                />
+                {errors.flights?.[idx]?.arrivalTime && (
+                  <p className="text-[10px] text-destructive mt-1">
+                    {errors.flights[idx]?.arrivalTime?.message}
+                  </p>
+                )}
+              </TableCell>
+
+              <TableCell className="py-2">
+                <div className="text-xs text-muted-foreground mb-1">From</div>
+                <Input
+                  placeholder="From"
+                  {...register(`flights.${idx}.from` as const, {
+                    setValueAs: (v) =>
+                      typeof v === "string" ? v.trim() : "",
+                  })}
+                  className="h-9"
+                />
+              </TableCell>
+
+              <TableCell className="py-2">
+                <div className="text-xs text-muted-foreground mb-1">To</div>
+                <Input
+                  placeholder="To"
+                  {...register(`flights.${idx}.to` as const, {
+                    setValueAs: (v) =>
+                      typeof v === "string" ? v.trim() : "",
+                  })}
+                  className="h-9"
+                />
+              </TableCell>
+            </TableRow>
+          </React.Fragment>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
+  ) : (
+    <div className="space-y-3">
+      <div className="text-sm text-muted-foreground">
+        Flights view optimized for larger screens
+      </div>
+    </div>
+  )}
+</div>
+
+{/* Simple top-level array error helper after a failed submit */}
             {submitCount > 0 &&
               (errors.flights?.root || (errors as any).flights?.message) && (
                 <p className="mt-3 text-sm text-destructive">
