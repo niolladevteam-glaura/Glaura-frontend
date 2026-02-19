@@ -427,7 +427,7 @@ export default function VendorDocumentsPage() {
     }
     setSelectedIds([]);
     fetchDocuments();
-    toast.success(`error ${successCount} document(s).`);
+    toast.error(`Rejected ${successCount} document(s).`);
   };
 
   // Checkbox handlers
