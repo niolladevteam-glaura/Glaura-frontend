@@ -152,6 +152,10 @@ export default function PortCallServicesPage() {
   const [serviceFocused, setServiceFocused] = useState(false);
   const [vendorFocused, setVendorFocused] = useState(false);
   const [loading, setLoading] = useState(false);
+  const serviceInputRef = React.useRef<HTMLInputElement>(null);
+  const vendorInputRef = React.useRef<HTMLInputElement>(null);
+  const serviceContainerRef = React.useRef<HTMLDivElement>(null);
+  const vendorContainerRef = React.useRef<HTMLDivElement>(null);
 
   // map: serviceId -> deleting flag (so we can show spinner on the exact row)
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
@@ -413,6 +417,27 @@ export default function PortCallServicesPage() {
     }
     setCurrentUser(JSON.parse(userData));
   }, [router]);
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        serviceContainerRef.current &&
+        !serviceContainerRef.current.contains(event.target as Node)
+      ) {
+        setServiceFocused(false);
+      }
+      if (
+        vendorContainerRef.current &&
+        !vendorContainerRef.current.contains(event.target as Node)
+      ) {
+        setVendorFocused(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   function getTokenOrRedirect() {
     const token = localStorage.getItem("token");
@@ -1082,14 +1107,14 @@ export default function PortCallServicesPage() {
             {/* Service Selection with Auto-suggest */}
             <div className="space-y-2">
               <Label htmlFor="service-search">Service *</Label>
-              <div className="relative">
+              <div className="relative" ref={serviceContainerRef}>
                 <Input
+                  ref={serviceInputRef}
                   id="service-search"
                   placeholder="Click to select service..."
                   value={searchService}
                   onChange={(e) => setSearchService(e.target.value)}
                   onFocus={() => setServiceFocused(true)}
-                  onBlur={() => setTimeout(() => setServiceFocused(false), 200)}
                   className="pr-3"
                 />
                 {serviceFocused && filteredServices.length > 0 && (
@@ -1098,7 +1123,8 @@ export default function PortCallServicesPage() {
                       <button
                         key={s.service_id}
                         type="button"
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                          e.preventDefault();
                           setSelectedServiceId(s.service_id);
                           setSearchService(s.service_name);
                           setServiceFocused(false);
@@ -1124,14 +1150,14 @@ export default function PortCallServicesPage() {
             {/* Vendor Selection with Auto-suggest */}
             <div className="space-y-2">
               <Label htmlFor="vendor-search">Vendor *</Label>
-              <div className="relative">
+              <div className="relative" ref={vendorContainerRef}>
                 <Input
+                  ref={vendorInputRef}
                   id="vendor-search"
                   placeholder="Click to select vendor..."
                   value={searchVendor}
                   onChange={(e) => setSearchVendor(e.target.value)}
                   onFocus={() => setVendorFocused(true)}
-                  onBlur={() => setTimeout(() => setVendorFocused(false), 200)}
                   className="pr-3"
                 />
                 {vendorFocused && filteredVendors.length > 0 && (
@@ -1140,7 +1166,8 @@ export default function PortCallServicesPage() {
                       <button
                         key={v.vendor_id}
                         type="button"
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                          e.preventDefault();
                           setSelectedVendorId(v.vendor_id);
                           setSearchVendor(v.name);
                           setVendorFocused(false);
