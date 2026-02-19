@@ -134,7 +134,7 @@ export default function ActivePortCalls() {
     Record<string, ServiceHeader[]>
   >({});
   const [headersLoading, setHeadersLoading] = useState<Record<string, boolean>>(
-    {}
+    {},
   );
 
   const [viewType, setViewType] = useState<"card" | "table">("card");
@@ -159,7 +159,7 @@ export default function ActivePortCalls() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
         if (response.status === 401) {
           localStorage.removeItem("token");
@@ -192,7 +192,7 @@ export default function ActivePortCalls() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
         const data = await response.json();
         if (data.success && data.data) {
@@ -231,7 +231,7 @@ export default function ActivePortCalls() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         )
           .then((res) => res.json())
           .then((data) => {
@@ -251,7 +251,7 @@ export default function ActivePortCalls() {
             }));
           })
           .finally(() =>
-            setHeadersLoading((prev) => ({ ...prev, [pc.job_id]: false }))
+            setHeadersLoading((prev) => ({ ...prev, [pc.job_id]: false })),
           );
       });
     };
@@ -267,7 +267,7 @@ export default function ActivePortCalls() {
           pc.vessel_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           pc.job_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
           pc.client_company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          pc.vessel_imo.includes(searchTerm)
+          pc.vessel_imo.includes(searchTerm),
       );
     }
     if (statusFilter !== "all") {
@@ -318,8 +318,8 @@ export default function ActivePortCalls() {
         Array.isArray(header.tasks) &&
         header.tasks.length > 0 &&
         header.tasks.every(
-          (task) => task.status === true || task.status === "true"
-        )
+          (task) => task.status === true || task.status === "true",
+        ),
     ).length;
     return { totalHeaders, completedHeaders };
   };
@@ -386,7 +386,7 @@ export default function ActivePortCalls() {
 
   // --- SORT BY RECENTLY UPDATED ---
   const sortedPortCalls = [...filteredPortCalls].sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
   );
 
   // -------------------- TABLE VIEW COMPONENT ------------------------
@@ -425,8 +425,8 @@ export default function ActivePortCalls() {
                       (status === "Completed"
                         ? "bg-green-500"
                         : status === "Pending"
-                        ? "bg-yellow-500"
-                        : "bg-gray-400")
+                          ? "bg-yellow-500"
+                          : "bg-gray-400")
                     }
                   ></span>
                   <span className="align-middle">{status}</span>
@@ -623,18 +623,18 @@ export default function ActivePortCalls() {
             <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <span>Port Call Management</span>
               <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-                <Badge
+                {/* <Badge
                   variant="outline"
                   className="w-full sm:w-auto text-center"
                 >
                   {filteredPortCalls.length} calls
-                </Badge>
-                <Link href="/port-calls/new" className="w-full sm:w-auto">
+                </Badge> */}
+                {/* <Link href="/port-calls/new" className="w-full sm:w-auto">
                   <Button size="sm" className="w-full sm:w-auto">
                     <Ship className="h-4 w-4 mr-2" />
                     New Port Call
                   </Button>
-                </Link>
+                </Link> */}
               </div>
             </CardTitle>
           </CardHeader>
@@ -745,7 +745,8 @@ export default function ActivePortCalls() {
                     Urgent (
                     {
                       portCalls.filter(
-                        (pc) => pc.priority === "High" || pc.priority === "high"
+                        (pc) =>
+                          pc.priority === "High" || pc.priority === "high",
                       ).length
                     }
                     )
@@ -827,7 +828,7 @@ export default function ActivePortCalls() {
                             setEditingPortCall(portCall);
                             const etaDateObj = new Date(portCall.eta);
                             setEditEtaDate(
-                              etaDateObj.toISOString().slice(0, 10)
+                              etaDateObj.toISOString().slice(0, 10),
                             );
                             const hours = etaDateObj
                               .getUTCHours()
@@ -996,7 +997,7 @@ export default function ActivePortCalls() {
                 // Build ISO string
                 // editEtaDate: "YYYY-MM-DD", editEtaTime: "HH:MM"
                 const isoEta = new Date(
-                  `${editEtaDate}T${editEtaTime}:00Z`
+                  `${editEtaDate}T${editEtaTime}:00Z`,
                 ).toISOString();
                 const response = await fetch(
                   `${process.env.NEXT_PUBLIC_API_URL}/portcall/${editingPortCall.job_id}`,
@@ -1007,7 +1008,7 @@ export default function ActivePortCalls() {
                       Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({ eta: isoEta }),
-                  }
+                  },
                 );
                 const data = await response.json();
                 if (response.ok || data.success) {
@@ -1016,15 +1017,15 @@ export default function ActivePortCalls() {
                     prev.map((pc) =>
                       pc.job_id === editingPortCall.job_id
                         ? { ...pc, eta: isoEta }
-                        : pc
-                    )
+                        : pc,
+                    ),
                   );
                   setFilteredPortCalls((prev) =>
                     prev.map((pc) =>
                       pc.job_id === editingPortCall.job_id
                         ? { ...pc, eta: isoEta }
-                        : pc
-                    )
+                        : pc,
+                    ),
                   );
                   setEditEtaDialogOpen(false);
                   setEditingPortCall(null);
