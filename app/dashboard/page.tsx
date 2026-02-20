@@ -453,11 +453,9 @@ export default function Dashboard() {
       setIsFirstLogin(!firstLoginFlag);
     }, []);
 
-    // Determine button states based on department
-    const isOperationsDept = user?.department?.toLowerCase() === "operations";
-    const isDisbursementDept =
-      user?.department?.toLowerCase() === "disbursement";
-    const isManagementDept = user?.department?.toLowerCase() === "management";
+    // Determine button states based on permissions
+    const hasPortCallPermission = can("operation.port_call.view");
+    const hasCustomerPermission = can("disbursement.customer.view");
 
     return (
       <Card className="welcome-card animate-fade-in-up mb-8">
@@ -476,7 +474,7 @@ export default function Dashboard() {
               </p>
               <div className="flex gap-4">
                 {/* Port Calls Button */}
-                {isOperationsDept || isManagementDept ? (
+                {hasPortCallPermission ? (
                   <Link href="/port-calls">
                     <Button
                       variant="secondary"
@@ -496,7 +494,7 @@ export default function Dashboard() {
                 )}
 
                 {/* Customers Button */}
-                {isDisbursementDept || isManagementDept ? (
+                {hasCustomerPermission ? (
                   <Link href="/customers">
                     <Button
                       variant="outline"
