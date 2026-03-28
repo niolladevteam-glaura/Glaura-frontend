@@ -10,20 +10,14 @@ interface CustomPhoneInputProps extends PhoneInputProps {
   placeholderText?: string;
 }
 
-/**
- * Automatically detect the country ISO code from the phone number value.
- * Uses react-phone-input-2's internal mapping, so we just need to pass the full value.
- */
 function getCountryIsoFromValue(
   value: string | undefined,
-  fallback: string = "lk"
+  fallback: string = "lk",
 ): string {
   if (!value) return fallback;
-  // Extract dial code from value, e.g. "+94", "+1", "+44"
   const match = value.match(/^(\+?\d{1,3})/);
   if (match && match[1]) {
-    // react-phone-input-2 can infer the country from the value
-    return undefined as any; // undefined lets PhoneInput auto-detect from value
+    return undefined as any;
   }
   return fallback;
 }
@@ -40,16 +34,16 @@ export default function ShadCountryPhoneInput(props: CustomPhoneInputProps) {
 
   const coercedValue = useMemo(
     () => (value != null ? String(value) : ""),
-    [value]
+    [value],
   );
 
   const autoCountry = useMemo(
     () =>
       getCountryIsoFromValue(
         coercedValue,
-        country != null ? String(country) : ""
+        country != null ? String(country) : "",
       ),
-    [coercedValue, country]
+    [coercedValue, country],
   );
 
   return (
@@ -81,7 +75,6 @@ export default function ShadCountryPhoneInput(props: CustomPhoneInputProps) {
         }}
       />
 
-      {/* Overlay label inside the trigger (click-through) */}
       <div className="pi-overlay">
         <div className="pi-overlay-text truncate">
           {label || placeholderText}
