@@ -584,8 +584,16 @@ export default function PdaGeneratePage() {
       const blob = await res.blob();
       const blobUrl = window.URL.createObjectURL(blob);
 
-      // Extract filename from Content-Disposition header if available
-      let filename = `PDA_${jobId || 'Document'}.pdf`;
+      // Replicate backend filename generation as fallback (due to potential CORS hiding headers)
+      const safeStr = (str: string) => 
+        String(str)
+          .replace(/[^a-zA-Z0-9-_]/g, "_")
+          .replace(/_+/g, "_");
+      
+      const expectedFileName = `${safeStr(VesselName)}-${safeStr(poc)}-${safeStr(port)}-${safeStr(date)}.pdf`;
+      let filename = expectedFileName;
+
+      // Extract filename from Content-Disposition header if available (preferred)
       const disposition = res.headers.get('Content-Disposition');
       if (disposition && disposition.indexOf('attachment') !== -1) {
         const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
