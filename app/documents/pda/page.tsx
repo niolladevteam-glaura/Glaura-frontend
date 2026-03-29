@@ -64,6 +64,17 @@ type Vessel = {
   grt: number;
 };
 
+type BankAccount = {
+  id: number;
+  bank: string;
+  account_number: string;
+  account_name: string;
+  branch: string;
+  swift_code: string;
+  primary_currency: string;
+  status: string;
+};
+
 type InvoiceRow = {
   no: number;
   details: string;
@@ -285,6 +296,12 @@ export default function PdaGeneratePage() {
   ]);
   const [InvoiceTotal, setInvoiceTotal] = useState<number>(0);
 
+  const [showDiscount, setShowDiscount] = useState<boolean>(false);
+  const [discountAmount, setDiscountAmount] = useState<number | string>("");
+
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [selectedBankId, setSelectedBankId] = useState<string>("");
+
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -322,6 +339,27 @@ export default function PdaGeneratePage() {
       }
     };
     fetchVessels();
+
+    const fetchBankAccounts = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch(`${API_BASE_URL}/bank-accounts`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setBankAccounts(data.data);
+        } else {
+          setBankAccounts([]);
+        }
+      } catch (e) {
+        setBankAccounts([]);
+      }
+    };
+    fetchBankAccounts();
   }, []);
 
   // Load user with token
@@ -482,19 +520,35 @@ export default function PdaGeneratePage() {
     const outPaymentTerms =
       paymentTerms === "Other" ? paymentTermsOther.trim() : paymentTerms;
 
+    const arrDateFormated = arraivalDate ? formatDate(arraivalDate) : "";
+    const arrTimeFormated = arraivalTime ? arraivalTime + (arraivalTime.split(":").length === 2 ? ":00" : "") : "00:00:00";
+    const reqArraivalDate = arrDateFormated ? `${arrDateFormated} , ${arrTimeFormated}` : "";
+
+    const depDateFormated = departureDate ? formatDate(departureDate) : "";
+    const depTimeFormated = departureTime ? departureTime + (departureTime.split(":").length === 2 ? ":00" : "") : "00:00:00";
+    const reqDepartureDate = depDateFormated ? `${depDateFormated}, ${depTimeFormated}` : "";
+
+    const discountVal = parseFloat(discountAmount as string) || 0;
+    const grandTotalVal = (InvoiceTotal - discountVal).toFixed(2);
+
     const payload = {
       date,
       jobID: jobId,
+      currency,
       ClientName,
       ClientAddress,
       ClientRefNo,
       AgentName,
       VesselName,
       port,
-      grt: grt ? Number(grt) : null,
-      arraivalDate: formatDate(arraivalDate),
-      departureDate: formatDate(departureDate),
+      arraivalDate: reqArraivalDate,
+      departureDate: reqDepartureDate,
       poc,
+      bankAccountID: selectedBankId || "",
+      discount: discountAmount ? String(discountAmount) : "0",
+      grandTotal: grandTotalVal,
+      grt: grt ? Number(grt) : null,
+      status: "pending",
       paymentTerms: outPaymentTerms,
       invoiceData: invoiceData.map((table) => ({
         tableHeader: table.tableHeader,
@@ -507,7 +561,6 @@ export default function PdaGeneratePage() {
         })),
       })),
       InvoiceTotal,
-      currency,
     };
 
     try {
@@ -591,6 +644,9 @@ export default function PdaGeneratePage() {
       paymentTermsOther,
       invoiceData,
       InvoiceTotal,
+      showDiscount,
+      discountAmount,
+      selectedBankId,
     };
 
     try {
@@ -634,6 +690,9 @@ export default function PdaGeneratePage() {
           ],
         );
         setInvoiceTotal(draftData.InvoiceTotal || 0);
+        setShowDiscount(draftData.showDiscount || false);
+        setDiscountAmount(draftData.discountAmount || "");
+        setSelectedBankId(draftData.selectedBankId || "");
         setHasDraft(true);
       } catch (err) {
         console.error("Failed to load draft:", err);
@@ -904,6 +963,7 @@ export default function PdaGeneratePage() {
                   )}
                 </div>
                 <div>
+                  <label className="block mb-1 text-sm font-medium">Currency</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -954,6 +1014,27 @@ export default function PdaGeneratePage() {
                       </Command>
                     </PopoverContent>
                   </Popover>
+                </div>
+                <div>
+                  <label className="block mb-1 text-sm font-medium">
+                    Bank Account
+                  </label>
+                  <Select
+                    value={selectedBankId}
+                    onValueChange={(v) => setSelectedBankId(v)}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Bank Account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bankAccounts.map((b) => (
+                        <SelectItem key={b.id} value={String(b.id)}>
+                          {b.bank} - {b.account_number} ({b.primary_currency})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -1100,10 +1181,59 @@ export default function PdaGeneratePage() {
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-end">
-                  <span className="text-lg font-bold text-yellow-900 dark:text-yellow-300">
-                    Invoice Total: {InvoiceTotal.toFixed(2)}
-                  </span>
+                <div className="flex flex-col items-end gap-2 mt-4">
+                  {!showDiscount && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDiscount(true)}
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Add Discount
+                    </Button>
+                  )}
+                  {showDiscount && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Discount amount:</span>
+                      <Input
+                        type="number"
+                        placeholder="Amount"
+                        className="w-32"
+                        value={discountAmount}
+                        onChange={(e) => setDiscountAmount(e.target.value)}
+                        min={0}
+                        step="any"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setShowDiscount(false);
+                          setDiscountAmount("");
+                        }}
+                        title="Remove Discount"
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  )}
+                  {showDiscount && discountAmount && parseFloat(String(discountAmount)) > 0 ? (
+                    <div className="flex flex-col items-end gap-1 mt-2">
+                      <span className="text-base font-semibold text-muted-foreground mr-1">
+                        Subtotal: {InvoiceTotal.toFixed(2)}
+                      </span>
+                      <span className="text-lg font-bold text-yellow-900 dark:text-yellow-300">
+                        Grand Total: {(InvoiceTotal - parseFloat(String(discountAmount))).toFixed(2)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end mt-2">
+                      <span className="text-lg font-bold text-yellow-900 dark:text-yellow-300">
+                        Invoice Total: {InvoiceTotal.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
