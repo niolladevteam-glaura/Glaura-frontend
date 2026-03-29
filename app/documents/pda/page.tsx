@@ -583,9 +583,42 @@ export default function PdaGeneratePage() {
       }
       const blob = await res.blob();
       const blobUrl = window.URL.createObjectURL(blob);
+
+      // Extract filename from Content-Disposition header if available
+      let filename = `PDA_${jobId || 'Document'}.pdf`;
+      const disposition = res.headers.get('Content-Disposition');
+      if (disposition && disposition.indexOf('attachment') !== -1) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      } else if (disposition && disposition.includes('filename=')) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+
+      // Create an invisible link to trigger the download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Also open it in a new tab
       window.open(blobUrl, "_blank");
+
+      // Cleanup (delayed to allow the new tab to load the blob before revoking)
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 1000);
+
       setSuccess(
-        "PDA Document generated successfully! PDF should open/download automatically.",
+        "PDA Document generated successfully! PDF downloaded and opened.",
       );
       clearDraft(); // Clear draft after successful generation
     } catch (err: any) {
