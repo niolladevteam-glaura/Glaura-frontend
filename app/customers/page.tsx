@@ -102,7 +102,7 @@ export default function CustomerCompanies() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
+    null,
   );
   const [birthdayAlerts, setBirthdayAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -121,7 +121,7 @@ export default function CustomerCompanies() {
   ]);
   const [newCompanyTypeInput, setNewCompanyTypeInput] = useState("");
   const [selectedCompanyTypes, setSelectedCompanyTypes] = useState<string[]>(
-    []
+    [],
   );
 
   // Customer form
@@ -166,7 +166,7 @@ export default function CustomerCompanies() {
   // --- Handler for company type checkboxes ---
   const handleCompanyTypeCheckbox = (value: string) => {
     setSelectedCompanyTypes((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
     );
   };
 
@@ -216,12 +216,12 @@ export default function CustomerCompanies() {
       contactNumbers: picForm.contactNumbers?.filter((num) => num.trim()) || [],
       contactTypes: (picForm.contactTypes || []).slice(
         0,
-        picForm.contactNumbers?.length || 1
+        picForm.contactNumbers?.length || 1,
       ),
       emails: picForm.emails?.filter((email) => email.trim()) || [],
       emailTypes: (picForm.emailTypes || []).slice(
         0,
-        picForm.emails?.length || 1
+        picForm.emails?.length || 1,
       ),
       birthday: picForm.birthday || "",
       remarks: picForm.remarks || "",
@@ -275,12 +275,12 @@ export default function CustomerCompanies() {
           picForm.contactNumbers?.filter((num) => num.trim()) || [],
         contactTypes: (picForm.contactTypes || []).slice(
           0,
-          picForm.contactNumbers?.length || 1
+          picForm.contactNumbers?.length || 1,
         ),
         emails: picForm.emails?.filter((email) => email.trim()) || [],
         emailTypes: (picForm.emailTypes || []).slice(
           0,
-          picForm.emails?.length || 1
+          picForm.emails?.length || 1,
         ),
         birthday: picForm.birthday || "",
         remarks: picForm.remarks || "",
@@ -354,7 +354,7 @@ export default function CustomerCompanies() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(
-    null
+    null,
   );
 
   const router = useRouter();
@@ -381,7 +381,7 @@ export default function CustomerCompanies() {
           throw new Error(response.statusText || "Request failed");
         }
         throw new Error(
-          errorData.message || `Request failed with status ${response.status}`
+          errorData.message || `Request failed with status ${response.status}`,
         );
       }
       return await response.json();
@@ -446,10 +446,10 @@ export default function CustomerCompanies() {
           const companyTypeArr = Array.isArray(apiCustomer.companyTypes)
             ? apiCustomer.companyTypes.map((ct: any) => ct.company_type)
             : Array.isArray(apiCustomer.company_type)
-            ? apiCustomer.company_type
-            : typeof apiCustomer.company_type === "string"
-            ? [apiCustomer.company_type]
-            : [];
+              ? apiCustomer.company_type
+              : typeof apiCustomer.company_type === "string"
+                ? [apiCustomer.company_type]
+                : [];
 
           return {
             id: apiCustomer.customer_id,
@@ -468,7 +468,7 @@ export default function CustomerCompanies() {
             totalPortCalls: apiCustomer.totalPortCalls || 0,
             activePortCalls: apiCustomer.activePortCalls || 0,
           };
-        }
+        },
       );
 
       setCustomers(transformedCustomers);
@@ -504,7 +504,7 @@ export default function CustomerCompanies() {
           const thisYearBirthday = new Date(
             today.getFullYear(),
             birthday.getMonth(),
-            birthday.getDate()
+            birthday.getDate(),
           );
 
           // Handle case where birthday is Feb 29 and not a leap year
@@ -516,7 +516,7 @@ export default function CustomerCompanies() {
 
           const daysUntil = Math.ceil(
             (thisYearBirthday.getTime() - today.getTime()) /
-              (1000 * 60 * 60 * 24)
+              (1000 * 60 * 60 * 24),
           );
 
           if (daysUntil >= 0 && daysUntil <= 7) {
@@ -562,8 +562,8 @@ export default function CustomerCompanies() {
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
           customer.pics.some((pic) =>
-            pic.name.toLowerCase().includes(searchTerm.toLowerCase())
-          )
+            pic.name.toLowerCase().includes(searchTerm.toLowerCase()),
+          ),
       );
     }
 
@@ -574,8 +574,8 @@ export default function CustomerCompanies() {
               .map((t) => t.toLowerCase())
               .includes(typeFilter)
           : typeof customer.companyType === "string"
-          ? (customer.companyType as string).toLowerCase() === typeFilter
-          : false
+            ? (customer.companyType as string).toLowerCase() === typeFilter
+            : false,
       );
     }
 
@@ -687,7 +687,10 @@ export default function CustomerCompanies() {
           phoneNumberType: firstPic.contactTypes?.[0] || "Direct Line",
           email: firstPic.emails?.[0] || "",
           emailType: firstPic.emailTypes?.[0] || "Personal",
-          birthday: firstPic.birthday,
+          birthday:
+            firstPic.birthday === "" || firstPic.birthday === undefined
+              ? null
+              : firstPic.birthday,
           receiveUpdates: firstPic.receiveUpdates,
           remark: firstPic.remarks,
         };
@@ -997,7 +1000,7 @@ export default function CustomerCompanies() {
                                 onChange={(e) =>
                                   handleCustomerFormChange(
                                     "companyName",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder="Enter company name"
@@ -1095,7 +1098,7 @@ export default function CustomerCompanies() {
                               onChange={(e) =>
                                 handleCustomerFormChange(
                                   "address",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               placeholder="Enter company address"
@@ -1127,7 +1130,7 @@ export default function CustomerCompanies() {
                                       : "");
                                   handleCustomerFormChange(
                                     "landlineCountryCode",
-                                    dial
+                                    dial,
                                   );
                                 }}
                               />
@@ -1145,7 +1148,7 @@ export default function CustomerCompanies() {
                                 onChange={(e) =>
                                   handleCustomerFormChange(
                                     "landlineNumber",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder="11-234-5678"
@@ -1203,7 +1206,7 @@ export default function CustomerCompanies() {
                               onChange={(e) =>
                                 handleCustomerFormChange(
                                   "remarks",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               placeholder="Additional notes about the customer"
@@ -1350,7 +1353,7 @@ export default function CustomerCompanies() {
                                 onChange={(e) =>
                                   handlePicFormChange(
                                     "firstName",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder="First Name"
@@ -1362,7 +1365,7 @@ export default function CustomerCompanies() {
                                 onChange={(e) =>
                                   handlePicFormChange(
                                     "lastName",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder="Last Name"
@@ -1384,7 +1387,7 @@ export default function CustomerCompanies() {
                               onChange={(e) =>
                                 handlePicFormChange(
                                   "department",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               placeholder="Enter department"
@@ -1425,11 +1428,11 @@ export default function CustomerCompanies() {
                                         handlePicFormChange("contactTypes", [
                                           ...(picForm.contactTypes?.slice(
                                             0,
-                                            idx
+                                            idx,
                                           ) || []),
                                           val,
                                           ...(picForm.contactTypes?.slice(
-                                            idx + 1
+                                            idx + 1,
                                           ) || []),
                                         ])
                                       }
@@ -1463,7 +1466,7 @@ export default function CustomerCompanies() {
                                       onChange={(val, data) => {
                                         const rest = number.replace(
                                           /^(\+\d+)?\s?/,
-                                          ""
+                                          "",
                                         );
                                         const dial =
                                           "+" +
@@ -1475,7 +1478,7 @@ export default function CustomerCompanies() {
                                         const updatedNumber = dial + " " + rest;
                                         updatePicContactNumber(
                                           idx,
-                                          updatedNumber.trim()
+                                          updatedNumber.trim(),
                                         );
                                       }}
                                     />
@@ -1494,7 +1497,7 @@ export default function CustomerCompanies() {
                                           idx,
                                           (number.startsWith("+")
                                             ? number.split(" ")[0] + " "
-                                            : "+94 ") + e.target.value
+                                            : "+94 ") + e.target.value,
                                         )
                                       }
                                       placeholder="77 123 4567"
@@ -1554,11 +1557,11 @@ export default function CustomerCompanies() {
                                         handlePicFormChange("emailTypes", [
                                           ...(picForm.emailTypes?.slice(
                                             0,
-                                            idx
+                                            idx,
                                           ) || []),
                                           val,
                                           ...(picForm.emailTypes?.slice(
-                                            idx + 1
+                                            idx + 1,
                                           ) || []),
                                         ])
                                       }
@@ -1635,7 +1638,7 @@ export default function CustomerCompanies() {
                                   onCheckedChange={(checked) =>
                                     handlePicFormChange(
                                       "receiveUpdates",
-                                      checked
+                                      checked,
                                     )
                                   }
                                 />
@@ -1749,8 +1752,8 @@ export default function CustomerCompanies() {
                           {loading
                             ? "Saving..."
                             : editingCustomer
-                            ? "Update Customer"
-                            : "Add Customer"}
+                              ? "Update Customer"
+                              : "Add Customer"}
                         </Button>
                       </div>
                     </DialogContent>
@@ -2077,7 +2080,7 @@ export default function CustomerCompanies() {
                                     >
                                       {type}
                                     </Badge>
-                                  )
+                                  ),
                                 )}
                               </div>
                             ) : (
@@ -2110,7 +2113,7 @@ export default function CustomerCompanies() {
                                   <Badge key={index} variant="outline">
                                     {email}
                                   </Badge>
-                                )
+                                ),
                               )
                             ) : (
                               <span className="text-muted-foreground">
