@@ -25,6 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
+import DatePicker from "@/components/ui/date-picker";
+import TimePicker from "@/components/ui/TimePicker";
 import {
   ArrowLeft,
   Amphora,
@@ -92,12 +94,18 @@ export default function TankerOperations() {
     voyage_no: "",
     port: "",
     berth_location: "",
-    ETA: "",
-    ETD: "",
-    ETB: "",
-    ATA: "",
-    ATD: "",
-    ATB: "",
+    etaDate: "",
+    etaTime: "",
+    etdDate: "",
+    etdTime: "",
+    etbDate: "",
+    etbTime: "",
+    ataDate: "",
+    ataTime: "",
+    atdDate: "",
+    atdTime: "",
+    atbDate: "",
+    atbTime: "",
     Estimate_port_stay: 0,
     greekLankaPIC: "",
     bordingOfficer: "",
@@ -181,6 +189,20 @@ export default function TankerOperations() {
     setIsLoading(true);
 
     try {
+      const formatDateTime = (dateVal: any, timeVal: any) => {
+        if (!dateVal) return null;
+        try {
+          const d = new Date(dateVal);
+          if (timeVal && typeof timeVal === 'string') {
+            const [hours, minutes] = timeVal.split(':');
+            d.setHours(Number(hours) || 0, Number(minutes) || 0, 0, 0);
+          }
+          return d.toISOString();
+        } catch {
+          return null;
+        }
+      };
+
       const generatedAgencyRef = `AG-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')}`;
       const generatedSLPARef = `SLPA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
       const generatedDocRef = `DOC-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -203,12 +225,12 @@ export default function TankerOperations() {
         voyage_no: newOps.voyage_no,
         port: newOps.port,
         berth_location: newOps.berth_location,
-        ETA: newOps.ETA ? new Date(newOps.ETA).toISOString() : null,
-        ETD: newOps.ETD ? new Date(newOps.ETD).toISOString() : null,
-        ETB: newOps.ETB ? new Date(newOps.ETB).toISOString() : null,
-        ATA: newOps.ATA ? new Date(newOps.ATA).toISOString() : null,
-        ATD: newOps.ATD ? new Date(newOps.ATD).toISOString() : null,
-        ATB: newOps.ATB ? new Date(newOps.ATB).toISOString() : null,
+        ETA: formatDateTime(newOps.etaDate, newOps.etaTime),
+        ETD: formatDateTime(newOps.etdDate, newOps.etdTime),
+        ETB: formatDateTime(newOps.etbDate, newOps.etbTime),
+        ATA: formatDateTime(newOps.ataDate, newOps.ataTime),
+        ATD: formatDateTime(newOps.atdDate, newOps.atdTime),
+        ATB: formatDateTime(newOps.atbDate, newOps.atbTime),
         Estimate_port_stay: Number(newOps.Estimate_port_stay),
         ConsigneeOneID: payloadConsignees[0]?.ConsigneeID || null,
         ConsigneeTwoID: payloadConsignees[1]?.ConsigneeID || null,
@@ -415,32 +437,62 @@ export default function TankerOperations() {
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
-                            <Label>ETA *</Label>
-                            <Input required type="datetime-local" value={newOps.ETA} onChange={e => setNewOps({ ...newOps, ETA: e.target.value })} />
+                            <Label>ETA Date *</Label>
+                            <DatePicker value={newOps.etaDate} onChange={val => setNewOps({ ...newOps, etaDate: val })} className="w-full h-[40px]" />
                           </div>
                           <div className="space-y-2">
-                            <Label>ETD *</Label>
-                            <Input required type="datetime-local" value={newOps.ETD} onChange={e => setNewOps({ ...newOps, ETD: e.target.value })} />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-2">
-                            <Label>ETB</Label>
-                            <Input type="datetime-local" value={newOps.ETB} onChange={e => setNewOps({ ...newOps, ETB: e.target.value })} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>ATA</Label>
-                            <Input type="datetime-local" value={newOps.ATA} onChange={e => setNewOps({ ...newOps, ATA: e.target.value })} />
+                            <Label>ETA Time *</Label>
+                            <TimePicker value={newOps.etaTime} onChange={val => setNewOps({ ...newOps, etaTime: val })} className="h-[40px]" />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
-                            <Label>ATD</Label>
-                            <Input type="datetime-local" value={newOps.ATD} onChange={e => setNewOps({ ...newOps, ATD: e.target.value })} />
+                            <Label>ETD Date *</Label>
+                            <DatePicker value={newOps.etdDate} onChange={val => setNewOps({ ...newOps, etdDate: val })} className="w-full h-[40px]" />
                           </div>
                           <div className="space-y-2">
-                            <Label>ATB</Label>
-                            <Input type="datetime-local" value={newOps.ATB} onChange={e => setNewOps({ ...newOps, ATB: e.target.value })} />
+                            <Label>ETD Time *</Label>
+                            <TimePicker value={newOps.etdTime} onChange={val => setNewOps({ ...newOps, etdTime: val })} className="h-[40px]" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>ETB Date</Label>
+                            <DatePicker value={newOps.etbDate} onChange={val => setNewOps({ ...newOps, etbDate: val })} className="w-full h-[40px]" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>ETB Time</Label>
+                            <TimePicker value={newOps.etbTime} onChange={val => setNewOps({ ...newOps, etbTime: val })} className="h-[40px]" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>ATA Date</Label>
+                            <DatePicker value={newOps.ataDate} onChange={val => setNewOps({ ...newOps, ataDate: val })} className="w-full h-[40px]" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>ATA Time</Label>
+                            <TimePicker value={newOps.ataTime} onChange={val => setNewOps({ ...newOps, ataTime: val })} className="h-[40px]" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>ATD Date</Label>
+                            <DatePicker value={newOps.atdDate} onChange={val => setNewOps({ ...newOps, atdDate: val })} className="w-full h-[40px]" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>ATD Time</Label>
+                            <TimePicker value={newOps.atdTime} onChange={val => setNewOps({ ...newOps, atdTime: val })} className="h-[40px]" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>ATB Date</Label>
+                            <DatePicker value={newOps.atbDate} onChange={val => setNewOps({ ...newOps, atbDate: val })} className="w-full h-[40px]" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>ATB Time</Label>
+                            <TimePicker value={newOps.atbTime} onChange={val => setNewOps({ ...newOps, atbTime: val })} className="h-[40px]" />
                           </div>
                         </div>
                         <div className="space-y-2">
@@ -489,14 +541,14 @@ export default function TankerOperations() {
                     </div>
 
                     <div className="space-y-4">
-                      <div className="space-y-2">
+                      {/* <div className="space-y-2">
                         <Label>Comments</Label>
                         <Textarea placeholder="Initial tanker ops created..." value={newOps.comments} onChange={e => setNewOps({ ...newOps, comments: e.target.value })} />
-                      </div>
-                      <div className="space-y-2">
+                      </div> */}
+                      {/* <div className="space-y-2">
                         <Label>Areas for Improvement</Label>
                         <Textarea placeholder="N/A" value={newOps.areas_for_improvement} onChange={e => setNewOps({ ...newOps, areas_for_improvement: e.target.value })} />
-                      </div>
+                      </div> */}
                     </div>
 
                     <DialogFooter className="pt-4 border-t">
