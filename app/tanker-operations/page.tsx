@@ -117,6 +117,35 @@ export default function TankerOperations() {
   };
 
   const [newOps, setNewOps] = useState(initialFormState);
+  const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:3080/api/user", {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+          }
+        });
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const formatted = json.data.map((u: any) => {
+            const fullName = `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.email;
+            return {
+              value: fullName,
+              label: fullName
+            };
+          });
+          setUserOptions(formatted);
+        }
+      } catch (e) {
+        console.error("Failed to fetch users");
+      }
+    }
+    fetchUsers();
+  }, []);
 
   const router = useRouter();
 
@@ -278,9 +307,13 @@ export default function TankerOperations() {
         user: currentUser?.name || "ops_admin"
       };
 
+      const token = localStorage.getItem("token");
       const res = await fetch("http://localhost:3080/api/tankerOps", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(reqBody)
       });
 
@@ -528,16 +561,38 @@ export default function TankerOperations() {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Estimate Port Stay (Hrs) *</Label>
-                          <Input required type="number" min="0" placeholder="60" value={newOps.Estimate_port_stay} onChange={e => setNewOps({ ...newOps, Estimate_port_stay: Number(e.target.value) })} />
+                          <Label>Estimate Port Stay (Hrs)</Label>
+                          <Input type="number" min="0" placeholder="60" value={newOps.Estimate_port_stay} onChange={e => setNewOps({ ...newOps, Estimate_port_stay: Number(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
                           <Label>Greek Lanka PIC</Label>
-                          <Input placeholder="e.g. Kasun Perera" value={newOps.greekLankaPIC} onChange={e => setNewOps({ ...newOps, greekLankaPIC: e.target.value })} />
+                          <Select value={newOps.greekLankaPIC} onValueChange={val => setNewOps({ ...newOps, greekLankaPIC: val })}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select PIC" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {userOptions.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <Label>Boarding Officer</Label>
-                          <Input placeholder="e.g. Ruwan Silva" value={newOps.bordingOfficer} onChange={e => setNewOps({ ...newOps, bordingOfficer: e.target.value })} />
+                          <Select value={newOps.bordingOfficer} onValueChange={val => setNewOps({ ...newOps, bordingOfficer: val })}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select Officer" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {userOptions.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>
