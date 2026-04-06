@@ -89,6 +89,9 @@ export default function TankerOperations() {
   const [isLoading, setIsLoading] = useState(false);
 
   const initialFormState = {
+    agency_ref_no: "",
+    SLPAPaymentRef: "",
+    documetRefNo: "",
     vessel_name: "",
     imo_number: "",
     voyage_no: "",
@@ -148,6 +151,17 @@ export default function TankerOperations() {
   }, []);
 
   const router = useRouter();
+
+  useEffect(() => {
+    if (isDialogOpen && !newOps.agency_ref_no) {
+      setNewOps((prev) => ({
+        ...prev,
+        agency_ref_no: `AG-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')}`,
+        SLPAPaymentRef: `SLPA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        documetRefNo: `DOC-${Math.floor(100000 + Math.random() * 900000)}`
+      }));
+    }
+  }, [isDialogOpen, newOps.agency_ref_no]);
 
   // Auto-calculate Estimate Port Stay (Hrs) from ETD - ETB
   useEffect(() => {
@@ -264,9 +278,9 @@ export default function TankerOperations() {
         }
       };
 
-      const generatedAgencyRef = `AG-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')}`;
-      const generatedSLPARef = `SLPA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const generatedDocRef = `DOC-${Math.floor(100000 + Math.random() * 900000)}`;
+      const agencyRef = newOps.agency_ref_no || `AG-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')}`;
+      const slpaRef = newOps.SLPAPaymentRef || `SLPA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const docRef = newOps.documetRefNo || `DOC-${Math.floor(100000 + Math.random() * 900000)}`;
 
       // Map consignees
       const payloadConsignees = newOps.consignees.filter(c => c.ConsigneeName.trim() !== "").map((c, index) => {
@@ -280,7 +294,7 @@ export default function TankerOperations() {
       });
 
       const reqBody = {
-        agency_ref_no: generatedAgencyRef,
+        agency_ref_no: agencyRef,
         vessel_name: newOps.vessel_name,
         imo_number: newOps.imo_number,
         voyage_no: newOps.voyage_no,
@@ -298,9 +312,9 @@ export default function TankerOperations() {
         ConsigneeThreeID: payloadConsignees[2]?.ConsigneeID || null,
         greekLankaPIC: newOps.greekLankaPIC,
         bordingOfficer: newOps.bordingOfficer,
-        SLPAPaymentRef: generatedSLPARef,
+        SLPAPaymentRef: slpaRef,
         DCReferenceNo: `DC-${Math.floor(100000 + Math.random() * 900000)}`,
-        documetRefNo: generatedDocRef,
+        documetRefNo: docRef,
         comments: newOps.comments || "N/A",
         areas_for_improvement: newOps.areas_for_improvement || "N/A",
         consignees: payloadConsignees,
@@ -329,7 +343,7 @@ export default function TankerOperations() {
       // Append dummy item conceptually so it shows on screen
       setOperations([{
         id: result.data?.ops_id || Date.now().toString(),
-        agencyRef: generatedAgencyRef,
+        agencyRef: agencyRef,
         vesselName: newOps.vessel_name,
         imoNo: newOps.imo_number,
         voyageNo: newOps.voyage_no,
@@ -473,6 +487,22 @@ export default function TankerOperations() {
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+                    {/* Reference Numbers Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
+                      <div className="space-y-2">
+                        <Label>Agency Ref No</Label>
+                        <Input value={newOps.agency_ref_no} onChange={e => setNewOps({ ...newOps, agency_ref_no: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>SLPA Payment Ref</Label>
+                        <Input value={newOps.SLPAPaymentRef} onChange={e => setNewOps({ ...newOps, SLPAPaymentRef: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Document Ref No</Label>
+                        <Input value={newOps.documetRefNo} onChange={e => setNewOps({ ...newOps, documetRefNo: e.target.value })} />
+                      </div>
+                    </div>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Left Column */}
                       <div className="space-y-4">
