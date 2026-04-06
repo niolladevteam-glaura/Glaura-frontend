@@ -423,7 +423,7 @@ export default function TankerOperations() {
               <td className="px-4 py-3">{op.voyageNo}</td>
               <td className="px-4 py-3">{op.port}</td>
               <td className="px-4 py-3">
-                <Link href={`/tanker-operations/${encodeURIComponent(op.agencyRef)}`}>
+                <Link href={`/tanker-operations/${op.id}`}>
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
                     <Edit className="h-4 w-4" />
                     Edit
@@ -796,7 +796,7 @@ export default function TankerOperations() {
                     </div>
                   </CardContent>
                   <div className="p-4 border-t mt-auto">
-                    <Link href={`/tanker-operations/${encodeURIComponent(op.agencyRef)}`} className="w-full">
+                    <Link href={`/tanker-operations/${op.id}`} className="w-full">
                       <Button variant="default" className="w-full flex items-center gap-2">
                         <Edit className="h-4 w-4" />
                         Update Operation
