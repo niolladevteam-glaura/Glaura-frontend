@@ -120,6 +120,38 @@ export default function TankerOperations() {
 
   const router = useRouter();
 
+  // Auto-calculate Estimate Port Stay (Hrs) from ETD - ETB
+  useEffect(() => {
+    if (newOps.etdDate && newOps.etbDate) {
+      try {
+        const d_etd = new Date(newOps.etdDate);
+        if (newOps.etdTime && typeof newOps.etdTime === 'string') {
+          const [h, m] = newOps.etdTime.split(':');
+          d_etd.setHours(Number(h) || 0, Number(m) || 0, 0, 0);
+        } else {
+          d_etd.setHours(0, 0, 0, 0);
+        }
+
+        const d_etb = new Date(newOps.etbDate);
+        if (newOps.etbTime && typeof newOps.etbTime === 'string') {
+          const [h, m] = newOps.etbTime.split(':');
+          d_etb.setHours(Number(h) || 0, Number(m) || 0, 0, 0);
+        } else {
+          d_etb.setHours(0, 0, 0, 0);
+        }
+
+        const diffMs = d_etd.getTime() - d_etb.getTime();
+        const diffHrs = Math.max(0, Math.round(diffMs / (1000 * 60 * 60)));
+        
+        if (diffHrs !== newOps.Estimate_port_stay && !isNaN(diffHrs)) {
+          setNewOps(prev => ({ ...prev, Estimate_port_stay: diffHrs }));
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
+  }, [newOps.etdDate, newOps.etdTime, newOps.etbDate, newOps.etbTime, newOps.Estimate_port_stay]);
+
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
     if (!userData) {
@@ -412,16 +444,16 @@ export default function TankerOperations() {
                       {/* Left Column */}
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label>Vessel Name *</Label>
-                          <Input required placeholder="e.g. MT Ocean Titan" value={newOps.vessel_name} onChange={e => setNewOps({ ...newOps, vessel_name: e.target.value })} />
+                          <Label>Vessel Name</Label>
+                          <Input placeholder="e.g. MT Ocean Titan" value={newOps.vessel_name} onChange={e => setNewOps({ ...newOps, vessel_name: e.target.value })} />
                         </div>
                         <div className="space-y-2">
-                          <Label>IMO Number *</Label>
-                          <Input required placeholder="e.g. 9234567" value={newOps.imo_number} onChange={e => setNewOps({ ...newOps, imo_number: e.target.value })} />
+                          <Label>IMO Number</Label>
+                          <Input placeholder="e.g. 9234567" value={newOps.imo_number} onChange={e => setNewOps({ ...newOps, imo_number: e.target.value })} />
                         </div>
                         <div className="space-y-2">
-                          <Label>Voyage No *</Label>
-                          <Input required placeholder="e.g. VOY-7788" value={newOps.voyage_no} onChange={e => setNewOps({ ...newOps, voyage_no: e.target.value })} />
+                          <Label>Voyage No</Label>
+                          <Input placeholder="e.g. VOY-7788" value={newOps.voyage_no} onChange={e => setNewOps({ ...newOps, voyage_no: e.target.value })} />
                         </div>
                         <div className="space-y-2">
                           <Label>Port</Label>
@@ -437,21 +469,21 @@ export default function TankerOperations() {
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
-                            <Label>ETA Date *</Label>
+                            <Label>ETA Date</Label>
                             <DatePicker value={newOps.etaDate} onChange={val => setNewOps({ ...newOps, etaDate: val })} className="w-full h-[40px]" />
                           </div>
                           <div className="space-y-2">
-                            <Label>ETA Time *</Label>
+                            <Label>ETA Time</Label>
                             <TimePicker value={newOps.etaTime} onChange={val => setNewOps({ ...newOps, etaTime: val })} className="h-[40px]" />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
-                            <Label>ETD Date *</Label>
+                            <Label>ETD Date</Label>
                             <DatePicker value={newOps.etdDate} onChange={val => setNewOps({ ...newOps, etdDate: val })} className="w-full h-[40px]" />
                           </div>
                           <div className="space-y-2">
-                            <Label>ETD Time *</Label>
+                            <Label>ETD Time</Label>
                             <TimePicker value={newOps.etdTime} onChange={val => setNewOps({ ...newOps, etdTime: val })} className="h-[40px]" />
                           </div>
                         </div>
@@ -538,17 +570,6 @@ export default function TankerOperations() {
                           )}
                         </div>
                       ))}
-                    </div>
-
-                    <div className="space-y-4">
-                      {/* <div className="space-y-2">
-                        <Label>Comments</Label>
-                        <Textarea placeholder="Initial tanker ops created..." value={newOps.comments} onChange={e => setNewOps({ ...newOps, comments: e.target.value })} />
-                      </div> */}
-                      {/* <div className="space-y-2">
-                        <Label>Areas for Improvement</Label>
-                        <Textarea placeholder="N/A" value={newOps.areas_for_improvement} onChange={e => setNewOps({ ...newOps, areas_for_improvement: e.target.value })} />
-                      </div> */}
                     </div>
 
                     <DialogFooter className="pt-4 border-t">
