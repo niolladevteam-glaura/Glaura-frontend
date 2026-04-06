@@ -344,7 +344,6 @@ export default function Dashboard() {
           href: "/tanker-operations",
           icon: Amphora,
           label: "Tanker Operations",
-          disabled: true,
         },
         {
           href: "/bunkering-operations",
