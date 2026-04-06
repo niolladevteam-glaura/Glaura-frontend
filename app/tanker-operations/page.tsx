@@ -6,6 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -21,14 +32,15 @@ import {
   Search,
   Plus,
   Ship,
-  FileText,
   MapPin,
   Table2,
   LayoutGrid,
   Edit,
   Eye,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface TankerOperation {
   id: string;
@@ -44,7 +56,7 @@ interface TankerOperation {
 const DUMMY_OPERATIONS: TankerOperation[] = [
   {
     id: "1",
-    agencyRef: "GL/TO/001",
+    agencyRef: "AG-2026-001",
     vesselName: "NORD VOYAGER",
     imoNo: "9123456",
     voyageNo: "V-120",
@@ -53,7 +65,7 @@ const DUMMY_OPERATIONS: TankerOperation[] = [
   },
   {
     id: "2",
-    agencyRef: "GL/TO/002",
+    agencyRef: "AG-2026-002",
     vesselName: "EVER GIVEN",
     imoNo: "9001234",
     voyageNo: "V-99",
@@ -69,6 +81,32 @@ export default function TankerOperations() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewType, setViewType] = useState<"card" | "table">("card");
+  
+  // Dialog State
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Form State
+  const initialFormState = {
+    vessel_name: "",
+    imo_number: "",
+    voyage_no: "",
+    port: "",
+    berth_location: "",
+    ETA: "",
+    ETD: "",
+    Estimate_port_stay: 0,
+    greekLankaPIC: "",
+    bordingOfficer: "",
+    comments: "",
+    areas_for_improvement: "",
+    consignees: [
+      { ConsigneeName: "", description: "" }
+    ]
+  };
+
+  const [newOps, setNewOps] = useState(initialFormState);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -109,6 +147,106 @@ export default function TankerOperations() {
         return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600";
+    }
+  };
+
+  const handleAddConsignee = () => {
+    if (newOps.consignees.length >= 3) {
+      toast.warning("Maximum of 3 consignees allowed.");
+      return;
+    }
+    setNewOps({
+      ...newOps,
+      consignees: [...newOps.consignees, { ConsigneeName: "", description: "" }]
+    });
+  };
+
+  const handleRemoveConsignee = (index: number) => {
+    const updated = [...newOps.consignees];
+    updated.splice(index, 1);
+    setNewOps({ ...newOps, consignees: updated });
+  };
+
+  const handleConsigneeChange = (index: number, field: string, value: string) => {
+    const updated = [...newOps.consignees];
+    updated[index] = { ...updated[index], [field]: value };
+    setNewOps({ ...newOps, consignees: updated });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const generatedAgencyRef = `AG-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')}`;
+      const generatedSLPARef = `SLPA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const generatedDocRef = `DOC-${Math.floor(100000 + Math.random() * 900000)}`;
+
+      // Map consignees
+      const payloadConsignees = newOps.consignees.filter(c => c.ConsigneeName.trim() !== "").map((c, index) => {
+        const types = ["ConsigneeOne", "ConsigneeTwo", "ConsigneeThree"];
+        return {
+          ConsigneeID: `CON-${String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')}`,
+          ConsigneeType: types[index] || `Consignee${index + 1}`,
+          ConsigneeName: c.ConsigneeName,
+          description: c.description || "N/A"
+        };
+      });
+
+      const reqBody = {
+        agency_ref_no: generatedAgencyRef,
+        vessel_name: newOps.vessel_name,
+        imo_number: newOps.imo_number,
+        voyage_no: newOps.voyage_no,
+        port: newOps.port,
+        berth_location: newOps.berth_location,
+        ETA: new Date(newOps.ETA).toISOString(),
+        ETD: new Date(newOps.ETD).toISOString(),
+        Estimate_port_stay: Number(newOps.Estimate_port_stay),
+        ConsigneeOneID: payloadConsignees[0]?.ConsigneeID || null,
+        ConsigneeTwoID: payloadConsignees[1]?.ConsigneeID || null,
+        ConsigneeThreeID: payloadConsignees[2]?.ConsigneeID || null,
+        greekLankaPIC: newOps.greekLankaPIC,
+        bordingOfficer: newOps.bordingOfficer,
+        SLPAPaymentRef: generatedSLPARef,
+        DCReferenceNo: `DC-${Math.floor(100000 + Math.random() * 900000)}`,
+        documetRefNo: generatedDocRef,
+        comments: newOps.comments || "N/A",
+        areas_for_improvement: newOps.areas_for_improvement || "N/A",
+        consignees: payloadConsignees,
+        user: currentUser?.name || "ops_admin"
+      };
+
+      const res = await fetch("http://localhost:3080/api/tankerOps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reqBody)
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.message || "Failed to create Tanker Operation");
+      }
+
+      toast.success(result.message || "Tanker operation created successfully");
+      setIsDialogOpen(false);
+      setNewOps(initialFormState);
+
+      // Append dummy item conceptually so it shows on screen
+      setOperations([{
+        id: result.data?.ops_id || Date.now().toString(),
+        agencyRef: generatedAgencyRef,
+        vesselName: newOps.vessel_name,
+        imoNo: newOps.imo_number,
+        voyageNo: newOps.voyage_no,
+        port: newOps.port,
+        status: "Pending"
+      }, ...operations]);
+
+    } catch (err: any) {
+      toast.error("Error creating Tanker Ops", { description: err.message });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -224,12 +362,127 @@ export default function TankerOperations() {
           <CardHeader>
             <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <span>Tanker Operations Management</span>
-              <Link href="/tanker-operations/new">
-                <Button className="w-full sm:w-auto">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Open Tanker Operation
-                </Button>
-              </Link>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full sm:w-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Open Tanker Operation
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader className="border-b pb-4">
+                    <DialogTitle className="text-xl font-semibold">
+                      Create Tanker Operation
+                    </DialogTitle>
+                    <DialogDescription className="text-sm text-gray-600 dark:text-gray-400">
+                      Fill in the operation details to generate a new Reference Number and initialize the workflow.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Left Column */}
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Vessel Name *</Label>
+                          <Input required placeholder="e.g. MT Ocean Titan" value={newOps.vessel_name} onChange={e => setNewOps({ ...newOps, vessel_name: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>IMO Number *</Label>
+                          <Input required placeholder="e.g. 9234567" value={newOps.imo_number} onChange={e => setNewOps({ ...newOps, imo_number: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Voyage No *</Label>
+                          <Input required placeholder="e.g. VOY-7788" value={newOps.voyage_no} onChange={e => setNewOps({ ...newOps, voyage_no: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Port</Label>
+                          <Input placeholder="e.g. Colombo" value={newOps.port} onChange={e => setNewOps({ ...newOps, port: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Berth Location</Label>
+                          <Input placeholder="e.g. Oil Jetty 02" value={newOps.berth_location} onChange={e => setNewOps({ ...newOps, berth_location: e.target.value })} />
+                        </div>
+                      </div>
+
+                      {/* Right Column */}
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>ETA *</Label>
+                            <Input required type="datetime-local" value={newOps.ETA} onChange={e => setNewOps({ ...newOps, ETA: e.target.value })} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>ETD *</Label>
+                            <Input required type="datetime-local" value={newOps.ETD} onChange={e => setNewOps({ ...newOps, ETD: e.target.value })} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Estimate Port Stay (Hrs) *</Label>
+                          <Input required type="number" min="0" placeholder="60" value={newOps.Estimate_port_stay} onChange={e => setNewOps({ ...newOps, Estimate_port_stay: Number(e.target.value) })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Greek Lanka PIC</Label>
+                          <Input placeholder="e.g. Kasun Perera" value={newOps.greekLankaPIC} onChange={e => setNewOps({ ...newOps, greekLankaPIC: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Boarding Officer</Label>
+                          <Input placeholder="e.g. Ruwan Silva" value={newOps.bordingOfficer} onChange={e => setNewOps({ ...newOps, bordingOfficer: e.target.value })} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 border rounded-md p-4 bg-gray-50/50 dark:bg-gray-800/50">
+                      <div className="flex justify-between items-center">
+                        <Label className="text-base font-semibold">Consignees</Label>
+                        {newOps.consignees.length < 3 && (
+                          <Button type="button" variant="outline" size="sm" onClick={handleAddConsignee}>
+                            <Plus className="w-4 h-4 mr-2" /> Add Consignee
+                          </Button>
+                        )}
+                      </div>
+                      {newOps.consignees.map((c, idx) => (
+                        <div key={idx} className="flex gap-2 items-start relative bg-white dark:bg-gray-900 p-3 rounded-md border shadow-sm">
+                          <div className="flex-1 space-y-3">
+                            <div>
+                              <Label className="text-xs">Consignee Name</Label>
+                              <Input placeholder="e.g. Ceylon Petroleum Corporation" value={c.ConsigneeName} onChange={e => handleConsigneeChange(idx, "ConsigneeName", e.target.value)} />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Description</Label>
+                              <Input placeholder="e.g. Main cargo receiver" value={c.description} onChange={e => handleConsigneeChange(idx, "description", e.target.value)} />
+                            </div>
+                          </div>
+                          {newOps.consignees.length > 1 && (
+                            <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-700 mt-5" onClick={() => handleRemoveConsignee(idx)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Comments</Label>
+                        <Textarea placeholder="Initial tanker ops created..." value={newOps.comments} onChange={e => setNewOps({ ...newOps, comments: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Areas for Improvement</Label>
+                        <Textarea placeholder="N/A" value={newOps.areas_for_improvement} onChange={e => setNewOps({ ...newOps, areas_for_improvement: e.target.value })} />
+                      </div>
+                    </div>
+
+                    <DialogFooter className="pt-4 border-t">
+                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={isLoading}>
+                        {isLoading ? "Creating..." : "Create Operation"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -290,8 +543,8 @@ export default function TankerOperations() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredOperations.map((op) => (
-                <Card key={op.id} className="hover:shadow-lg transition-shadow border-t-4 border-t-primary">
-                  <CardHeader className="pb-3 border-b">
+                <Card key={op.id} className="hover:shadow-lg transition-shadow border-t-4 border-t-primary flex flex-col h-full">
+                  <CardHeader className="pb-3 border-b flex-shrink-0">
                     <div className="flex justify-between items-start">
                       <div>
                         <Badge variant="outline" className="mb-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200">
@@ -307,7 +560,7 @@ export default function TankerOperations() {
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-4 grid grid-cols-2 gap-y-4 text-sm">
+                  <CardContent className="pt-4 grid grid-cols-2 gap-y-4 text-sm flex-grow">
                     <div>
                       <p className="text-muted-foreground text-xs font-semibold uppercase">IMO No</p>
                       <p className="font-medium mt-1">{op.imoNo}</p>
@@ -323,15 +576,15 @@ export default function TankerOperations() {
                         {op.port}
                       </p>
                     </div>
-                    <div className="col-span-2 pt-4 border-t flex gap-2">
-                      <Link href={`/tanker-operations/${encodeURIComponent(op.agencyRef)}`} className="w-full">
-                        <Button variant="default" className="w-full flex items-center gap-2">
-                          <Edit className="h-4 w-4" />
-                          Edit Operation
-                        </Button>
-                      </Link>
-                    </div>
                   </CardContent>
+                  <div className="p-4 border-t mt-auto">
+                    <Link href={`/tanker-operations/${encodeURIComponent(op.agencyRef)}`} className="w-full">
+                      <Button variant="default" className="w-full flex items-center gap-2">
+                        <Edit className="h-4 w-4" />
+                        Edit Operation
+                      </Button>
+                    </Link>
+                  </div>
                 </Card>
               ))}
               {filteredOperations.length === 0 && (
