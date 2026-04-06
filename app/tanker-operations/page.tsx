@@ -88,6 +88,8 @@ export default function TankerOperations() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
   const initialFormState = {
     agency_ref_no: "",
     SLPAPaymentRef: "",
@@ -126,7 +128,7 @@ export default function TankerOperations() {
     async function fetchUsers() {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:3080/api/user", {
+        const res = await fetch(`${API_BASE_URL}/user`, {
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` })
@@ -154,7 +156,7 @@ export default function TankerOperations() {
     async function fetchOperations() {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:3080/api/tankerOps", {
+        const res = await fetch(`${API_BASE_URL}/tankerOps`, {
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` })
@@ -353,7 +355,7 @@ export default function TankerOperations() {
       };
 
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3080/api/tankerOps", {
+      const res = await fetch(`${API_BASE_URL}/tankerOps`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -797,7 +799,7 @@ export default function TankerOperations() {
                     <Link href={`/tanker-operations/${encodeURIComponent(op.agencyRef)}`} className="w-full">
                       <Button variant="default" className="w-full flex items-center gap-2">
                         <Edit className="h-4 w-4" />
-                        Edit Operation
+                        Update Operation
                       </Button>
                     </Link>
                   </div>
