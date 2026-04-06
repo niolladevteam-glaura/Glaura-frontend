@@ -86,7 +86,6 @@ export default function TankerOperations() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form State
   const initialFormState = {
     vessel_name: "",
     imo_number: "",
@@ -95,6 +94,10 @@ export default function TankerOperations() {
     berth_location: "",
     ETA: "",
     ETD: "",
+    ETB: "",
+    ATA: "",
+    ATD: "",
+    ATB: "",
     Estimate_port_stay: 0,
     greekLankaPIC: "",
     bordingOfficer: "",
@@ -200,8 +203,12 @@ export default function TankerOperations() {
         voyage_no: newOps.voyage_no,
         port: newOps.port,
         berth_location: newOps.berth_location,
-        ETA: new Date(newOps.ETA).toISOString(),
-        ETD: new Date(newOps.ETD).toISOString(),
+        ETA: newOps.ETA ? new Date(newOps.ETA).toISOString() : null,
+        ETD: newOps.ETD ? new Date(newOps.ETD).toISOString() : null,
+        ETB: newOps.ETB ? new Date(newOps.ETB).toISOString() : null,
+        ATA: newOps.ATA ? new Date(newOps.ATA).toISOString() : null,
+        ATD: newOps.ATD ? new Date(newOps.ATD).toISOString() : null,
+        ATB: newOps.ATB ? new Date(newOps.ATB).toISOString() : null,
         Estimate_port_stay: Number(newOps.Estimate_port_stay),
         ConsigneeOneID: payloadConsignees[0]?.ConsigneeID || null,
         ConsigneeTwoID: payloadConsignees[1]?.ConsigneeID || null,
@@ -414,6 +421,26 @@ export default function TankerOperations() {
                           <div className="space-y-2">
                             <Label>ETD *</Label>
                             <Input required type="datetime-local" value={newOps.ETD} onChange={e => setNewOps({ ...newOps, ETD: e.target.value })} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>ETB</Label>
+                            <Input type="datetime-local" value={newOps.ETB} onChange={e => setNewOps({ ...newOps, ETB: e.target.value })} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>ATA</Label>
+                            <Input type="datetime-local" value={newOps.ATA} onChange={e => setNewOps({ ...newOps, ATA: e.target.value })} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>ATD</Label>
+                            <Input type="datetime-local" value={newOps.ATD} onChange={e => setNewOps({ ...newOps, ATD: e.target.value })} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>ATB</Label>
+                            <Input type="datetime-local" value={newOps.ATB} onChange={e => setNewOps({ ...newOps, ATB: e.target.value })} />
                           </div>
                         </div>
                         <div className="space-y-2">
