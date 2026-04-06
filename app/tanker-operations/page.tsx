@@ -78,8 +78,8 @@ const DUMMY_OPERATIONS: TankerOperation[] = [
 
 export default function TankerOperations() {
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [operations, setOperations] = useState<TankerOperation[]>(DUMMY_OPERATIONS);
-  const [filteredOperations, setFilteredOperations] = useState<TankerOperation[]>(DUMMY_OPERATIONS);
+  const [operations, setOperations] = useState<TankerOperation[]>([]);
+  const [filteredOperations, setFilteredOperations] = useState<TankerOperation[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewType, setViewType] = useState<"card" | "table">("card");
@@ -148,6 +148,37 @@ export default function TankerOperations() {
       }
     }
     fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    async function fetchOperations() {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:3080/api/tankerOps", {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+          }
+        });
+        const json = await res.json();
+        if (json.data && Array.isArray(json.data)) {
+          const mapped = json.data.map((op: any) => ({
+            id: op.ops_id,
+            agencyRef: op.agency_ref_no,
+            vesselName: op.vessel_name,
+            imoNo: op.imo_number,
+            voyageNo: op.voyage_no,
+            port: op.port,
+            status: "Pending" // Fallback since the backend response doesn't overtly provide a status mapping yet
+          }));
+          setOperations(mapped);
+          setFilteredOperations(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch tanker operations");
+      }
+    }
+    fetchOperations();
   }, []);
 
   const router = useRouter();
