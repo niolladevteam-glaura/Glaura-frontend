@@ -396,6 +396,47 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
           </CardContent>
         </Card>
 
+        {/* Stage / Task Tracking Table */}
+        <Card className="mb-6 overflow-hidden">
+          <CardHeader className="bg-gray-50/80 dark:bg-gray-800/30 border-b py-4">
+            <CardTitle className="text-lg">Stage & Task Tracking</CardTitle>
+          </CardHeader>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold w-[150px]">Stage</th>
+                  <th className="px-4 py-3 text-left font-semibold w-[400px]">Task</th>
+                  <th className="px-4 py-3 text-center font-semibold w-48">Action</th>
+                  <th className="px-4 py-3 text-left font-semibold">Remarks</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y text-sm">
+                {(opsData.tasks || []).map((t: any) => (
+                  <tr key={t.id} className="bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/50 border-b">
+                    <td className="px-4 py-3 border-r text-muted-foreground">{t.stageName}</td>
+                    <td className="px-4 py-3 border-r font-medium">{t.taskName}</td>
+                    <td className="px-4 py-3 text-center border-r">
+                      <Select value={t.status || "Pending"} onValueChange={v => handleTaskChange(t.id, "status", v)}>
+                        <SelectTrigger className={`w-[130px] mx-auto text-xs font-semibold ${t.status === "Done" || t.status === "Completed" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Done">Done</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Input placeholder="Add remark..." value={t.Remarks || ""} onChange={e => handleTaskChange(t.id, "Remarks", e.target.value)} className="bg-transparent border-gray-200 dark:border-gray-700" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
         {/* ETA Notices Table */}
         <Card className="mb-6 overflow-hidden">
           <CardHeader className="bg-gray-50/80 dark:bg-gray-800/30 border-b py-4">
@@ -446,47 +487,6 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                           <SelectItem value="Done">Done</SelectItem>
                         </SelectContent>
                       </Select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        {/* Stage / Task Tracking Table */}
-        <Card className="mb-6 overflow-hidden">
-          <CardHeader className="bg-gray-50/80 dark:bg-gray-800/30 border-b py-4">
-            <CardTitle className="text-lg">Stage & Task Tracking</CardTitle>
-          </CardHeader>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold w-[150px]">Stage</th>
-                  <th className="px-4 py-3 text-left font-semibold w-[400px]">Task</th>
-                  <th className="px-4 py-3 text-center font-semibold w-48">Action</th>
-                  <th className="px-4 py-3 text-left font-semibold">Remarks</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y text-sm">
-                {(opsData.tasks || []).map((t: any) => (
-                  <tr key={t.id} className="bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/50 border-b">
-                    <td className="px-4 py-3 border-r text-muted-foreground">{t.stageName}</td>
-                    <td className="px-4 py-3 border-r font-medium">{t.taskName}</td>
-                    <td className="px-4 py-3 text-center border-r">
-                      <Select value={t.status || "Pending"} onValueChange={v => handleTaskChange(t.id, "status", v)}>
-                        <SelectTrigger className={`w-[130px] mx-auto text-xs font-semibold ${t.status === "Done" || t.status === "Completed" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Done">Done</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input placeholder="Add remark..." value={t.Remarks || ""} onChange={e => handleTaskChange(t.id, "Remarks", e.target.value)} className="bg-transparent border-gray-200 dark:border-gray-700" />
                     </td>
                   </tr>
                 ))}
