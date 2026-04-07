@@ -41,6 +41,8 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
   const [editDialog, setEditDialog] = useState<{ open: boolean; taskId: string; remark: string }>({ open: false, taskId: "", remark: "" });
   // Track which task is currently being saved (shows per-row spinner)
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+  // Track which ETA row is currently being saved
+  const [updatingEtaId, setUpdatingEtaId] = useState<string | null>(null);
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080/api";
 
@@ -310,6 +312,59 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
       toast.error(err?.message || "Failed to update task");
     } finally {
       setUpdatingTaskId(null);
+    }
+  };
+
+  const handleUpdateEta = async (etaId: string) => {
+    const etaRow = (opsData.etas || []).find((e: any) => e.ops_eta_id === etaId);
+    if (!etaRow) return;
+
+    setUpdatingEtaId(etaId);
+    try {
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("currentUser");
+      const currentUser = storedUser ? JSON.parse(storedUser) : null;
+      const userName = currentUser?.name || "sathira";
+
+      const payload = {
+        ops_eta_id: etaId, // Including ID to ensure backend knows which record to update
+        updated_to_port: etaRow.updated_to_port === true || etaRow.updated_to_port === "Done",
+        updated_to_consignee: etaRow.updated_to_consignee === true || etaRow.updated_to_consignee === "Done",
+        ETAReceivedDateTime: etaRow.ETAReceivedDateTime || null,
+        user: userName,
+      };
+
+      const res = await fetch(`${API_BASE_URL}/tankerOps/${ops_id}/eta`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.message || "ETA update failed");
+      }
+
+      toast.success("ETA notice updated");
+
+      // Refetch full operation to sync UI
+      const refreshRes = await fetch(`${API_BASE_URL}/tankerOps/${ops_id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const refreshJson = await refreshRes.json();
+      if (refreshJson.data) {
+        setOpsData(refreshJson.data);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update ETA notice");
+    } finally {
+      setUpdatingEtaId(null);
     }
   };
   
@@ -713,6 +768,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                   <th className="px-4 py-3 text-center font-semibold">Update to Port</th>
                   <th className="px-4 py-3 text-center font-semibold">ETA Received</th>
                   <th className="px-4 py-3 text-center font-semibold">Update to Consignee</th>
+                  <th className="px-4 py-3 text-center font-semibold w-[100px]">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y text-sm">
@@ -750,6 +806,21 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                           <SelectItem value="Done">Done</SelectItem>
                         </SelectContent>
                       </Select>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex items-center justify-center">
+                        {updatingEtaId === eta.ops_eta_id ? (
+                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                        ) : (
+                          <button
+                            title="Save ETA Update"
+                            onClick={() => handleUpdateEta(eta.ops_eta_id)}
+                            className="h-8 w-8 rounded-full flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-green-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all cursor-pointer"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
