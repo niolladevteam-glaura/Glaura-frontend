@@ -25,6 +25,16 @@ import {
 import { toast } from "sonner";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/TimePicker";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function TankerOperationDetail({ params }: { params: { ops_id: string } }) {
   const router = useRouter();
@@ -43,6 +53,8 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   // Track which ETA row is currently being saved
   const [updatingEtaId, setUpdatingEtaId] = useState<string | null>(null);
+  // Completion confirmation dialog
+  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080/api";
 
@@ -502,7 +514,11 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
             </div>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={saving || isReadOnly} className="shadow-md">
+        <Button 
+          onClick={() => setIsCompleteDialogOpen(true)} 
+          disabled={saving || isReadOnly} 
+          className="shadow-md"
+        >
           {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
           Complete Operation
         </Button>
@@ -776,8 +792,35 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
           </div>
         </Card>
 
-        {/* Mark-as-Done Dialog */}
-        <Dialog open={doneDialog.open} onOpenChange={open => setDoneDialog(d => ({ ...d, open }))}>
+      {/* Completion Confirmation Dialog */}
+      <AlertDialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Complete Operation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to complete this operation? This will finalize the record,
+              set its status to "Completed", and make it read-only. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-primary text-primary-foreground shadow hover:bg-primary/90"
+              disabled={saving}
+              onClick={(e) => {
+                e.preventDefault();
+                handleSave();
+                setIsCompleteDialogOpen(false);
+              }}
+            >
+              {saving ? "Completing..." : "Confirm & Complete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Mark-as-Done Dialog */}
+      <Dialog open={doneDialog.open} onOpenChange={open => setDoneDialog(d => ({ ...d, open }))}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
