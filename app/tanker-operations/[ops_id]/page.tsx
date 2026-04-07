@@ -268,6 +268,37 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
     );
     handleChange("tasks", newTasks);
   };
+
+  const handleUpdateTask = async (taskId: string, status: string, remarks: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("currentUser");
+      const currentUser = storedUser ? JSON.parse(storedUser) : null;
+      const userName = currentUser?.name || "ops_admin";
+
+      const res = await fetch(`${API_BASE_URL}/tankerOps/${ops_id}/task/${taskId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ status, remarks, user: userName }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.message || "Task update failed");
+      }
+
+      // Also update local state so UI reflects immediately
+      handleTaskChange(taskId, "status", status);
+      if (remarks) handleTaskChange(taskId, "Remarks", remarks);
+
+      toast.success(status === "Completed" ? "Task marked as done" : "Remark saved");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update task");
+    }
+  };
   
   const handleEtaChange = (etaId: string, field: string, value: any) => {
     const newEtas = (opsData.etas || []).map((e: any) => 
@@ -533,7 +564,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                           <button
                             title={isDone ? "Completed" : "Mark as Done"}
                             disabled={isDone}
-                            onClick={() => setDoneDialog({ open: true, taskId: t.id, remark: t.Remarks || "" })}
+                            onClick={() => setDoneDialog({ open: true, taskId: t.task.ops_task_id, remark: t.Remarks || "" })}
                             className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all ${
                               isDone
                                 ? "bg-green-500 border-green-500 text-white cursor-default"
@@ -546,7 +577,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                           {!isDone && (
                             <button
                               title="Edit Remark"
-                              onClick={() => setEditDialog({ open: true, taskId: t.id, remark: t.Remarks || "" })}
+                              onClick={() => setEditDialog({ open: true, taskId: t.task.ops_task_id, remark: t.Remarks || "" })}
                               className="h-8 w-8 rounded-full flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer"
                             >
                               <Pencil className="h-3.5 w-3.5" />
@@ -592,11 +623,10 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
               <Button
                 className="bg-green-600 hover:bg-green-700 text-white"
                 onClick={() => {
-                  handleTaskChange(doneDialog.taskId, "status", "Done");
-                  if (doneDialog.remark.trim()) {
-                    handleTaskChange(doneDialog.taskId, "Remarks", doneDialog.remark.trim());
-                  }
+                  const taskId = doneDialog.taskId;
+                  const remark = doneDialog.remark.trim();
                   setDoneDialog({ open: false, taskId: "", remark: "" });
+                  handleUpdateTask(taskId, "Completed", remark);
                 }}
               >
                 <Check className="h-4 w-4 mr-1" /> Mark as Done
@@ -634,8 +664,13 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
               </Button>
               <Button
                 onClick={() => {
-                  handleTaskChange(editDialog.taskId, "Remarks", editDialog.remark);
+                  const taskId = editDialog.taskId;
+                  const remark = editDialog.remark;
+                  // Find existing status so we don't accidentally change it
+                  const existingTask = (opsData.tasks || []).find((t: any) => t.id === taskId);
+                  const existingStatus = existingTask?.status || "Pending";
                   setEditDialog({ open: false, taskId: "", remark: "" });
+                  handleUpdateTask(taskId, existingStatus, remark);
                 }}
               >
                 Save Remark
