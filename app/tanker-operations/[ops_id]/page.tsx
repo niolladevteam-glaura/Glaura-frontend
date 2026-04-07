@@ -107,6 +107,48 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
     handleChange("consignees", newConsignees);
   };
 
+  const handleDateTimeChange = (field: string, dateStr: string, timeStr: string) => {
+    if (!dateStr) {
+      handleChange(field, null);
+      return;
+    }
+    try {
+      const time = timeStr || "00:00";
+      const dateObj = new Date(`${dateStr}T${time}`);
+      if (!isNaN(dateObj.getTime())) {
+        handleChange(field, dateObj.toISOString());
+      }
+    } catch(e) {}
+  };
+
+  const handleEtaDateTimeChange = (etaId: string, dateStr: string, timeStr: string) => {
+    if (!dateStr) {
+      handleEtaChange(etaId, "ETAReceivedDateTime", null);
+      return;
+    }
+    try {
+      const time = timeStr || "00:00";
+      const dateObj = new Date(`${dateStr}T${time}`);
+      if (!isNaN(dateObj.getTime())) {
+        handleEtaChange(etaId, "ETAReceivedDateTime", dateObj.toISOString());
+      }
+    } catch(e) {}
+  };
+
+  const getLocalDateStr = (isoString: string) => {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-CA");
+  };
+
+  const getLocalTimeStr = (isoString: string) => {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "";
+    return d.toTimeString().slice(0, 5);
+  };
+
   const handleTaskChange = (taskId: string, field: string, value: any) => {
     const newTasks = (opsData.tasks || []).map((t: any) => 
       t.id === taskId ? { ...t, [field]: value } : t
@@ -250,38 +292,56 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
             {/* Bottom Row: Timestamps */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-6 border-t">
                {/* Scheduled Timestamps */}
-               <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <Label>ETA</Label>
-                    <Input type="datetime-local" value={opsData.ETA ? new Date(opsData.ETA).toISOString().slice(0,16) : ""} onChange={e => handleChange("ETA", new Date(e.target.value).toISOString())} />
+               <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                 <div className="space-y-2 flex flex-col justify-end">
+                    <Label className="mb-1 text-xs">ETA</Label>
+                    <div className="flex gap-2 w-full">
+                      <DatePicker value={getLocalDateStr(opsData.ETA)} onChange={d => handleDateTimeChange("ETA", d, getLocalTimeStr(opsData.ETA) || "00:00")} />
+                      <TimePicker value={getLocalTimeStr(opsData.ETA)} onChange={t => handleDateTimeChange("ETA", getLocalDateStr(opsData.ETA) || new Date().toLocaleDateString("en-CA"), t)} />
+                    </div>
                  </div>
-                 <div className="space-y-2">
-                    <Label>ETB</Label>
-                    <Input type="datetime-local" value={opsData.ETB ? new Date(opsData.ETB).toISOString().slice(0,16) : ""} onChange={e => handleChange("ETB", new Date(e.target.value).toISOString())} />
+                 <div className="space-y-2 flex flex-col justify-end">
+                    <Label className="mb-1 text-xs">ETB</Label>
+                    <div className="flex gap-2 w-full">
+                      <DatePicker value={getLocalDateStr(opsData.ETB)} onChange={d => handleDateTimeChange("ETB", d, getLocalTimeStr(opsData.ETB) || "00:00")} />
+                      <TimePicker value={getLocalTimeStr(opsData.ETB)} onChange={t => handleDateTimeChange("ETB", getLocalDateStr(opsData.ETB) || new Date().toLocaleDateString("en-CA"), t)} />
+                    </div>
                  </div>
-                 <div className="space-y-2">
-                    <Label>ETD</Label>
-                    <Input type="datetime-local" value={opsData.ETD ? new Date(opsData.ETD).toISOString().slice(0,16) : ""} onChange={e => handleChange("ETD", new Date(e.target.value).toISOString())} />
+                 <div className="space-y-2 flex flex-col justify-end">
+                    <Label className="mb-1 text-xs">ETD</Label>
+                    <div className="flex gap-2 w-full">
+                      <DatePicker value={getLocalDateStr(opsData.ETD)} onChange={d => handleDateTimeChange("ETD", d, getLocalTimeStr(opsData.ETD) || "00:00")} />
+                      <TimePicker value={getLocalTimeStr(opsData.ETD)} onChange={t => handleDateTimeChange("ETD", getLocalDateStr(opsData.ETD) || new Date().toLocaleDateString("en-CA"), t)} />
+                    </div>
                  </div>
-                 <div className="space-y-2">
-                    <Label>Est Port Stay (Hrs)</Label>
-                    <Input type="number" value={opsData.Estimate_port_stay || ""} onChange={e => handleChange("Estimate_port_stay", Number(e.target.value))} />
+                 <div className="space-y-2 flex flex-col justify-end">
+                    <Label className="mb-1 text-xs">Est Port Stay (Hrs)</Label>
+                    <Input type="number" className="h-[42px]" value={opsData.Estimate_port_stay || ""} onChange={e => handleChange("Estimate_port_stay", Number(e.target.value))} />
                  </div>
                </div>
 
                {/* Actual Timestamps */}
-               <div className="grid grid-cols-3 gap-4">
-                 <div className="space-y-2">
-                    <Label>ATA</Label>
-                    <Input type="datetime-local" value={opsData.ATA ? new Date(opsData.ATA).toISOString().slice(0,16) : ""} onChange={e => handleChange("ATA", new Date(e.target.value).toISOString())} />
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <div className="space-y-2 flex flex-col justify-end">
+                    <Label className="mb-1 text-xs">ATA</Label>
+                    <div className="flex flex-col gap-2 w-full">
+                      <DatePicker value={getLocalDateStr(opsData.ATA)} onChange={d => handleDateTimeChange("ATA", d, getLocalTimeStr(opsData.ATA) || "00:00")} />
+                      <TimePicker value={getLocalTimeStr(opsData.ATA)} onChange={t => handleDateTimeChange("ATA", getLocalDateStr(opsData.ATA) || new Date().toLocaleDateString("en-CA"), t)} />
+                    </div>
                  </div>
-                 <div className="space-y-2">
-                    <Label>ATB</Label>
-                    <Input type="datetime-local" value={opsData.ATB ? new Date(opsData.ATB).toISOString().slice(0,16) : ""} onChange={e => handleChange("ATB", new Date(e.target.value).toISOString())} />
+                 <div className="space-y-2 flex flex-col justify-end">
+                    <Label className="mb-1 text-xs">ATB</Label>
+                    <div className="flex flex-col gap-2 w-full">
+                      <DatePicker value={getLocalDateStr(opsData.ATB)} onChange={d => handleDateTimeChange("ATB", d, getLocalTimeStr(opsData.ATB) || "00:00")} />
+                      <TimePicker value={getLocalTimeStr(opsData.ATB)} onChange={t => handleDateTimeChange("ATB", getLocalDateStr(opsData.ATB) || new Date().toLocaleDateString("en-CA"), t)} />
+                    </div>
                  </div>
-                 <div className="space-y-2">
-                    <Label>ATD</Label>
-                    <Input type="datetime-local" value={opsData.ATD ? new Date(opsData.ATD).toISOString().slice(0,16) : ""} onChange={e => handleChange("ATD", new Date(e.target.value).toISOString())} />
+                 <div className="space-y-2 flex flex-col justify-end">
+                    <Label className="mb-1 text-xs">ATD</Label>
+                    <div className="flex flex-col gap-2 w-full">
+                      <DatePicker value={getLocalDateStr(opsData.ATD)} onChange={d => handleDateTimeChange("ATD", d, getLocalTimeStr(opsData.ATD) || "00:00")} />
+                      <TimePicker value={getLocalTimeStr(opsData.ATD)} onChange={t => handleDateTimeChange("ATD", getLocalDateStr(opsData.ATD) || new Date().toLocaleDateString("en-CA"), t)} />
+                    </div>
                  </div>
                </div>
             </div>
@@ -322,11 +382,11 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="px-4 py-4 text-center border-r">
-                       <Input type="datetime-local" className="w-[200px] mx-auto" 
-                        value={eta.ETAReceivedDateTime ? new Date(eta.ETAReceivedDateTime).toISOString().slice(0,16) : ""} 
-                        onChange={e => handleEtaChange(eta.ops_eta_id, "ETAReceivedDateTime", e.target.value ? new Date(e.target.value).toISOString() : null)} 
-                       />
+                    <td className="px-4 py-4 text-center border-r align-top">
+                       <div className="flex flex-col gap-2 mx-auto w-[180px]">
+                         <DatePicker value={getLocalDateStr(eta.ETAReceivedDateTime)} onChange={d => handleEtaDateTimeChange(eta.ops_eta_id, d, getLocalTimeStr(eta.ETAReceivedDateTime) || "00:00")} />
+                         <TimePicker value={getLocalTimeStr(eta.ETAReceivedDateTime)} onChange={t => handleEtaDateTimeChange(eta.ops_eta_id, getLocalDateStr(eta.ETAReceivedDateTime) || new Date().toLocaleDateString("en-CA"), t)} />
+                       </div>
                     </td>
                     <td className="px-4 py-4 text-center">
                       <Select value={eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? "Done" : "Pending"} onValueChange={v => handleEtaChange(eta.ops_eta_id, "updated_to_consignee", v === "Done")}>
