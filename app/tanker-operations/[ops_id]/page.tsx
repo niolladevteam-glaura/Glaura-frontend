@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Loader2, Ship } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Ship, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/TimePicker";
@@ -97,6 +97,16 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
     }
   };
 
+  const handleAddConsignee = () => {
+    const newConsignees = [...(opsData.consignees || []), { ConsigneeName: "", description: "" }];
+    handleChange("consignees", newConsignees);
+  };
+
+  const handleRemoveConsignee = (idx: number) => {
+    const newConsignees = (opsData.consignees || []).filter((_: any, i: number) => i !== idx);
+    handleChange("consignees", newConsignees);
+  };
+
   const handleTaskChange = (taskId: string, field: string, value: any) => {
     const newTasks = (opsData.tasks || []).map((t: any) => 
       t.id === taskId ? { ...t, [field]: value } : t
@@ -145,152 +155,165 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
         </Button>
       </header>
 
-      <div className="max-w-[1400px] mx-auto p-4 sm:p-6 space-y-6">
+      <div className="max-w-[1400px] mx-auto p-4 sm:p-6">
         
-        {/* General Check List (Excel Top Pane) */}
-        <Card className="shadow-sm border-t-4 border-t-blue-600">
-          <CardHeader className="bg-blue-50 dark:bg-blue-900/20 py-3 border-b">
-            <CardTitle className="text-sm uppercase tracking-wider text-blue-800 dark:text-blue-300">
-              GREEK LANKA - TANKER OPERATIONS CHECK LIST
-            </CardTitle>
+        {/* General Check List */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Tanker Operations Details</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 divide-y lg:divide-y-0 lg:divide-x dark:divide-gray-800">
-              
-              {/* Left Grid: Core Particulars */}
-              <div className="p-4 space-y-3 bg-yellow-50/30 dark:bg-gray-900/50">
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">Agency Ref:</Label>
-                  <Input className="h-7 text-xs bg-white" value={opsData.agency_ref_no || ""} onChange={e => handleChange("agency_ref_no", e.target.value)} />
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              {/* Left Column: Core Particulars */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Agency Ref No</Label>
+                  <Input value={opsData.agency_ref_no || ""} onChange={e => handleChange("agency_ref_no", e.target.value)} />
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">Vessel Name:</Label>
-                  <Input className="h-7 text-xs bg-white border-yellow-300 bg-yellow-50" value={opsData.vessel_name || ""} onChange={e => handleChange("vessel_name", e.target.value)} />
+                <div className="space-y-2">
+                  <Label>Vessel Name</Label>
+                  <Input value={opsData.vessel_name || ""} onChange={e => handleChange("vessel_name", e.target.value)} />
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">IMO No:</Label>
-                  <Input className="h-7 text-xs bg-white border-yellow-300 bg-yellow-50" value={opsData.imo_number || ""} onChange={e => handleChange("imo_number", e.target.value)} />
+                <div className="space-y-2">
+                  <Label>IMO No</Label>
+                  <Input value={opsData.imo_number || ""} onChange={e => handleChange("imo_number", e.target.value)} />
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">Voyage No:</Label>
-                  <Input className="h-7 text-xs bg-white border-yellow-300 bg-yellow-50" value={opsData.voyage_no || ""} onChange={e => handleChange("voyage_no", e.target.value)} />
+                <div className="space-y-2">
+                  <Label>Voyage No</Label>
+                  <Input value={opsData.voyage_no || ""} onChange={e => handleChange("voyage_no", e.target.value)} />
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">Port:</Label>
-                  <Input className="h-7 text-xs bg-white border-yellow-300 bg-yellow-50" value={opsData.port || ""} onChange={e => handleChange("port", e.target.value)} />
+                <div className="space-y-2">
+                  <Label>Port</Label>
+                  <Input value={opsData.port || ""} onChange={e => handleChange("port", e.target.value)} />
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">Berth Location:</Label>
-                  <Input className="h-7 text-xs bg-white border-yellow-300 bg-yellow-50" value={opsData.berth_location || ""} onChange={e => handleChange("berth_location", e.target.value)} />
+                <div className="space-y-2">
+                  <Label>Berth Location</Label>
+                  <Input value={opsData.berth_location || ""} onChange={e => handleChange("berth_location", e.target.value)} />
                 </div>
               </div>
 
-              {/* Middle Grid: Consignees & Dates */}
-              <div className="p-4 space-y-3">
-                {/* Consignees Map */}
+              {/* Middle Column: Consignees */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg border">
+                  <Label className="px-2 font-semibold">Consignees</Label>
+                  <Button variant="outline" size="sm" onClick={handleAddConsignee} className="h-7 text-xs">
+                    <Plus className="h-3 w-3 mr-1" /> Add
+                  </Button>
+                </div>
                 {(opsData.consignees || []).map((c: any, index: number) => (
-                  <div key={index} className="space-y-1 mb-2">
-                    <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                      <Label className="font-semibold text-gray-600">Consignee {index + 1}:</Label>
-                      <Input className="h-7 text-xs bg-white" value={c.ConsigneeName || ""} onChange={e => handleConsigneeChange(index, "ConsigneeName", e.target.value)} />
+                  <div key={index} className="space-y-3 p-4 border rounded-lg bg-gray-50/50 dark:bg-gray-800/30 shadow-sm relative group">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRemoveConsignee(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <div className="space-y-1.5 pr-6">
+                      <Label>Consignee {index + 1}</Label>
+                      <Input value={c.ConsigneeName || ""} onChange={e => handleConsigneeChange(index, "ConsigneeName", e.target.value)} />
                     </div>
-                    <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                      <Label className="text-gray-500 text-[10px]">Cargo Grade & Qty:</Label>
-                      <Input className="h-6 text-[10px] bg-white border-yellow-300 bg-yellow-50" placeholder="Editable text..." value={c.description || ""} onChange={e => handleConsigneeChange(index, "description", e.target.value)} />
+                    <div className="space-y-1.5">
+                      <Label>Cargo Grade & Qty</Label>
+                      <Input placeholder="Description..." value={c.description || ""} onChange={e => handleConsigneeChange(index, "description", e.target.value)} />
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Right Grid: Officers and Reference */}
-              <div className="p-4 space-y-3">
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">Greek Lanka PIC:</Label>
-                  <Input className="h-7 text-xs bg-white" value={opsData.greekLankaPIC || ""} onChange={e => handleChange("greekLankaPIC", e.target.value)} />
+              {/* Right Column: Officers & Refs */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Greek Lanka PIC</Label>
+                  <Input value={opsData.greekLankaPIC || ""} onChange={e => handleChange("greekLankaPIC", e.target.value)} />
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">Boarding Officer:</Label>
-                  <Input className="h-7 text-xs bg-white" value={opsData.bordingOfficer || ""} onChange={e => handleChange("bordingOfficer", e.target.value)} />
+                <div className="space-y-2">
+                  <Label>Boarding Officer</Label>
+                  <Input value={opsData.bordingOfficer || ""} onChange={e => handleChange("bordingOfficer", e.target.value)} />
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">SLPA Payment Ref:</Label>
-                  <Input className="h-7 text-xs bg-white" value={opsData.SLPAPaymentRef || ""} onChange={e => handleChange("SLPAPaymentRef", e.target.value)} />
+                <div className="space-y-2">
+                  <Label>SLPA Payment Ref</Label>
+                  <Input value={opsData.SLPAPaymentRef || ""} onChange={e => handleChange("SLPAPaymentRef", e.target.value)} />
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">DC Reference No:</Label>
-                  <Input className="h-7 text-xs bg-white" value={opsData.DCReferenceNo || ""} onChange={e => handleChange("DCReferenceNo", e.target.value)} />
+                <div className="space-y-2">
+                  <Label>DC Reference No</Label>
+                  <Input value={opsData.DCReferenceNo || ""} onChange={e => handleChange("DCReferenceNo", e.target.value)} />
                 </div>
-                <div className="grid grid-cols-[120px_1fr] items-center text-xs">
-                  <Label className="font-semibold text-gray-600">Document Ref:</Label>
-                  <Input className="h-7 text-xs bg-white" value={opsData.documetRefNo || ""} onChange={e => handleChange("documetRefNo", e.target.value)} />
+                <div className="space-y-2">
+                  <Label>Document Ref</Label>
+                  <Input value={opsData.documetRefNo || ""} onChange={e => handleChange("documetRefNo", e.target.value)} />
                 </div>
               </div>
             </div>
-            
-            {/* Bottom Strip of General Check List (Timestamps) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x border-t bg-yellow-50/50 dark:bg-gray-900/80 p-4 gap-4">
+
+            {/* Bottom Row: Timestamps */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-6 border-t">
                {/* Scheduled Timestamps */}
                <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <Label className="text-xs font-semibold text-gray-600">ETA</Label>
-                    <Input type="datetime-local" className="h-7 text-xs mt-1 bg-white border-yellow-300 bg-yellow-50" value={opsData.ETA ? new Date(opsData.ETA).toISOString().slice(0,16) : ""} onChange={e => handleChange("ETA", new Date(e.target.value).toISOString())} />
+                 <div className="space-y-2">
+                    <Label>ETA</Label>
+                    <Input type="datetime-local" value={opsData.ETA ? new Date(opsData.ETA).toISOString().slice(0,16) : ""} onChange={e => handleChange("ETA", new Date(e.target.value).toISOString())} />
                  </div>
-                 <div>
-                    <Label className="text-xs font-semibold text-gray-600">ETB</Label>
-                    <Input type="datetime-local" className="h-7 text-xs mt-1 bg-white border-yellow-300 bg-yellow-50" value={opsData.ETB ? new Date(opsData.ETB).toISOString().slice(0,16) : ""} onChange={e => handleChange("ETB", new Date(e.target.value).toISOString())} />
+                 <div className="space-y-2">
+                    <Label>ETB</Label>
+                    <Input type="datetime-local" value={opsData.ETB ? new Date(opsData.ETB).toISOString().slice(0,16) : ""} onChange={e => handleChange("ETB", new Date(e.target.value).toISOString())} />
                  </div>
-                 <div>
-                    <Label className="text-xs font-semibold text-gray-600">ETD</Label>
-                    <Input type="datetime-local" className="h-7 text-xs mt-1 bg-white border-yellow-300 bg-yellow-50" value={opsData.ETD ? new Date(opsData.ETD).toISOString().slice(0,16) : ""} onChange={e => handleChange("ETD", new Date(e.target.value).toISOString())} />
+                 <div className="space-y-2">
+                    <Label>ETD</Label>
+                    <Input type="datetime-local" value={opsData.ETD ? new Date(opsData.ETD).toISOString().slice(0,16) : ""} onChange={e => handleChange("ETD", new Date(e.target.value).toISOString())} />
                  </div>
-                 <div>
-                    <Label className="text-xs font-semibold text-gray-600">Est Port Stay</Label>
-                    <Input type="number" className="h-7 text-xs mt-1 bg-white" value={opsData.Estimate_port_stay || ""} onChange={e => handleChange("Estimate_port_stay", Number(e.target.value))} />
+                 <div className="space-y-2">
+                    <Label>Est Port Stay (Hrs)</Label>
+                    <Input type="number" value={opsData.Estimate_port_stay || ""} onChange={e => handleChange("Estimate_port_stay", Number(e.target.value))} />
                  </div>
                </div>
 
                {/* Actual Timestamps */}
                <div className="grid grid-cols-3 gap-4">
-                 <div>
-                    <Label className="text-xs font-semibold text-gray-600">ATA</Label>
-                    <Input type="datetime-local" className="h-7 text-xs mt-1 bg-white border-yellow-300 bg-yellow-50" value={opsData.ATA ? new Date(opsData.ATA).toISOString().slice(0,16) : ""} onChange={e => handleChange("ATA", new Date(e.target.value).toISOString())} />
+                 <div className="space-y-2">
+                    <Label>ATA</Label>
+                    <Input type="datetime-local" value={opsData.ATA ? new Date(opsData.ATA).toISOString().slice(0,16) : ""} onChange={e => handleChange("ATA", new Date(e.target.value).toISOString())} />
                  </div>
-                 <div>
-                    <Label className="text-xs font-semibold text-gray-600">ATB</Label>
-                    <Input type="datetime-local" className="h-7 text-xs mt-1 bg-white border-yellow-300 bg-yellow-50" value={opsData.ATB ? new Date(opsData.ATB).toISOString().slice(0,16) : ""} onChange={e => handleChange("ATB", new Date(e.target.value).toISOString())} />
+                 <div className="space-y-2">
+                    <Label>ATB</Label>
+                    <Input type="datetime-local" value={opsData.ATB ? new Date(opsData.ATB).toISOString().slice(0,16) : ""} onChange={e => handleChange("ATB", new Date(e.target.value).toISOString())} />
                  </div>
-                 <div>
-                    <Label className="text-xs font-semibold text-gray-600">ATD</Label>
-                    <Input type="datetime-local" className="h-7 text-xs mt-1 bg-white border-yellow-300 bg-yellow-50" value={opsData.ATD ? new Date(opsData.ATD).toISOString().slice(0,16) : ""} onChange={e => handleChange("ATD", new Date(e.target.value).toISOString())} />
+                 <div className="space-y-2">
+                    <Label>ATD</Label>
+                    <Input type="datetime-local" value={opsData.ATD ? new Date(opsData.ATD).toISOString().slice(0,16) : ""} onChange={e => handleChange("ATD", new Date(e.target.value).toISOString())} />
                  </div>
                </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Middle Pane: ETA Notices Table */}
-        <Card className="shadow-sm overflow-hidden">
+        {/* ETA Notices Table */}
+        <Card className="mb-6 overflow-hidden">
+          <CardHeader className="bg-gray-50/80 dark:bg-gray-800/30 border-b py-4">
+            <CardTitle className="text-lg">ETA Tracking</CardTitle>
+          </CardHeader>
           <div className="overflow-x-auto">
-            <table className="min-w-full text-xs">
-              <thead className="bg-[#1f4e78] text-white">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium border-r border-[#153655]">ETA Notices</th>
-                  <th className="px-4 py-2 text-center font-medium border-r border-[#153655]">Update to Port</th>
-                  <th className="px-4 py-2 text-center font-medium border-r border-[#153655]">ETA Received</th>
-                  <th className="px-4 py-2 text-center font-medium border-[#153655]">Update to Consignee</th>
+                  <th className="px-4 py-3 text-left font-semibold">ETA Notices</th>
+                  <th className="px-4 py-3 text-center font-semibold">Update to Port</th>
+                  <th className="px-4 py-3 text-center font-semibold">ETA Received</th>
+                  <th className="px-4 py-3 text-center font-semibold">Update to Consignee</th>
                 </tr>
               </thead>
-              <tbody className="divide-y text-gray-800 dark:text-gray-200">
+              <tbody className="divide-y text-sm">
                 {(opsData.etas || []).sort((a:any, b:any) => {
                   const valA = parseInt(a.eta_noices.split(" ")[0]);
                   const valB = parseInt(b.eta_noices.split(" ")[0]);
-                  return valB - valA; // Descending like Excel: 120H, 96H...
+                  return valB - valA; 
                 }).map((eta: any) => (
-                  <tr key={eta.ops_eta_id} className="bg-white dark:bg-gray-900 border-b">
-                    <td className="px-4 py-1.5 font-medium border-r bg-gray-50 dark:bg-gray-800">{eta.eta_noices}</td>
-                    <td className="px-2 py-1.5 border-r text-center w-48">
+                  <tr key={eta.ops_eta_id} className="bg-white dark:bg-gray-900 border-b transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+                    <td className="px-4 py-4 font-medium border-r">{eta.eta_noices}</td>
+                    <td className="px-4 py-4 text-center border-r">
                       <Select value={eta.updated_to_port === true || eta.updated_to_port === "Done" ? "Done" : "Pending"} onValueChange={v => handleEtaChange(eta.ops_eta_id, "updated_to_port", v === "Done")}>
-                        <SelectTrigger className={`h-7 text-xs font-semibold ${eta.updated_to_port === true || eta.updated_to_port === "Done" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        <SelectTrigger className={`w-[130px] mx-auto text-xs font-semibold ${eta.updated_to_port === true || eta.updated_to_port === "Done" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -299,15 +322,15 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="px-2 py-1.5 border-r text-center w-64">
-                       <Input type="datetime-local" className="h-7 text-xs bg-white mx-auto w-full" 
+                    <td className="px-4 py-4 text-center border-r">
+                       <Input type="datetime-local" className="w-[200px] mx-auto" 
                         value={eta.ETAReceivedDateTime ? new Date(eta.ETAReceivedDateTime).toISOString().slice(0,16) : ""} 
                         onChange={e => handleEtaChange(eta.ops_eta_id, "ETAReceivedDateTime", e.target.value ? new Date(e.target.value).toISOString() : null)} 
                        />
                     </td>
-                    <td className="px-2 py-1.5 text-center w-48">
+                    <td className="px-4 py-4 text-center">
                       <Select value={eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? "Done" : "Pending"} onValueChange={v => handleEtaChange(eta.ops_eta_id, "updated_to_consignee", v === "Done")}>
-                        <SelectTrigger className={`h-7 text-xs font-semibold ${eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        <SelectTrigger className={`w-[130px] mx-auto text-xs font-semibold ${eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -323,26 +346,29 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
           </div>
         </Card>
 
-        {/* Bottom Pane: Stage / Task Tracking Table */}
-        <Card className="shadow-sm overflow-hidden">
+        {/* Stage / Task Tracking Table */}
+        <Card className="mb-6 overflow-hidden">
+          <CardHeader className="bg-gray-50/80 dark:bg-gray-800/30 border-b py-4">
+            <CardTitle className="text-lg">Stage & Task Tracking</CardTitle>
+          </CardHeader>
           <div className="overflow-x-auto">
-            <table className="min-w-full text-xs">
-              <thead className="bg-[#1f4e78] text-white">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium border-r border-[#153655] w-[150px]">Stage</th>
-                  <th className="px-4 py-2 text-left font-medium border-r border-[#153655] w-[400px]">Task</th>
-                  <th className="px-4 py-2 text-center font-medium border-r border-[#153655] w-48">Action</th>
-                  <th className="px-4 py-2 text-left font-medium border-[#153655]">Remarks</th>
+                  <th className="px-4 py-3 text-left font-semibold w-[150px]">Stage</th>
+                  <th className="px-4 py-3 text-left font-semibold w-[400px]">Task</th>
+                  <th className="px-4 py-3 text-center font-semibold w-48">Action</th>
+                  <th className="px-4 py-3 text-left font-semibold">Remarks</th>
                 </tr>
               </thead>
-              <tbody className="divide-y text-gray-800 dark:text-gray-200 bg-white">
+              <tbody className="divide-y text-sm">
                 {(opsData.tasks || []).map((t: any) => (
-                  <tr key={t.id} className="dark:bg-gray-900 border-b">
-                    <td className="px-4 py-1.5 border-r bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{t.stageName}</td>
-                    <td className="px-4 py-1.5 border-r font-medium text-gray-700 dark:text-gray-300">{t.taskName}</td>
-                    <td className="px-2 py-1.5 border-r text-center">
+                  <tr key={t.id} className="bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/50 border-b">
+                    <td className="px-4 py-3 border-r text-muted-foreground">{t.stageName}</td>
+                    <td className="px-4 py-3 border-r font-medium">{t.taskName}</td>
+                    <td className="px-4 py-3 text-center border-r">
                       <Select value={t.status || "Pending"} onValueChange={v => handleTaskChange(t.id, "status", v)}>
-                        <SelectTrigger className={`h-7 text-xs font-semibold ${t.status === "Done" || t.status === "Completed" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        <SelectTrigger className={`w-[130px] mx-auto text-xs font-semibold ${t.status === "Done" || t.status === "Completed" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -351,8 +377,8 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="px-2 py-1.5">
-                      <Input className="h-7 text-xs shadow-none border-transparent hover:border-gray-300 focus:border-blue-500 bg-transparent transition-colors" placeholder="Add remark..." value={t.Remarks || ""} onChange={e => handleTaskChange(t.id, "Remarks", e.target.value)} />
+                    <td className="px-4 py-3">
+                      <Input placeholder="Add remark..." value={t.Remarks || ""} onChange={e => handleTaskChange(t.id, "Remarks", e.target.value)} className="bg-transparent border-gray-200 dark:border-gray-700" />
                     </td>
                   </tr>
                 ))}
@@ -362,13 +388,13 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
         </Card>
 
         {/* Footer Pane: TextAreas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
            <div className="space-y-2">
-             <Label className="text-gray-700 font-semibold">Comments</Label>
+             <Label>Comments</Label>
              <Textarea className="min-h-[100px] resize-none" placeholder="Operation general comments..." value={opsData.comments || ""} onChange={e => handleChange("comments", e.target.value)} />
            </div>
            <div className="space-y-2">
-             <Label className="text-gray-700 font-semibold">Areas for Improvement</Label>
+             <Label>Areas for Improvement</Label>
              <Textarea className="min-h-[100px] resize-none" placeholder="Feedback or improvement areas..." value={opsData.areas_for_improvement || ""} onChange={e => handleChange("areas_for_improvement", e.target.value)} />
            </div>
         </div>
