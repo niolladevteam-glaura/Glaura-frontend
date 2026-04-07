@@ -25,8 +25,34 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [opsData, setOpsData] = useState<any>(null);
+  const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080/api";
+
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_BASE_URL}/user`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` })
+          }
+        });
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const formatted = json.data.map((u: any) => {
+            const fullName = `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.email;
+            return { value: fullName, label: fullName };
+          });
+          setUserOptions(formatted);
+        }
+      } catch (err) {
+        console.error("Failed to load users", err);
+      }
+    }
+    fetchUsers();
+  }, [API_BASE_URL]);
 
   useEffect(() => {
     async function fetchDetails() {
@@ -268,11 +294,33 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Greek Lanka PIC</Label>
-                  <Input value={opsData.greekLankaPIC || ""} onChange={e => handleChange("greekLankaPIC", e.target.value)} />
+                  <Select value={opsData.greekLankaPIC || ""} onValueChange={val => handleChange("greekLankaPIC", val)}>
+                    <SelectTrigger className="w-full bg-white dark:bg-gray-950">
+                      <SelectValue placeholder="Select PIC" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userOptions.map(opt => (
+                        <SelectItem key={`pic-${opt.value}`} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Boarding Officer</Label>
-                  <Input value={opsData.bordingOfficer || ""} onChange={e => handleChange("bordingOfficer", e.target.value)} />
+                  <Select value={opsData.bordingOfficer || ""} onValueChange={val => handleChange("bordingOfficer", val)}>
+                    <SelectTrigger className="w-full bg-white dark:bg-gray-950">
+                      <SelectValue placeholder="Select Officer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userOptions.map(opt => (
+                        <SelectItem key={`officer-${opt.value}`} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>SLPA Payment Ref</Label>
