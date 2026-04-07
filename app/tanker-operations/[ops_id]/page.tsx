@@ -31,6 +31,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
   const { ops_id } = params;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingDetails, setSavingDetails] = useState(false);
   const [opsData, setOpsData] = useState<any>(null);
   const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
 
@@ -120,6 +121,80 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
       toast.error("Failed to update operation");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveDetails = async () => {
+    setSavingDetails(true);
+    try {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("username") || localStorage.getItem("user") || "ops_admin";
+
+      const consignees: any[] = opsData.consignees || [];
+      const consigneeOne   = consignees.find((c: any) => c.ConsigneeType === "ConsigneeOne")   || consignees[0] || null;
+      const consigneeTwo   = consignees.find((c: any) => c.ConsigneeType === "ConsigneeTwo")   || consignees[1] || null;
+      const consigneeThree = consignees.find((c: any) => c.ConsigneeType === "ConsigneeThree") || consignees[2] || null;
+
+      const payload = {
+        agency_ref_no:       opsData.agency_ref_no       || null,
+        vessel_name:         opsData.vessel_name         || null,
+        imo_number:          opsData.imo_number          || null,
+        voyage_no:           opsData.voyage_no           || null,
+        port:                opsData.port                || null,
+        berth_location:      opsData.berth_location      || null,
+
+        ETA:  opsData.ETA  || null,
+        ETB:  opsData.ETB  || null,
+        ETD:  opsData.ETD  || null,
+        ATA:  opsData.ATA  || null,
+        ATB:  opsData.ATB  || null,
+        ATD:  opsData.ATD  || null,
+
+        Estimate_port_stay: opsData.Estimate_port_stay || null,
+
+        ConsigneeOneID:   consigneeOne   ? (consigneeOne.ConsigneeID   || null) : null,
+        ConsigneeTwoID:   consigneeTwo   ? (consigneeTwo.ConsigneeID   || null) : null,
+        ConsigneeThreeID: consigneeThree ? (consigneeThree.ConsigneeID || null) : null,
+
+        greekLankaPIC:  opsData.greekLankaPIC  || null,
+        bordingOfficer: opsData.bordingOfficer || null,
+
+        SLPAPaymentRef: opsData.SLPAPaymentRef || null,
+        DCReferenceNo:  opsData.DCReferenceNo  || null,
+        documetRefNo:   opsData.documetRefNo   || null,
+
+        comments:              opsData.comments              || null,
+        areas_for_improvement: opsData.areas_for_improvement || null,
+
+        consignees: consignees.map((c: any) => ({
+          ConsigneeID:   c.ConsigneeID   || null,
+          ConsigneeType: c.ConsigneeType || null,
+          ConsigneeName: c.ConsigneeName || null,
+          description:   c.description   || null,
+        })),
+
+        user,
+      };
+
+      const res = await fetch(`${API_BASE_URL}/tankerOps/${ops_id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.message || "Update failed");
+      }
+
+      toast.success("Details updated successfully");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update details");
+    } finally {
+      setSavingDetails(false);
     }
   };
 
@@ -231,7 +306,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
         </div>
         <Button onClick={handleSave} disabled={saving} className="shadow-md">
           {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-          Save Changes
+          Complete Operation
         </Button>
       </header>
 
@@ -239,8 +314,18 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
         
         {/* General Check List */}
         <Card className="mb-6">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between pb-4">
             <CardTitle>Tanker Operations Details</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleSaveDetails}
+              disabled={savingDetails}
+              className="shadow-sm"
+            >
+              {savingDetails ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              Update Details
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
