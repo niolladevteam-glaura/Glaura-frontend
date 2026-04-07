@@ -412,7 +412,11 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                 </tr>
               </thead>
               <tbody className="divide-y text-sm">
-                {(opsData.tasks || []).map((t: any) => (
+                {(opsData.tasks || []).slice().sort((a: any, b: any) => {
+                  if (a.stageName < b.stageName) return -1;
+                  if (a.stageName > b.stageName) return 1;
+                  return 0;
+                }).map((t: any) => (
                   <tr key={t.id} className="bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/50 border-b">
                     <td className="px-4 py-3 border-r text-muted-foreground">{t.stageName}</td>
                     <td className="px-4 py-3 border-r font-medium">{t.taskName}</td>
