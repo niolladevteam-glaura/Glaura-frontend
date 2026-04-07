@@ -14,7 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Loader2, Ship, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Ship, Plus, Trash2, Check, Pencil } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/TimePicker";
@@ -26,6 +33,11 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
   const [saving, setSaving] = useState(false);
   const [opsData, setOpsData] = useState<any>(null);
   const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
+
+  // Mark-as-done dialog
+  const [doneDialog, setDoneDialog] = useState<{ open: boolean; taskId: string; remark: string }>({ open: false, taskId: "", remark: "" });
+  // Edit remark dialog (for incomplete tasks)
+  const [editDialog, setEditDialog] = useState<{ open: boolean; taskId: string; remark: string }>({ open: false, taskId: "", remark: "" });
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080/api";
 
@@ -399,16 +411,15 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
         {/* Stage / Task Tracking Table */}
         <Card className="mb-6 overflow-hidden">
           <CardHeader className="bg-gray-50/80 dark:bg-gray-800/30 border-b py-4">
-            <CardTitle className="text-lg">Stage & Task Tracking</CardTitle>
+            <CardTitle className="text-lg">Stage &amp; Task Tracking</CardTitle>
           </CardHeader>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold w-[150px]">Stage</th>
-                  <th className="px-4 py-3 text-left font-semibold w-[400px]">Task</th>
-                  <th className="px-4 py-3 text-center font-semibold w-48">Action</th>
-                  <th className="px-4 py-3 text-left font-semibold">Remarks</th>
+                  <th className="px-4 py-3 text-left font-semibold w-[180px]">Stage</th>
+                  <th className="px-4 py-3 text-left font-semibold">Task</th>
+                  <th className="px-4 py-3 text-center font-semibold w-[140px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y text-sm">
@@ -416,30 +427,137 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                   if (a.stageName < b.stageName) return -1;
                   if (a.stageName > b.stageName) return 1;
                   return 0;
-                }).map((t: any) => (
-                  <tr key={t.id} className="bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/50 border-b">
-                    <td className="px-4 py-3 border-r text-muted-foreground">{t.stageName}</td>
-                    <td className="px-4 py-3 border-r font-medium">{t.taskName}</td>
-                    <td className="px-4 py-3 text-center border-r">
-                      <Select value={t.status || "Pending"} onValueChange={v => handleTaskChange(t.id, "status", v)}>
-                        <SelectTrigger className={`w-[130px] mx-auto text-xs font-semibold ${t.status === "Done" || t.status === "Completed" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Done">Done</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input placeholder="Add remark..." value={t.Remarks || ""} onChange={e => handleTaskChange(t.id, "Remarks", e.target.value)} className="bg-transparent border-gray-200 dark:border-gray-700" />
-                    </td>
-                  </tr>
-                ))}
+                }).map((t: any) => {
+                  const isDone = t.status === "Done" || t.status === "Completed";
+                  return (
+                    <tr key={t.id} className={`transition-colors border-b ${
+                      isDone
+                        ? "bg-green-50/40 dark:bg-green-900/10"
+                        : "bg-white dark:bg-gray-900 hover:bg-gray-50/50 dark:hover:bg-gray-800/50"
+                    }`}>
+                      <td className="px-4 py-3 border-r text-muted-foreground font-medium">{t.stageName}</td>
+                      <td className="px-4 py-3 border-r">
+                        <span className={isDone ? "line-through text-muted-foreground" : "font-medium"}>{t.taskName}</span>
+                        {t.Remarks && (
+                          <p className="text-xs text-muted-foreground mt-1 italic">&ldquo;{t.Remarks}&rdquo;</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {/* Tick / Done button */}
+                          <button
+                            title={isDone ? "Completed" : "Mark as Done"}
+                            disabled={isDone}
+                            onClick={() => setDoneDialog({ open: true, taskId: t.id, remark: t.Remarks || "" })}
+                            className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                              isDone
+                                ? "bg-green-500 border-green-500 text-white cursor-default"
+                                : "border-gray-300 dark:border-gray-600 text-gray-400 hover:border-green-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer"
+                            }`}
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          {/* Edit remark – only for incomplete tasks */}
+                          {!isDone && (
+                            <button
+                              title="Edit Remark"
+                              onClick={() => setEditDialog({ open: true, taskId: t.id, remark: t.Remarks || "" })}
+                              className="h-8 w-8 rounded-full flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </Card>
+
+        {/* Mark-as-Done Dialog */}
+        <Dialog open={doneDialog.open} onOpenChange={open => setDoneDialog(d => ({ ...d, open }))}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-green-100 dark:bg-green-900/30">
+                  <Check className="h-4 w-4 text-green-600" />
+                </span>
+                Mark Task as Done
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-2 space-y-3">
+              <p className="text-sm text-muted-foreground">You can optionally add a remark before marking this task as done.</p>
+              <Textarea
+                placeholder="Add a remark... (optional)"
+                className="min-h-[90px] resize-none"
+                value={doneDialog.remark}
+                onChange={e => setDoneDialog(d => ({ ...d, remark: e.target.value }))}
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setDoneDialog({ open: false, taskId: "", remark: "" })}
+              >
+                Dismiss
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  handleTaskChange(doneDialog.taskId, "status", "Done");
+                  if (doneDialog.remark.trim()) {
+                    handleTaskChange(doneDialog.taskId, "Remarks", doneDialog.remark.trim());
+                  }
+                  setDoneDialog({ open: false, taskId: "", remark: "" });
+                }}
+              >
+                <Check className="h-4 w-4 mr-1" /> Mark as Done
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Remark Dialog */}
+        <Dialog open={editDialog.open} onOpenChange={open => setEditDialog(d => ({ ...d, open }))}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                  <Pencil className="h-4 w-4 text-blue-600" />
+                </span>
+                Edit Remark
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-2 space-y-3">
+              <p className="text-sm text-muted-foreground">Add or update the remark for this task.</p>
+              <Textarea
+                placeholder="Add a remark..."
+                className="min-h-[90px] resize-none"
+                value={editDialog.remark}
+                onChange={e => setEditDialog(d => ({ ...d, remark: e.target.value }))}
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditDialog({ open: false, taskId: "", remark: "" })}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  handleTaskChange(editDialog.taskId, "Remarks", editDialog.remark);
+                  setEditDialog({ open: false, taskId: "", remark: "" });
+                }}
+              >
+                Save Remark
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* ETA Notices Table */}
         <Card className="mb-6 overflow-hidden">
