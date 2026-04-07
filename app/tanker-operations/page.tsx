@@ -171,7 +171,7 @@ export default function TankerOperations() {
             imoNo: op.imo_number,
             voyageNo: op.voyage_no,
             port: op.port,
-            status: "Pending" // Fallback since the backend response doesn't overtly provide a status mapping yet
+            status: op.status// Fallback since the backend response doesn't overtly provide a status mapping yet
           }));
           setOperations(mapped);
           setFilteredOperations(mapped);
@@ -260,7 +260,7 @@ export default function TankerOperations() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Closed":
+      case "Completed":
         return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-700";
       case "Pending":
         return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700";

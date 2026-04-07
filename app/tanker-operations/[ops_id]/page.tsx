@@ -102,27 +102,124 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
   }, [ops_id, router, API_BASE_URL]);
 
   const handleSave = async () => {
+    // 1. Validation Logic
+    const requiredFields = [
+      { key: "agency_ref_no", label: "Agency Ref No" },
+      { key: "vessel_name", label: "Vessel Name" },
+      { key: "imo_number", label: "IMO Number" },
+      { key: "voyage_no", label: "Voyage No" },
+      { key: "port", label: "Port" },
+      { key: "berth_location", label: "Berth Location" },
+      { key: "greekLankaPIC", label: "Greek Lanka PIC" },
+      { key: "bordingOfficer", label: "Boarding Officer" },
+      { key: "SLPAPaymentRef", label: "SLPA Payment Ref" },
+      { key: "DCReferenceNo", label: "DC Reference No" },
+      { key: "documetRefNo", label: "Document Ref No" },
+      { key: "ETA", label: "ETA" },
+      { key: "ETB", label: "ETB" },
+      { key: "ETD", label: "ETD" },
+      { key: "ATA", label: "ATA" },
+      { key: "ATB", label: "ATB" },
+      { key: "ATD", label: "ATD" },
+      { key: "Estimate_port_stay", label: "Estimate Port Stay" },
+      { key: "comments", label: "Comments" },
+      { key: "areas_for_improvement", label: "Areas for Improvement" },
+    ];
+
+    for (const field of requiredFields) {
+      if (!opsData[field.key]) {
+        toast.error(`Please fill the ${field.label} field`);
+        return;
+      }
+    }
+
+    // Consignee validation
+    if (!opsData.consignees || opsData.consignees.length === 0) {
+      toast.error("Please add at least one Consignee");
+      return;
+    }
+
+    for (let i = 0; i < opsData.consignees.length; i++) {
+      const c = opsData.consignees[i];
+      if (!c.ConsigneeName || !c.description) {
+        toast.error(`Please fill Name and Description for Consignee ${i + 1}`);
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      // Simulated or actual PUT request depending on backend readiness
+      const user = localStorage.getItem("username") || localStorage.getItem("user") || "ops_admin";
+
+      const consignees: any[] = opsData.consignees || [];
+      const consigneeOne   = consignees.find((c: any) => c.ConsigneeType === "ConsigneeOne")   || consignees[0] || null;
+      const consigneeTwo   = consignees.find((c: any) => c.ConsigneeType === "ConsigneeTwo")   || consignees[1] || null;
+      const consigneeThree = consignees.find((c: any) => c.ConsigneeType === "ConsigneeThree") || consignees[2] || null;
+
+      const payload = {
+        agency_ref_no:       opsData.agency_ref_no,
+        vessel_name:         opsData.vessel_name,
+        imo_number:          opsData.imo_number,
+        voyage_no:           opsData.voyage_no,
+        port:                opsData.port,
+        berth_location:      opsData.berth_location,
+
+        ETA:  opsData.ETA,
+        ETB:  opsData.ETB,
+        ETD:  opsData.ETD,
+        ATA:  opsData.ATA,
+        ATB:  opsData.ATB,
+        ATD:  opsData.ATD,
+
+        Estimate_port_stay: opsData.Estimate_port_stay,
+
+        ConsigneeOneID:   consigneeOne   ? (consigneeOne.ConsigneeID   || null) : null,
+        ConsigneeTwoID:   consigneeTwo   ? (consigneeTwo.ConsigneeID   || null) : null,
+        ConsigneeThreeID: consigneeThree ? (consigneeThree.ConsigneeID || null) : null,
+
+        greekLankaPIC:  opsData.greekLankaPIC,
+        bordingOfficer: opsData.bordingOfficer,
+
+        SLPAPaymentRef: opsData.SLPAPaymentRef,
+        DCReferenceNo:  opsData.DCReferenceNo,
+        documetRefNo:   opsData.documetRefNo,
+
+        comments:              opsData.comments,
+        areas_for_improvement: opsData.areas_for_improvement,
+        status:                "Completed", // Explicitly set status to Completed
+
+        consignees: consignees.map((c: any) => ({
+          ConsigneeID:   c.ConsigneeID   || null,
+          ConsigneeType: c.ConsigneeType || null,
+          ConsigneeName: c.ConsigneeName || null,
+          description:   c.description   || null,
+        })),
+
+        user,
+      };
+
       const res = await fetch(`${API_BASE_URL}/tankerOps/${ops_id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify(opsData)
+        body: JSON.stringify(payload)
       });
       
       if (!res.ok) {
-        // If the backend doesn't support PUT yet, we'll swallow this softly for the UI demonstration
-        console.warn("Update might not be fully supported by backend yet.");
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.message || "Operation completion failed");
       }
       
-      toast.success("Operation updated successfully");
-    } catch (err) {
-      toast.error("Failed to update operation");
+      toast.success("Operation completed successfully");
+      // Auto-redirect to tanker operations list
+      setTimeout(() => {
+        router.push("/tanker-operations");
+      }, 1500);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to complete operation");
     } finally {
       setSaving(false);
     }
@@ -385,6 +482,8 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
 
   if (!opsData) return null;
 
+  const isReadOnly = opsData?.status === "Completed";
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Header */}
@@ -403,8 +502,8 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
             </div>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={saving} className="shadow-md">
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+        <Button onClick={handleSave} disabled={saving || isReadOnly} className="shadow-md">
+          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
           Complete Operation
         </Button>
       </header>
@@ -419,7 +518,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
               size="sm"
               variant="outline"
               onClick={handleSaveDetails}
-              disabled={savingDetails}
+              disabled={savingDetails || isReadOnly}
               className="shadow-sm"
             >
               {savingDetails ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
@@ -432,27 +531,27 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Agency Ref No</Label>
-                  <Input value={opsData.agency_ref_no || ""} onChange={e => handleChange("agency_ref_no", e.target.value)} />
+                  <Input value={opsData.agency_ref_no || ""} onChange={e => handleChange("agency_ref_no", e.target.value)} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>Vessel Name</Label>
-                  <Input value={opsData.vessel_name || ""} onChange={e => handleChange("vessel_name", e.target.value)} />
+                  <Input value={opsData.vessel_name || ""} onChange={e => handleChange("vessel_name", e.target.value)} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>IMO No</Label>
-                  <Input value={opsData.imo_number || ""} onChange={e => handleChange("imo_number", e.target.value)} />
+                  <Input value={opsData.imo_number || ""} onChange={e => handleChange("imo_number", e.target.value)} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>Voyage No</Label>
-                  <Input value={opsData.voyage_no || ""} onChange={e => handleChange("voyage_no", e.target.value)} />
+                  <Input value={opsData.voyage_no || ""} onChange={e => handleChange("voyage_no", e.target.value)} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>Port</Label>
-                  <Input value={opsData.port || ""} onChange={e => handleChange("port", e.target.value)} />
+                  <Input value={opsData.port || ""} onChange={e => handleChange("port", e.target.value)} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>Berth Location</Label>
-                  <Input value={opsData.berth_location || ""} onChange={e => handleChange("berth_location", e.target.value)} />
+                  <Input value={opsData.berth_location || ""} onChange={e => handleChange("berth_location", e.target.value)} disabled={isReadOnly} />
                 </div>
               </div>
 
@@ -460,7 +559,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
               <div className="space-y-4">
                 <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg border">
                   <Label className="px-2 font-semibold">Consignees</Label>
-                  <Button variant="outline" size="sm" onClick={handleAddConsignee} className="h-7 text-xs">
+                  <Button variant="outline" size="sm" onClick={handleAddConsignee} className="h-7 text-xs" disabled={isReadOnly}>
                     <Plus className="h-3 w-3 mr-1" /> Add
                   </Button>
                 </div>
@@ -471,16 +570,17 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                       size="icon" 
                       className="h-6 w-6 absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => handleRemoveConsignee(index)}
+                      disabled={isReadOnly}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                     <div className="space-y-1.5 pr-6">
                       <Label>Consignee {index + 1}</Label>
-                      <Input value={c.ConsigneeName || ""} onChange={e => handleConsigneeChange(index, "ConsigneeName", e.target.value)} />
+                      <Input value={c.ConsigneeName || ""} onChange={e => handleConsigneeChange(index, "ConsigneeName", e.target.value)} disabled={isReadOnly} />
                     </div>
                     <div className="space-y-1.5">
                       <Label>Cargo Grade & Qty</Label>
-                      <Input placeholder="Description..." value={c.description || ""} onChange={e => handleConsigneeChange(index, "description", e.target.value)} />
+                      <Input placeholder="Description..." value={c.description || ""} onChange={e => handleConsigneeChange(index, "description", e.target.value)} disabled={isReadOnly} />
                     </div>
                   </div>
                 ))}
@@ -490,7 +590,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Greek Lanka PIC</Label>
-                  <Select value={opsData.greekLankaPIC || ""} onValueChange={val => handleChange("greekLankaPIC", val)}>
+                  <Select value={opsData.greekLankaPIC || ""} onValueChange={val => handleChange("greekLankaPIC", val)} disabled={isReadOnly}>
                     <SelectTrigger className="w-full bg-white dark:bg-gray-950">
                       <SelectValue placeholder="Select PIC" />
                     </SelectTrigger>
@@ -505,7 +605,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                 </div>
                 <div className="space-y-2">
                   <Label>Boarding Officer</Label>
-                  <Select value={opsData.bordingOfficer || ""} onValueChange={val => handleChange("bordingOfficer", val)}>
+                  <Select value={opsData.bordingOfficer || ""} onValueChange={val => handleChange("bordingOfficer", val)} disabled={isReadOnly}>
                     <SelectTrigger className="w-full bg-white dark:bg-gray-950">
                       <SelectValue placeholder="Select Officer" />
                     </SelectTrigger>
@@ -520,15 +620,15 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                 </div>
                 <div className="space-y-2">
                   <Label>SLPA Payment Ref</Label>
-                  <Input value={opsData.SLPAPaymentRef || ""} onChange={e => handleChange("SLPAPaymentRef", e.target.value)} />
+                  <Input value={opsData.SLPAPaymentRef || ""} onChange={e => handleChange("SLPAPaymentRef", e.target.value)} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>DC Reference No</Label>
-                  <Input value={opsData.DCReferenceNo || ""} onChange={e => handleChange("DCReferenceNo", e.target.value)} />
+                  <Input value={opsData.DCReferenceNo || ""} onChange={e => handleChange("DCReferenceNo", e.target.value)} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>Document Ref</Label>
-                  <Input value={opsData.documetRefNo || ""} onChange={e => handleChange("documetRefNo", e.target.value)} />
+                  <Input value={opsData.documetRefNo || ""} onChange={e => handleChange("documetRefNo", e.target.value)} disabled={isReadOnly} />
                 </div>
               </div>
             </div>
@@ -540,27 +640,27 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                  <div className="space-y-2 flex flex-col justify-end">
                     <Label className="mb-1 text-xs">ETA</Label>
                     <div className="flex gap-2 w-full">
-                      <DatePicker value={getLocalDateStr(opsData.ETA)} onChange={d => handleDateTimeChange("ETA", d, getLocalTimeStr(opsData.ETA) || "00:00")} />
-                      <TimePicker value={getLocalTimeStr(opsData.ETA)} onChange={t => handleDateTimeChange("ETA", getLocalDateStr(opsData.ETA) || new Date().toLocaleDateString("en-CA"), t)} />
+                      <DatePicker value={getLocalDateStr(opsData.ETA)} onChange={d => handleDateTimeChange("ETA", d, getLocalTimeStr(opsData.ETA) || "00:00")} disabled={isReadOnly} />
+                      <TimePicker value={getLocalTimeStr(opsData.ETA)} onChange={t => handleDateTimeChange("ETA", getLocalDateStr(opsData.ETA) || new Date().toLocaleDateString("en-CA"), t)} disabled={isReadOnly} />
                     </div>
                  </div>
                  <div className="space-y-2 flex flex-col justify-end">
                     <Label className="mb-1 text-xs">ETB</Label>
                     <div className="flex gap-2 w-full">
-                      <DatePicker value={getLocalDateStr(opsData.ETB)} onChange={d => handleDateTimeChange("ETB", d, getLocalTimeStr(opsData.ETB) || "00:00")} />
-                      <TimePicker value={getLocalTimeStr(opsData.ETB)} onChange={t => handleDateTimeChange("ETB", getLocalDateStr(opsData.ETB) || new Date().toLocaleDateString("en-CA"), t)} />
+                      <DatePicker value={getLocalDateStr(opsData.ETB)} onChange={d => handleDateTimeChange("ETB", d, getLocalTimeStr(opsData.ETB) || "00:00")} disabled={isReadOnly} />
+                      <TimePicker value={getLocalTimeStr(opsData.ETB)} onChange={t => handleDateTimeChange("ETB", getLocalDateStr(opsData.ETB) || new Date().toLocaleDateString("en-CA"), t)} disabled={isReadOnly} />
                     </div>
                  </div>
                  <div className="space-y-2 flex flex-col justify-end">
                     <Label className="mb-1 text-xs">ETD</Label>
                     <div className="flex gap-2 w-full">
-                      <DatePicker value={getLocalDateStr(opsData.ETD)} onChange={d => handleDateTimeChange("ETD", d, getLocalTimeStr(opsData.ETD) || "00:00")} />
-                      <TimePicker value={getLocalTimeStr(opsData.ETD)} onChange={t => handleDateTimeChange("ETD", getLocalDateStr(opsData.ETD) || new Date().toLocaleDateString("en-CA"), t)} />
+                      <DatePicker value={getLocalDateStr(opsData.ETD)} onChange={d => handleDateTimeChange("ETD", d, getLocalTimeStr(opsData.ETD) || "00:00")} disabled={isReadOnly} />
+                      <TimePicker value={getLocalTimeStr(opsData.ETD)} onChange={t => handleDateTimeChange("ETD", getLocalDateStr(opsData.ETD) || new Date().toLocaleDateString("en-CA"), t)} disabled={isReadOnly} />
                     </div>
                  </div>
                  <div className="space-y-2 flex flex-col justify-end">
                     <Label className="mb-1 text-xs">Est Port Stay (Hrs)</Label>
-                    <Input type="number" className="h-[42px]" value={opsData.Estimate_port_stay || ""} onChange={e => handleChange("Estimate_port_stay", Number(e.target.value))} />
+                    <Input type="number" className="h-[42px]" value={opsData.Estimate_port_stay || ""} onChange={e => handleChange("Estimate_port_stay", Number(e.target.value))} disabled={isReadOnly} />
                  </div>
                </div>
 
@@ -569,22 +669,22 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                  <div className="space-y-2 flex flex-col justify-end">
                     <Label className="mb-1 text-xs">ATA</Label>
                     <div className="flex flex-col gap-2 w-full">
-                      <DatePicker value={getLocalDateStr(opsData.ATA)} onChange={d => handleDateTimeChange("ATA", d, getLocalTimeStr(opsData.ATA) || "00:00")} />
-                      <TimePicker value={getLocalTimeStr(opsData.ATA)} onChange={t => handleDateTimeChange("ATA", getLocalDateStr(opsData.ATA) || new Date().toLocaleDateString("en-CA"), t)} />
+                      <DatePicker value={getLocalDateStr(opsData.ATA)} onChange={d => handleDateTimeChange("ATA", d, getLocalTimeStr(opsData.ATA) || "00:00")} disabled={isReadOnly} />
+                      <TimePicker value={getLocalTimeStr(opsData.ATA)} onChange={t => handleDateTimeChange("ATA", getLocalDateStr(opsData.ATA) || new Date().toLocaleDateString("en-CA"), t)} disabled={isReadOnly} />
                     </div>
                  </div>
                  <div className="space-y-2 flex flex-col justify-end">
                     <Label className="mb-1 text-xs">ATB</Label>
                     <div className="flex flex-col gap-2 w-full">
-                      <DatePicker value={getLocalDateStr(opsData.ATB)} onChange={d => handleDateTimeChange("ATB", d, getLocalTimeStr(opsData.ATB) || "00:00")} />
-                      <TimePicker value={getLocalTimeStr(opsData.ATB)} onChange={t => handleDateTimeChange("ATB", getLocalDateStr(opsData.ATB) || new Date().toLocaleDateString("en-CA"), t)} />
+                      <DatePicker value={getLocalDateStr(opsData.ATB)} onChange={d => handleDateTimeChange("ATB", d, getLocalTimeStr(opsData.ATB) || "00:00")} disabled={isReadOnly} />
+                      <TimePicker value={getLocalTimeStr(opsData.ATB)} onChange={t => handleDateTimeChange("ATB", getLocalDateStr(opsData.ATB) || new Date().toLocaleDateString("en-CA"), t)} disabled={isReadOnly} />
                     </div>
                  </div>
                  <div className="space-y-2 flex flex-col justify-end">
                     <Label className="mb-1 text-xs">ATD</Label>
                     <div className="flex flex-col gap-2 w-full">
-                      <DatePicker value={getLocalDateStr(opsData.ATD)} onChange={d => handleDateTimeChange("ATD", d, getLocalTimeStr(opsData.ATD) || "00:00")} />
-                      <TimePicker value={getLocalTimeStr(opsData.ATD)} onChange={t => handleDateTimeChange("ATD", getLocalDateStr(opsData.ATD) || new Date().toLocaleDateString("en-CA"), t)} />
+                      <DatePicker value={getLocalDateStr(opsData.ATD)} onChange={d => handleDateTimeChange("ATD", d, getLocalTimeStr(opsData.ATD) || "00:00")} disabled={isReadOnly} />
+                      <TimePicker value={getLocalTimeStr(opsData.ATD)} onChange={t => handleDateTimeChange("ATD", getLocalDateStr(opsData.ATD) || new Date().toLocaleDateString("en-CA"), t)} disabled={isReadOnly} />
                     </div>
                  </div>
                </div>
@@ -638,11 +738,13 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                             {/* Tick / Done button */}
                             <button
                               title={isDone ? "Completed" : "Mark as Done"}
-                              disabled={isDone}
+                              disabled={isDone || isReadOnly}
                               onClick={() => setDoneDialog({ open: true, taskId: t.task.ops_task_id, remark: t.Remarks || "" })}
                               className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all ${
                                 isDone
                                   ? "bg-green-500 border-green-500 text-white cursor-default"
+                                  : isReadOnly
+                                  ? "border-gray-200 text-gray-200 cursor-not-allowed"
                                   : "border-gray-300 dark:border-gray-600 text-gray-400 hover:border-green-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer"
                               }`}
                             >
@@ -653,7 +755,12 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                               <button
                                 title="Edit Remark"
                                 onClick={() => setEditDialog({ open: true, taskId: t.task.ops_task_id, remark: t.Remarks || "" })}
-                                className="h-8 w-8 rounded-full flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer"
+                                disabled={isReadOnly}
+                                className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                                  isReadOnly
+                                    ? "border-gray-200 text-gray-200 cursor-not-allowed"
+                                    : "border-gray-300 dark:border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer"
+                                }`}
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
@@ -780,7 +887,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                   <tr key={eta.ops_eta_id} className="bg-white dark:bg-gray-900 border-b transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
                     <td className="px-4 py-4 font-medium border-r">{eta.eta_noices}</td>
                     <td className="px-4 py-4 text-center border-r">
-                      <Select value={eta.updated_to_port === true || eta.updated_to_port === "Done" ? "Done" : "Pending"} onValueChange={v => handleEtaChange(eta.ops_eta_id, "updated_to_port", v === "Done")}>
+                      <Select value={eta.updated_to_port === true || eta.updated_to_port === "Done" ? "Done" : "Pending"} onValueChange={v => handleEtaChange(eta.ops_eta_id, "updated_to_port", v === "Done")} disabled={isReadOnly}>
                         <SelectTrigger className={`w-[130px] mx-auto text-xs font-semibold ${eta.updated_to_port === true || eta.updated_to_port === "Done" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"}`}>
                           <SelectValue />
                         </SelectTrigger>
@@ -792,12 +899,12 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                     </td>
                     <td className="px-4 py-4 text-center border-r align-top">
                        <div className="flex flex-col gap-2 mx-auto w-[180px]">
-                         <DatePicker value={getLocalDateStr(eta.ETAReceivedDateTime)} onChange={d => handleEtaDateTimeChange(eta.ops_eta_id, d, getLocalTimeStr(eta.ETAReceivedDateTime) || "00:00")} />
-                         <TimePicker value={getLocalTimeStr(eta.ETAReceivedDateTime)} onChange={t => handleEtaDateTimeChange(eta.ops_eta_id, getLocalDateStr(eta.ETAReceivedDateTime) || new Date().toLocaleDateString("en-CA"), t)} />
+                         <DatePicker value={getLocalDateStr(eta.ETAReceivedDateTime)} onChange={d => handleEtaDateTimeChange(eta.ops_eta_id, d, getLocalTimeStr(eta.ETAReceivedDateTime) || "00:00")} disabled={isReadOnly} />
+                         <TimePicker value={getLocalTimeStr(eta.ETAReceivedDateTime)} onChange={t => handleEtaDateTimeChange(eta.ops_eta_id, getLocalDateStr(eta.ETAReceivedDateTime) || new Date().toLocaleDateString("en-CA"), t)} disabled={isReadOnly} />
                        </div>
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <Select value={eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? "Done" : "Pending"} onValueChange={v => handleEtaChange(eta.ops_eta_id, "updated_to_consignee", v === "Done")}>
+                      <Select value={eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? "Done" : "Pending"} onValueChange={v => handleEtaChange(eta.ops_eta_id, "updated_to_consignee", v === "Done")} disabled={isReadOnly}>
                         <SelectTrigger className={`w-[130px] mx-auto text-xs font-semibold ${eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"}`}>
                           <SelectValue />
                         </SelectTrigger>
@@ -815,7 +922,12 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                           <button
                             title="Save ETA Update"
                             onClick={() => handleUpdateEta(eta.ops_eta_id)}
-                            className="h-8 w-8 rounded-full flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-green-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all cursor-pointer"
+                            disabled={isReadOnly}
+                            className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                              isReadOnly
+                                ? "border-gray-200 text-gray-200 cursor-not-allowed"
+                                : "border-gray-300 dark:border-gray-600 text-gray-400 hover:border-green-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer"
+                            }`}
                           >
                             <Check className="h-4 w-4" />
                           </button>
@@ -833,11 +945,11 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
            <div className="space-y-2">
              <Label>Comments</Label>
-             <Textarea className="min-h-[100px] resize-none" placeholder="Operation general comments..." value={opsData.comments || ""} onChange={e => handleChange("comments", e.target.value)} />
+             <Textarea className="min-h-[100px] resize-none" placeholder="Operation general comments..." value={opsData.comments || ""} onChange={e => handleChange("comments", e.target.value)} disabled={isReadOnly} />
            </div>
            <div className="space-y-2">
              <Label>Areas for Improvement</Label>
-             <Textarea className="min-h-[100px] resize-none" placeholder="Feedback or improvement areas..." value={opsData.areas_for_improvement || ""} onChange={e => handleChange("areas_for_improvement", e.target.value)} />
+             <Textarea className="min-h-[100px] resize-none" placeholder="Feedback or improvement areas..." value={opsData.areas_for_improvement || ""} onChange={e => handleChange("areas_for_improvement", e.target.value)} disabled={isReadOnly} />
            </div>
         </div>
 
