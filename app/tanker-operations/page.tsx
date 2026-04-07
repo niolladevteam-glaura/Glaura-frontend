@@ -24,6 +24,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/TimePicker";
@@ -52,6 +62,8 @@ interface TankerOperation {
   voyageNo: string;
   port: string;
   status: "Pending" | "Completed";
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Dummy data for initial layout
@@ -84,8 +96,9 @@ export default function TankerOperations() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewType, setViewType] = useState<"card" | "table">("card");
   
-  // Dialog State
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [operationToDelete, setOperationToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -171,7 +184,9 @@ export default function TankerOperations() {
             imoNo: op.imo_number,
             voyageNo: op.voyage_no,
             port: op.port,
-            status: op.status// Fallback since the backend response doesn't overtly provide a status mapping yet
+            status: op.status,
+            createdAt: op.createdAt,
+            updatedAt: op.updatedAt
           }));
           setOperations(mapped);
           setFilteredOperations(mapped);
@@ -267,6 +282,14 @@ export default function TankerOperations() {
       default:
         return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600";
     }
+  };
+
+  const formatDisplayDateTime = (dateStr?: string) => {
+    if (!dateStr) return "N/A";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "N/A";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
   const handleAddConsignee = () => {
@@ -391,6 +414,38 @@ export default function TankerOperations() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const userName = currentUser?.name || "sathira";
+
+      const res = await fetch(`${API_BASE_URL}/tankerOps/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({ user: userName })
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || "Failed to delete operation");
+
+      toast.success(result.message || "Operation deleted successfully");
+      
+      // Update local state
+      setOperations(prev => prev.filter(op => op.id !== id));
+      setFilteredOperations(prev => prev.filter(op => op.id !== id));
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete operation");
+    } finally {
+      setIsLoading(false);
+      setIsDeleteDialogOpen(false);
+      setOperationToDelete(null);
+    }
+  };
+
   if (!currentUser) return null;
 
   const TableView = () => (
@@ -423,19 +478,32 @@ export default function TankerOperations() {
               <td className="px-4 py-3">{op.voyageNo}</td>
               <td className="px-4 py-3">{op.port}</td>
               <td className="px-4 py-3">
-                <Link href={`/tanker-operations/${op.id}`}>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    {op.status === "Completed" ? (
-                      <>
-                        <Eye className="h-4 w-4" /> View Operation
-                      </>
-                    ) : (
-                      <>
-                        <Edit className="h-4 w-4" /> Edit
-                      </>
-                    )}
+                <div className="flex items-center gap-2">
+                  <Link href={`/tanker-operations/${op.id}`}>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      {op.status === "Completed" ? (
+                        <>
+                          <Eye className="h-4 w-4" /> View Operation
+                        </>
+                      ) : (
+                        <>
+                          <Edit className="h-4 w-4" /> Edit
+                        </>
+                      )}
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                    onClick={() => {
+                      setOperationToDelete(op.id);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
-                </Link>
+                </div>
               </td>
             </tr>
           ))}
@@ -768,7 +836,19 @@ export default function TankerOperations() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredOperations.map((op) => (
-                <Card key={op.id} className="hover:shadow-lg transition-shadow border-t-4 border-t-primary flex flex-col h-full">
+                <Card key={op.id} className="hover:shadow-lg transition-shadow border-t-4 border-t-primary flex flex-col h-full relative group">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 z-10"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setOperationToDelete(op.id);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                   <CardHeader className="pb-3 border-b flex-shrink-0">
                     <div className="flex justify-between items-start">
                       <div>
@@ -800,6 +880,12 @@ export default function TankerOperations() {
                         <MapPin className="h-4 w-4 text-gray-400" />
                         {op.port}
                       </p>
+                    </div>
+                    <div className="col-span-2 pt-2 border-t mt-1">
+                      <div className="flex justify-between text-[10px] text-muted-foreground italic">
+                        <span>Created: {formatDisplayDateTime(op.createdAt)}</span>
+                        <span>Updated: {formatDisplayDateTime(op.updatedAt)}</span>
+                      </div>
                     </div>
                   </CardContent>
                   <div className="p-4 border-t mt-auto">
@@ -834,6 +920,31 @@ export default function TankerOperations() {
           )}
         </div>
       </div>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the tanker operation
+              and remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={isLoading}
+              onClick={(e) => {
+                e.preventDefault();
+                if (operationToDelete) handleDelete(operationToDelete);
+              }}
+            >
+              {isLoading ? "Deleting..." : "Delete Operation"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
