@@ -51,7 +51,7 @@ interface TankerOperation {
   imoNo: string;
   voyageNo: string;
   port: string;
-  status: "Pending" | "Closed";
+  status: "Pending" | "Completed";
 }
 
 // Dummy data for initial layout
@@ -72,7 +72,7 @@ const DUMMY_OPERATIONS: TankerOperation[] = [
     imoNo: "9001234",
     voyageNo: "V-99",
     port: "HAMBANTOTA",
-    status: "Closed",
+    status: "Completed",
   },
 ];
 
@@ -425,8 +425,15 @@ export default function TankerOperations() {
               <td className="px-4 py-3">
                 <Link href={`/tanker-operations/${op.id}`}>
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <Edit className="h-4 w-4" />
-                    Edit
+                    {op.status === "Completed" ? (
+                      <>
+                        <Eye className="h-4 w-4" /> View Operation
+                      </>
+                    ) : (
+                      <>
+                        <Edit className="h-4 w-4" /> Edit
+                      </>
+                    )}
                   </Button>
                 </Link>
               </td>
@@ -725,7 +732,7 @@ export default function TankerOperations() {
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -798,8 +805,15 @@ export default function TankerOperations() {
                   <div className="p-4 border-t mt-auto">
                     <Link href={`/tanker-operations/${op.id}`} className="w-full">
                       <Button variant="default" className="w-full flex items-center gap-2">
-                        <Edit className="h-4 w-4" />
-                        Update Operation
+                        {op.status === "Completed" ? (
+                          <>
+                            <Eye className="h-4 w-4" /> View Operation
+                          </>
+                        ) : (
+                          <>
+                            <Edit className="h-4 w-4" /> Update Operation
+                          </>
+                        )}
                       </Button>
                     </Link>
                   </div>
