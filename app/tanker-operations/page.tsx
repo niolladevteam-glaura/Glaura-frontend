@@ -49,7 +49,8 @@ import {
   LayoutGrid,
   Edit,
   Eye,
-  Trash2
+  Trash2,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -100,6 +101,7 @@ export default function TankerOperations() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [operationToDelete, setOperationToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -193,6 +195,8 @@ export default function TankerOperations() {
         }
       } catch (err) {
         console.error("Failed to fetch tanker operations");
+      } finally {
+        setPageLoading(false);
       }
     }
     fetchOperations();
@@ -445,6 +449,15 @@ export default function TankerOperations() {
       setOperationToDelete(null);
     }
   };
+
+  if (pageLoading) {
+    return (
+      <div className="flex flex-col h-screen w-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <p className="text-sm text-muted-foreground animate-pulse">Loading tanker operations...</p>
+      </div>
+    );
+  }
 
   if (!currentUser) return null;
 
