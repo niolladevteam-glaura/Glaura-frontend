@@ -39,6 +39,8 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
   const [doneDialog, setDoneDialog] = useState<{ open: boolean; taskId: string; remark: string }>({ open: false, taskId: "", remark: "" });
   // Edit remark dialog (for incomplete tasks)
   const [editDialog, setEditDialog] = useState<{ open: boolean; taskId: string; remark: string }>({ open: false, taskId: "", remark: "" });
+  // Track which task is currently being saved (shows per-row spinner)
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3080/api";
 
@@ -270,6 +272,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
   };
 
   const handleUpdateTask = async (taskId: string, status: string, remarks: string) => {
+    setUpdatingTaskId(taskId);
     try {
       const token = localStorage.getItem("token");
       const storedUser = localStorage.getItem("currentUser");
@@ -290,13 +293,23 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
         throw new Error(errJson?.message || "Task update failed");
       }
 
-      // Also update local state so UI reflects immediately
-      handleTaskChange(taskId, "status", status);
-      if (remarks) handleTaskChange(taskId, "Remarks", remarks);
-
       toast.success(status === "Completed" ? "Task marked as done" : "Remark saved");
+
+      // Refetch the full operation so the UI reflects the latest DB state
+      const refreshRes = await fetch(`${API_BASE_URL}/tankerOps/${ops_id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const refreshJson = await refreshRes.json();
+      if (refreshJson.data) {
+        setOpsData(refreshJson.data);
+      }
     } catch (err: any) {
       toast.error(err?.message || "Failed to update task");
+    } finally {
+      setUpdatingTaskId(null);
     }
   };
   
@@ -545,6 +558,7 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                   return 0;
                 }).map((t: any) => {
                   const isDone = t.status === "Done" || t.status === "Completed";
+                  const isUpdating = updatingTaskId === t.task?.ops_task_id;
                   return (
                     <tr key={t.id} className={`transition-colors border-b ${
                       isDone
@@ -559,31 +573,38 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {/* Tick / Done button */}
-                          <button
-                            title={isDone ? "Completed" : "Mark as Done"}
-                            disabled={isDone}
-                            onClick={() => setDoneDialog({ open: true, taskId: t.task.ops_task_id, remark: t.Remarks || "" })}
-                            className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all ${
-                              isDone
-                                ? "bg-green-500 border-green-500 text-white cursor-default"
-                                : "border-gray-300 dark:border-gray-600 text-gray-400 hover:border-green-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer"
-                            }`}
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
-                          {/* Edit remark – only for incomplete tasks */}
-                          {!isDone && (
+                        {isUpdating ? (
+                          /* Per-row loading spinner while saving */
+                          <div className="flex items-center justify-center">
+                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2">
+                            {/* Tick / Done button */}
                             <button
-                              title="Edit Remark"
-                              onClick={() => setEditDialog({ open: true, taskId: t.task.ops_task_id, remark: t.Remarks || "" })}
-                              className="h-8 w-8 rounded-full flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer"
+                              title={isDone ? "Completed" : "Mark as Done"}
+                              disabled={isDone}
+                              onClick={() => setDoneDialog({ open: true, taskId: t.task.ops_task_id, remark: t.Remarks || "" })}
+                              className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                                isDone
+                                  ? "bg-green-500 border-green-500 text-white cursor-default"
+                                  : "border-gray-300 dark:border-gray-600 text-gray-400 hover:border-green-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer"
+                              }`}
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <Check className="h-4 w-4" />
                             </button>
-                          )}
-                        </div>
+                            {/* Edit remark – only for incomplete tasks */}
+                            {!isDone && (
+                              <button
+                                title="Edit Remark"
+                                onClick={() => setEditDialog({ open: true, taskId: t.task.ops_task_id, remark: t.Remarks || "" })}
+                                className="h-8 w-8 rounded-full flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -666,8 +687,8 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                 onClick={() => {
                   const taskId = editDialog.taskId;
                   const remark = editDialog.remark;
-                  // Find existing status so we don't accidentally change it
-                  const existingTask = (opsData.tasks || []).find((t: any) => t.id === taskId);
+                  // Find existing status by ops_task_id so we don't accidentally change it
+                  const existingTask = (opsData.tasks || []).find((t: any) => t.task?.ops_task_id === taskId);
                   const existingStatus = existingTask?.status || "Pending";
                   setEditDialog({ open: false, taskId: "", remark: "" });
                   handleUpdateTask(taskId, existingStatus, remark);
