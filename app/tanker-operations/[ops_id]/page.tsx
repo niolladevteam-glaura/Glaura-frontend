@@ -724,9 +724,87 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
               </thead>
               <tbody className="divide-y text-sm">
                 {(opsData.tasks || []).slice().sort((a: any, b: any) => {
-                  if (a.stageName < b.stageName) return -1;
-                  if (a.stageName > b.stageName) return 1;
-                  return 0;
+                  const STAGE_ORDER: Record<string, number> = {
+                    "Pre-Arrival": 1,
+                    "Documentation": 2,
+                    "Pre-Berthing": 3,
+                    "Arrival": 4,
+                    "Discharge": 5,
+                    "Completion": 6,
+                    "Departure": 7
+                  };
+
+                  const TASK_ORDER: Record<string, number> = {
+                    "Q88 and Appointment Received": 1,
+                    "Cargo Details Confirmed (Grade / Qty / Segregation)": 2,
+                    "Consignee Details Confirmed": 3,
+                    "SLPA Acceptance Confirmed": 4,
+                    "P&I Value & Validity Checked": 5,
+                    "Vessel Suitability (Draft / LOA / Age / Class)": 6,
+                    "Pre-Arrival Message to Master of the Vessel": 7,
+                    "Vessel Initial Notice to Port Authority": 8,
+                    "Daily ETA Reporting - To Port": 9,
+                    "Daily ETA Reporting - To Consignee": 10,
+                    "SLPA Safety Clearance": 11,
+                    "ISPS Clearance (Navy)": 12,
+                    "MEPA Clearance": 13,
+                    "Port Health Clearance": 14,
+                    "Port Payments": 15,
+                    "Customs OT Arranged": 16,
+                    "Manifest Registration (Physical)": 17,
+                    "Manifest Registration (ASYCUDA)": 18,
+                    "DO Issued to Consignee": 19,
+                    "STS / Pipeline / HTD Port Payment Confirmation to Consignee": 20,
+                    "DG / Special Approval (if applicable)": 21,
+                    "Vessel Wise DMS License Applied": 22,
+                    "Payment Slip / DC Approval / Navigation Forms (Payment) to Main Control": 23,
+                    "Shore Passes Request Sent to Immigration": 24,
+                    "Asycuda for Port Clearance": 25,
+                    "Berth Confirmed": 26,
+                    "Berth Line-up Sent to Client & Vessel": 27,
+                    "Berth Line-up Sent to Consignee": 28,
+                    "Ullage or STS Plan Confirmed (CRITICAL)": 29,
+                    "Surveyor Contact Established": 30,
+                    "Terminal Readiness Confirmed (Line / Pumps / Tanks)": 31,
+                    "Discharge Plan (Sequence) Confirmed": 32,
+                    "Berth Position Confirmed with Consignee": 33,
+                    "NOR Tendered": 34,
+                    "Pilot Onboard": 35,
+                    "Berthing Position Liaised with Berthing Master and Consignee": 36,
+                    "Vessel Berthed (All Made Fast)": 37,
+                    "Free Pratique Granted": 38,
+                    "Customs/Immigration/Port Health/ISPS Completed": 39,
+                    "Sampling Commenced": 40,
+                    "Sampling Completed": 41,
+                    "Sample Report ETA": 42,
+                    "Discharge Commenced": 43,
+                    "Discharge Rate Monitored": 44,
+                    "Ullage Monitored Continuously": 45,
+                    "Daily Reporting - Minimum 2 Reports (AM/PM)": 46,
+                    "Interruption Log Maintained (Time Lost + Reason)": 47,
+                    "Multi-Consignee Coordination Managed": 48,
+                    "Final ROB Confirmed": 49,
+                    "Final Survey Completed": 50,
+                    "SOF / Cargo Docs Signed and Collected Copies": 51,
+                    "Port Clearance": 52,
+                    "1 Hr Notice to Port Control": 53,
+                    "Pilot Arranged": 54,
+                    "Vessel Sailed (Last Line)": 55,
+                    "SOF Issued": 56,
+                    "Departure Update Sent": 57,
+                    "Departure Documents Shared with Customer": 58,
+                    "Document Filing Completed": 59
+                  };
+
+                  const stageA = STAGE_ORDER[a.stageName] || 999;
+                  const stageB = STAGE_ORDER[b.stageName] || 999;
+
+                  if (stageA !== stageB) return stageA - stageB;
+
+                  const taskA = TASK_ORDER[a.taskName] || 999;
+                  const taskB = TASK_ORDER[b.taskName] || 999;
+
+                  return taskA - taskB;
                 }).map((t: any) => {
                   const isDone = t.status === "Done" || t.status === "Completed";
                   const isUpdating = updatingTaskId === t.task?.ops_task_id;
