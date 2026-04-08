@@ -663,22 +663,22 @@ export default function TankerOperations() {
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
-                            <Label>ETD Date</Label>
-                            <DatePicker value={newOps.etdDate} onChange={val => setNewOps({ ...newOps, etdDate: val })} className="w-full h-[40px]" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>ETD Time</Label>
-                            <TimePicker value={newOps.etdTime} onChange={val => setNewOps({ ...newOps, etdTime: val })} className="h-[40px]" />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-2">
                             <Label>ETB Date</Label>
                             <DatePicker value={newOps.etbDate} onChange={val => setNewOps({ ...newOps, etbDate: val })} className="w-full h-[40px]" />
                           </div>
                           <div className="space-y-2">
                             <Label>ETB Time</Label>
                             <TimePicker value={newOps.etbTime} onChange={val => setNewOps({ ...newOps, etbTime: val })} className="h-[40px]" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>ETD Date</Label>
+                            <DatePicker value={newOps.etdDate} onChange={val => setNewOps({ ...newOps, etdDate: val })} className="w-full h-[40px]" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>ETD Time</Label>
+                            <TimePicker value={newOps.etdTime} onChange={val => setNewOps({ ...newOps, etdTime: val })} className="h-[40px]" />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -693,22 +693,22 @@ export default function TankerOperations() {
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
-                            <Label>ATD Date</Label>
-                            <DatePicker value={newOps.atdDate} onChange={val => setNewOps({ ...newOps, atdDate: val })} className="w-full h-[40px]" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>ATD Time</Label>
-                            <TimePicker value={newOps.atdTime} onChange={val => setNewOps({ ...newOps, atdTime: val })} className="h-[40px]" />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-2">
                             <Label>ATB Date</Label>
                             <DatePicker value={newOps.atbDate} onChange={val => setNewOps({ ...newOps, atbDate: val })} className="w-full h-[40px]" />
                           </div>
                           <div className="space-y-2">
                             <Label>ATB Time</Label>
                             <TimePicker value={newOps.atbTime} onChange={val => setNewOps({ ...newOps, atbTime: val })} className="h-[40px]" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
+                            <Label>ATD Date</Label>
+                            <DatePicker value={newOps.atdDate} onChange={val => setNewOps({ ...newOps, atdDate: val })} className="w-full h-[40px]" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>ATD Time</Label>
+                            <TimePicker value={newOps.atdTime} onChange={val => setNewOps({ ...newOps, atdTime: val })} className="h-[40px]" />
                           </div>
                         </div>
                         <div className="space-y-2">
