@@ -1005,49 +1005,73 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                   const valB = parseInt(b.eta_noices.split(" ")[0]);
                   return valB - valA; 
                 }).map((eta: any) => (
-                  <tr key={eta.ops_eta_id} className="bg-white dark:bg-gray-900 border-b transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
-                    <td className="px-4 py-4 font-medium border-r">{eta.eta_noices}</td>
-                    <td className="px-4 py-4 text-center border-r">
-                      <Select value={eta.updated_to_port === true || eta.updated_to_port === "Done" ? "Done" : "Pending"} onValueChange={v => handleEtaChange(eta.ops_eta_id, "updated_to_port", v === "Done")} disabled={isReadOnly}>
-                        <SelectTrigger className={`w-[130px] mx-auto text-xs font-semibold ${eta.updated_to_port === true || eta.updated_to_port === "Done" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Done">Done</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  <tr key={eta.ops_eta_id} className="bg-white dark:bg-gray-900 border-b transition-all hover:bg-gray-50 dark:hover:bg-gray-800/80 hover:shadow-sm">
+                    <td className="px-4 py-4 border-r align-middle w-[150px]">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold p-2.5 rounded-lg flex-shrink-0 min-w-[50px] text-center shadow-sm">
+                          {eta.eta_noices.split(" ")[0]}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-none">ETA</p>
+                          <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">Notice</p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-4 py-4 text-center border-r align-top">
-                       <div className="flex flex-col gap-2 mx-auto w-[180px]">
-                         <DatePicker value={getLocalDateStr(eta.ETAReceivedDateTime)} onChange={d => handleEtaDateTimeChange(eta.ops_eta_id, d, getLocalTimeStr(eta.ETAReceivedDateTime) || "00:00")} disabled={isReadOnly} />
-                         <TimePicker value={getLocalTimeStr(eta.ETAReceivedDateTime)} onChange={t => handleEtaDateTimeChange(eta.ops_eta_id, getLocalDateStr(eta.ETAReceivedDateTime) || new Date().toLocaleDateString("en-CA"), t)} disabled={isReadOnly} />
+                    <td className="px-4 py-4 text-center border-r align-middle w-[160px]">
+                      <div className="flex flex-col items-center gap-1.5">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">To Port</span>
+                        <button
+                          disabled={isReadOnly}
+                          onClick={() => handleEtaChange(eta.ops_eta_id, "updated_to_port", !(eta.updated_to_port === true || eta.updated_to_port === "Done"))}
+                          className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none ring-2 ring-offset-2 ring-transparent ${eta.updated_to_port === true || eta.updated_to_port === "Done" ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}`}
+                        >
+                          <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${eta.updated_to_port === true || eta.updated_to_port === "Done" ? 'translate-x-8' : 'translate-x-1'}`} />
+                          <span className={`absolute text-[9px] font-bold ${eta.updated_to_port === true || eta.updated_to_port === "Done" ? 'left-1.5 text-white' : 'right-1.5 text-gray-500 dark:text-gray-400'}`}>
+                            {eta.updated_to_port === true || eta.updated_to_port === "Done" ? 'DONE' : 'PEND'}
+                          </span>
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-center border-r align-middle">
+                       <div className="flex flex-col gap-1 mx-auto max-w-[220px]">
+                         <span className="text-[10px] font-semibold text-center text-muted-foreground uppercase tracking-wider mb-0.5">Received At</span>
+                         <div className="flex flex-col gap-1.5 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-md border border-slate-200 dark:border-slate-700 shadow-inner">
+                           <DatePicker className="w-full text-xs h-8 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-1" value={getLocalDateStr(eta.ETAReceivedDateTime)} onChange={d => handleEtaDateTimeChange(eta.ops_eta_id, d, getLocalTimeStr(eta.ETAReceivedDateTime) || "00:00")} disabled={isReadOnly} />
+                           <TimePicker className="w-full text-xs h-8 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 focus:ring-1" value={getLocalTimeStr(eta.ETAReceivedDateTime)} onChange={t => handleEtaDateTimeChange(eta.ops_eta_id, getLocalDateStr(eta.ETAReceivedDateTime) || new Date().toLocaleDateString("en-CA"), t)} disabled={isReadOnly} />
+                         </div>
                        </div>
                     </td>
-                    <td className="px-4 py-4 text-center">
-                      <Select value={eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? "Done" : "Pending"} onValueChange={v => handleEtaChange(eta.ops_eta_id, "updated_to_consignee", v === "Done")} disabled={isReadOnly}>
-                        <SelectTrigger className={`w-[130px] mx-auto text-xs font-semibold ${eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Done">Done</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <td className="px-4 py-4 text-center border-r align-middle w-[160px]">
+                      <div className="flex flex-col items-center gap-1.5">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">To Consignee</span>
+                        <button
+                          disabled={isReadOnly}
+                          onClick={() => handleEtaChange(eta.ops_eta_id, "updated_to_consignee", !(eta.updated_to_consignee === true || eta.updated_to_consignee === "Done"))}
+                          className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none ring-2 ring-offset-2 ring-transparent ${eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}`}
+                        >
+                          <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? 'translate-x-8' : 'translate-x-1'}`} />
+                          <span className={`absolute text-[9px] font-bold ${eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? 'left-1.5 text-white' : 'right-1.5 text-gray-500 dark:text-gray-400'}`}>
+                            {eta.updated_to_consignee === true || eta.updated_to_consignee === "Done" ? 'DONE' : 'PEND'}
+                          </span>
+                        </button>
+                      </div>
                     </td>
-                    <td className="px-4 py-4 text-center">
-                      <div className="flex items-center justify-center">
+                    <td className="px-5 py-4 text-center align-middle w-[100px]">
+                      <div className="flex flex-col items-center gap-1.5">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider opacity-0 hidden md:block">Save</span>
                         {updatingEtaId === eta.ops_eta_id ? (
-                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                          <div className="h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center">
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          </div>
                         ) : (
                           <button
                             title="Save ETA Update"
                             onClick={() => handleUpdateEta(eta.ops_eta_id)}
                             disabled={isReadOnly}
-                            className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                            className={`h-9 w-9 rounded-full flex items-center justify-center border-2 transition-all shadow-[0_2px_4px_rgba(0,0,0,0.05)] active:scale-95 ${
                               isReadOnly
-                                ? "border-gray-200 text-gray-200 cursor-not-allowed"
-                                : "border-gray-300 dark:border-gray-600 text-gray-400 hover:border-green-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer"
+                                ? "border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-600"
+                                : "border-primary/20 bg-primary/5 text-primary hover:border-primary hover:bg-primary hover:text-white dark:hover:bg-primary/90 cursor-pointer"
                             }`}
                           >
                             <Check className="h-4 w-4" />
