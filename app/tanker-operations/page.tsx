@@ -612,15 +612,15 @@ export default function TankerOperations() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
                       <div className="space-y-2">
                         <Label>Agency Ref No</Label>
-                        <Input value={newOps.agency_ref_no} onChange={e => setNewOps({ ...newOps, agency_ref_no: e.target.value })} />
+                        <Input className="uppercase" value={newOps.agency_ref_no} onChange={e => setNewOps({ ...newOps, agency_ref_no: e.target.value.toUpperCase() })} />
                       </div>
                       <div className="space-y-2">
                         <Label>SLPA Payment Ref</Label>
-                        <Input value={newOps.SLPAPaymentRef} onChange={e => setNewOps({ ...newOps, SLPAPaymentRef: e.target.value })} />
+                        <Input className="uppercase" value={newOps.SLPAPaymentRef} onChange={e => setNewOps({ ...newOps, SLPAPaymentRef: e.target.value.toUpperCase() })} />
                       </div>
                       <div className="space-y-2">
                         <Label>Document Ref No</Label>
-                        <Input value={newOps.documetRefNo} onChange={e => setNewOps({ ...newOps, documetRefNo: e.target.value })} />
+                        <Input className="uppercase" value={newOps.documetRefNo} onChange={e => setNewOps({ ...newOps, documetRefNo: e.target.value.toUpperCase() })} />
                       </div>
                     </div>
                     
@@ -629,23 +629,23 @@ export default function TankerOperations() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label>Vessel Name</Label>
-                          <Input placeholder="e.g. MT Ocean Titan" value={newOps.vessel_name} onChange={e => setNewOps({ ...newOps, vessel_name: e.target.value })} />
+                          <Input className="uppercase" placeholder="e.g. MT Ocean Titan" value={newOps.vessel_name} onChange={e => setNewOps({ ...newOps, vessel_name: e.target.value.toUpperCase() })} />
                         </div>
                         <div className="space-y-2">
                           <Label>IMO Number</Label>
-                          <Input placeholder="e.g. 9234567" value={newOps.imo_number} onChange={e => setNewOps({ ...newOps, imo_number: e.target.value })} />
+                          <Input className="uppercase" placeholder="e.g. 9234567" value={newOps.imo_number} onChange={e => setNewOps({ ...newOps, imo_number: e.target.value.toUpperCase() })} />
                         </div>
                         <div className="space-y-2">
                           <Label>Voyage No</Label>
-                          <Input placeholder="e.g. VOY-7788" value={newOps.voyage_no} onChange={e => setNewOps({ ...newOps, voyage_no: e.target.value })} />
+                          <Input className="uppercase" placeholder="e.g. VOY-7788" value={newOps.voyage_no} onChange={e => setNewOps({ ...newOps, voyage_no: e.target.value.toUpperCase() })} />
                         </div>
                         <div className="space-y-2">
                           <Label>Port</Label>
-                          <Input placeholder="e.g. Colombo" value={newOps.port} onChange={e => setNewOps({ ...newOps, port: e.target.value })} />
+                          <Input className="uppercase" placeholder="e.g. Colombo" value={newOps.port} onChange={e => setNewOps({ ...newOps, port: e.target.value.toUpperCase() })} />
                         </div>
                         <div className="space-y-2">
                           <Label>Berth Location</Label>
-                          <Input placeholder="e.g. Oil Jetty 02" value={newOps.berth_location} onChange={e => setNewOps({ ...newOps, berth_location: e.target.value })} />
+                          <Input className="uppercase" placeholder="e.g. Oil Jetty 02" value={newOps.berth_location} onChange={e => setNewOps({ ...newOps, berth_location: e.target.value.toUpperCase() })} />
                         </div>
                       </div>
 
@@ -762,11 +762,11 @@ export default function TankerOperations() {
                           <div className="flex-1 space-y-3">
                             <div>
                               <Label className="text-xs">Consignee Name</Label>
-                              <Input placeholder="e.g. Ceylon Petroleum Corporation" value={c.ConsigneeName} onChange={e => handleConsigneeChange(idx, "ConsigneeName", e.target.value)} />
+                              <Input className="uppercase" placeholder="e.g. Ceylon Petroleum Corporation" value={c.ConsigneeName} onChange={e => handleConsigneeChange(idx, "ConsigneeName", e.target.value.toUpperCase())} />
                             </div>
                             <div>
                               <Label className="text-xs">Description</Label>
-                              <Input placeholder="e.g. Main cargo receiver" value={c.description} onChange={e => handleConsigneeChange(idx, "description", e.target.value)} />
+                              <Input className="uppercase" placeholder="e.g. Main cargo receiver" value={c.description} onChange={e => handleConsigneeChange(idx, "description", e.target.value.toUpperCase())} />
                             </div>
                           </div>
                           {newOps.consignees.length > 1 && (
