@@ -171,7 +171,7 @@ export default function BunkerOperations() {
     async function fetchOperations() {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`${API_BASE_URL}/bunkerOps`, {
+        const res = await fetch(`${API_BASE_URL}/bunkerOps?limit=50&offset=0`, {
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` })
