@@ -547,27 +547,27 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Agency Ref No</Label>
-                  <Input value={opsData.agency_ref_no || ""} onChange={e => handleChange("agency_ref_no", e.target.value)} disabled={isReadOnly} />
+                  <Input className="uppercase" value={opsData.agency_ref_no || ""} onChange={e => handleChange("agency_ref_no", e.target.value.toUpperCase())} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>Vessel Name</Label>
-                  <Input value={opsData.vessel_name || ""} onChange={e => handleChange("vessel_name", e.target.value)} disabled={isReadOnly} />
+                  <Input className="uppercase" value={opsData.vessel_name || ""} onChange={e => handleChange("vessel_name", e.target.value.toUpperCase())} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>IMO No</Label>
-                  <Input value={opsData.imo_number || ""} onChange={e => handleChange("imo_number", e.target.value)} disabled={isReadOnly} />
+                  <Input className="uppercase" value={opsData.imo_number || ""} onChange={e => handleChange("imo_number", e.target.value.toUpperCase())} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>Voyage No</Label>
-                  <Input value={opsData.voyage_no || ""} onChange={e => handleChange("voyage_no", e.target.value)} disabled={isReadOnly} />
+                  <Input className="uppercase" value={opsData.voyage_no || ""} onChange={e => handleChange("voyage_no", e.target.value.toUpperCase())} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>Port</Label>
-                  <Input value={opsData.port || ""} onChange={e => handleChange("port", e.target.value)} disabled={isReadOnly} />
+                  <Input className="uppercase" value={opsData.port || ""} onChange={e => handleChange("port", e.target.value.toUpperCase())} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>Berth Location</Label>
-                  <Input value={opsData.berth_location || ""} onChange={e => handleChange("berth_location", e.target.value)} disabled={isReadOnly} />
+                  <Input className="uppercase" value={opsData.berth_location || ""} onChange={e => handleChange("berth_location", e.target.value.toUpperCase())} disabled={isReadOnly} />
                 </div>
               </div>
 
@@ -592,11 +592,11 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                     </Button>
                     <div className="space-y-1.5 pr-6">
                       <Label>Consignee {index + 1}</Label>
-                      <Input value={c.ConsigneeName || ""} onChange={e => handleConsigneeChange(index, "ConsigneeName", e.target.value)} disabled={isReadOnly} />
+                      <Input className="uppercase" value={c.ConsigneeName || ""} onChange={e => handleConsigneeChange(index, "ConsigneeName", e.target.value.toUpperCase())} disabled={isReadOnly} />
                     </div>
                     <div className="space-y-1.5">
                       <Label>Cargo Grade & Qty</Label>
-                      <Input placeholder="Description..." value={c.description || ""} onChange={e => handleConsigneeChange(index, "description", e.target.value)} disabled={isReadOnly} />
+                      <Input className="uppercase" placeholder="Description..." value={c.description || ""} onChange={e => handleConsigneeChange(index, "description", e.target.value.toUpperCase())} disabled={isReadOnly} />
                     </div>
                   </div>
                 ))}
@@ -636,15 +636,15 @@ export default function TankerOperationDetail({ params }: { params: { ops_id: st
                 </div>
                 <div className="space-y-2">
                   <Label>SLPA Payment Ref</Label>
-                  <Input value={opsData.SLPAPaymentRef || ""} onChange={e => handleChange("SLPAPaymentRef", e.target.value)} disabled={isReadOnly} />
+                  <Input className="uppercase" value={opsData.SLPAPaymentRef || ""} onChange={e => handleChange("SLPAPaymentRef", e.target.value.toUpperCase())} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>DC Reference No</Label>
-                  <Input value={opsData.DCReferenceNo || ""} onChange={e => handleChange("DCReferenceNo", e.target.value)} disabled={isReadOnly} />
+                  <Input className="uppercase" value={opsData.DCReferenceNo || ""} onChange={e => handleChange("DCReferenceNo", e.target.value.toUpperCase())} disabled={isReadOnly} />
                 </div>
                 <div className="space-y-2">
                   <Label>Document Ref</Label>
-                  <Input value={opsData.documetRefNo || ""} onChange={e => handleChange("documetRefNo", e.target.value)} disabled={isReadOnly} />
+                  <Input className="uppercase" value={opsData.documetRefNo || ""} onChange={e => handleChange("documetRefNo", e.target.value.toUpperCase())} disabled={isReadOnly} />
                 </div>
               </div>
             </div>
