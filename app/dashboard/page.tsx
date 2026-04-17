@@ -349,7 +349,7 @@ export default function Dashboard() {
           href: "/bunkering-operations",
           icon: Fuel,
           label: "Bunkering Operations",
-          disabled: true,
+          
         },
 
         can("operation.document.view") && {
