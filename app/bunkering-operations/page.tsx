@@ -750,10 +750,10 @@ export default function BunkerOperations() {
 
                     <div className="space-y-4 border rounded-md p-4 bg-gray-50/50 dark:bg-gray-800/50">
                       <div className="flex justify-between items-center">
-                        <Label className="text-base font-semibold">Consignees</Label>
+                        <Label className="text-base font-semibold">Physical Suppliers</Label>
                         {newOps.consignees.length < 3 && (
                           <Button type="button" variant="outline" size="sm" onClick={handleAddConsignee}>
-                            <Plus className="w-4 h-4 mr-2" /> Add Consignee
+                            <Plus className="w-4 h-4 mr-2" /> Add Physical Supplier
                           </Button>
                         )}
                       </div>
@@ -761,7 +761,7 @@ export default function BunkerOperations() {
                         <div key={idx} className="flex gap-2 items-start relative bg-white dark:bg-gray-900 p-3 rounded-md border shadow-sm">
                           <div className="flex-1 space-y-3">
                             <div>
-                              <Label className="text-xs">Consignee Name</Label>
+                              <Label className="text-xs">Physical Supplier</Label>
                               <Input className="uppercase" placeholder="e.g. Ceylon Petroleum Corporation" value={c.ConsigneeName} onChange={e => handleConsigneeChange(idx, "ConsigneeName", e.target.value.toUpperCase())} />
                             </div>
                             <div>

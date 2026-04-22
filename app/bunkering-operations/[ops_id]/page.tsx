@@ -591,7 +591,7 @@ export default function BunkerOperationDetail({ params }: { params: { ops_id: st
                       <Trash2 className="h-4 w-4" />
                     </Button>
                     <div className="space-y-1.5 pr-6">
-                      <Label>Consignee {index + 1}</Label>
+                      <Label>Physical Supplier {index + 1}</Label>
                       <Input className="uppercase" value={c.ConsigneeName || ""} onChange={e => handleConsigneeChange(index, "ConsigneeName", e.target.value.toUpperCase())} disabled={isReadOnly} />
                     </div>
                     <div className="space-y-1.5">
