@@ -196,6 +196,7 @@ export default function BunkerOperationDetail({ params }: { params: { ops_id: st
         SLPAPaymentRef: opsData.SLPAPaymentRef,
         DCReferenceNo:  opsData.DCReferenceNo,
         documetRefNo:   opsData.documetRefNo,
+        CustomOT:       opsData.CustomOT,
 
         comments:              opsData.comments,
         areas_for_improvement: opsData.areas_for_improvement,
@@ -275,6 +276,7 @@ export default function BunkerOperationDetail({ params }: { params: { ops_id: st
         SLPAPaymentRef: opsData.SLPAPaymentRef || null,
         DCReferenceNo:  opsData.DCReferenceNo  || null,
         documetRefNo:   opsData.documetRefNo   || null,
+        CustomOT:       opsData.CustomOT       || null,
 
         comments:              opsData.comments              || null,
         areas_for_improvement: opsData.areas_for_improvement || null,
@@ -645,6 +647,10 @@ export default function BunkerOperationDetail({ params }: { params: { ops_id: st
                 <div className="space-y-2">
                   <Label>Document Ref</Label>
                   <Input className="uppercase" value={opsData.documetRefNo || ""} onChange={e => handleChange("documetRefNo", e.target.value.toUpperCase())} disabled={isReadOnly} />
+                </div>
+                <div className="space-y-2">
+                  <Label>CustomOT</Label>
+                  <Input className="uppercase" value={opsData.CustomOT || ""} onChange={e => handleChange("CustomOT", e.target.value.toUpperCase())} disabled={isReadOnly} />
                 </div>
               </div>
             </div>

@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -50,7 +56,7 @@ import {
   Edit,
   Eye,
   Trash2,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -92,14 +98,18 @@ const DUMMY_OPERATIONS: TankerOperation[] = [
 export default function TankerOperations() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [operations, setOperations] = useState<TankerOperation[]>([]);
-  const [filteredOperations, setFilteredOperations] = useState<TankerOperation[]>([]);
+  const [filteredOperations, setFilteredOperations] = useState<
+    TankerOperation[]
+  >([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewType, setViewType] = useState<"card" | "table">("card");
-  
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [operationToDelete, setOperationToDelete] = useState<string | null>(null);
+  const [operationToDelete, setOperationToDelete] = useState<string | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
 
@@ -131,13 +141,14 @@ export default function TankerOperations() {
     bordingOfficer: "",
     comments: "",
     areas_for_improvement: "",
-    consignees: [
-      { ConsigneeName: "", description: "" }
-    ]
+    CustomOT: "", // <-- Add CustomOT field
+    consignees: [{ ConsigneeName: "", description: "" }],
   };
 
   const [newOps, setNewOps] = useState(initialFormState);
-  const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
+  const [userOptions, setUserOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
 
   useEffect(() => {
     async function fetchUsers() {
@@ -146,16 +157,17 @@ export default function TankerOperations() {
         const res = await fetch(`${API_BASE_URL}/user`, {
           headers: {
             "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` })
-          }
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
         });
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
           const formatted = json.data.map((u: any) => {
-            const fullName = `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.email;
+            const fullName =
+              `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.email;
             return {
               value: fullName,
-              label: fullName
+              label: fullName,
             };
           });
           setUserOptions(formatted);
@@ -174,8 +186,8 @@ export default function TankerOperations() {
         const res = await fetch(`${API_BASE_URL}/tankerOps`, {
           headers: {
             "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` })
-          }
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
         });
         const json = await res.json();
         if (json.data && Array.isArray(json.data)) {
@@ -188,7 +200,7 @@ export default function TankerOperations() {
             port: op.port,
             status: op.status,
             createdAt: op.createdAt,
-            updatedAt: op.updatedAt
+            updatedAt: op.updatedAt,
           }));
           setOperations(mapped);
           setFilteredOperations(mapped);
@@ -208,9 +220,9 @@ export default function TankerOperations() {
     if (isDialogOpen && !newOps.agency_ref_no) {
       setNewOps((prev) => ({
         ...prev,
-        agency_ref_no: `AG-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')}`,
+        agency_ref_no: `AG-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900)).padStart(3, "0")}`,
         SLPAPaymentRef: `SLPA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        documetRefNo: `DOC-${Math.floor(100000 + Math.random() * 900000)}`
+        documetRefNo: `DOC-${Math.floor(100000 + Math.random() * 900000)}`,
       }));
     }
   }, [isDialogOpen, newOps.agency_ref_no]);
@@ -220,16 +232,16 @@ export default function TankerOperations() {
     if (newOps.etdDate && newOps.etbDate) {
       try {
         const d_etd = new Date(newOps.etdDate);
-        if (newOps.etdTime && typeof newOps.etdTime === 'string') {
-          const [h, m] = newOps.etdTime.split(':');
+        if (newOps.etdTime && typeof newOps.etdTime === "string") {
+          const [h, m] = newOps.etdTime.split(":");
           d_etd.setHours(Number(h) || 0, Number(m) || 0, 0, 0);
         } else {
           d_etd.setHours(0, 0, 0, 0);
         }
 
         const d_etb = new Date(newOps.etbDate);
-        if (newOps.etbTime && typeof newOps.etbTime === 'string') {
-          const [h, m] = newOps.etbTime.split(':');
+        if (newOps.etbTime && typeof newOps.etbTime === "string") {
+          const [h, m] = newOps.etbTime.split(":");
           d_etb.setHours(Number(h) || 0, Number(m) || 0, 0, 0);
         } else {
           d_etb.setHours(0, 0, 0, 0);
@@ -237,15 +249,21 @@ export default function TankerOperations() {
 
         const diffMs = d_etd.getTime() - d_etb.getTime();
         const diffHrs = Math.max(0, Math.round(diffMs / (1000 * 60 * 60)));
-        
+
         if (diffHrs !== newOps.Estimate_port_stay && !isNaN(diffHrs)) {
-          setNewOps(prev => ({ ...prev, Estimate_port_stay: diffHrs }));
+          setNewOps((prev) => ({ ...prev, Estimate_port_stay: diffHrs }));
         }
       } catch (e) {
         // Ignore parsing errors
       }
     }
-  }, [newOps.etdDate, newOps.etdTime, newOps.etbDate, newOps.etbTime, newOps.Estimate_port_stay]);
+  }, [
+    newOps.etdDate,
+    newOps.etdTime,
+    newOps.etbDate,
+    newOps.etbTime,
+    newOps.Estimate_port_stay,
+  ]);
 
   useEffect(() => {
     const userData = localStorage.getItem("currentUser");
@@ -268,11 +286,13 @@ export default function TankerOperations() {
         (op) =>
           op.vesselName.toLowerCase().includes(term) ||
           op.agencyRef.toLowerCase().includes(term) ||
-          op.imoNo.includes(term)
+          op.imoNo.includes(term),
       );
     }
     if (statusFilter !== "all") {
-      filtered = filtered.filter((op) => op.status.toLowerCase() === statusFilter);
+      filtered = filtered.filter(
+        (op) => op.status.toLowerCase() === statusFilter,
+      );
     }
     setFilteredOperations(filtered);
   }, [searchTerm, statusFilter, operations]);
@@ -303,7 +323,10 @@ export default function TankerOperations() {
     }
     setNewOps({
       ...newOps,
-      consignees: [...newOps.consignees, { ConsigneeName: "", description: "" }]
+      consignees: [
+        ...newOps.consignees,
+        { ConsigneeName: "", description: "" },
+      ],
     });
   };
 
@@ -313,7 +336,11 @@ export default function TankerOperations() {
     setNewOps({ ...newOps, consignees: updated });
   };
 
-  const handleConsigneeChange = (index: number, field: string, value: string) => {
+  const handleConsigneeChange = (
+    index: number,
+    field: string,
+    value: string,
+  ) => {
     const updated = [...newOps.consignees];
     updated[index] = { ...updated[index], [field]: value };
     setNewOps({ ...newOps, consignees: updated });
@@ -328,8 +355,8 @@ export default function TankerOperations() {
         if (!dateVal) return null;
         try {
           const d = new Date(dateVal);
-          if (timeVal && typeof timeVal === 'string') {
-            const [hours, minutes] = timeVal.split(':');
+          if (timeVal && typeof timeVal === "string") {
+            const [hours, minutes] = timeVal.split(":");
             d.setHours(Number(hours) || 0, Number(minutes) || 0, 0, 0);
           }
           return d.toISOString();
@@ -338,20 +365,28 @@ export default function TankerOperations() {
         }
       };
 
-      const agencyRef = newOps.agency_ref_no || `AG-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')}`;
-      const slpaRef = newOps.SLPAPaymentRef || `SLPA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const docRef = newOps.documetRefNo || `DOC-${Math.floor(100000 + Math.random() * 900000)}`;
+      const agencyRef =
+        newOps.agency_ref_no ||
+        `AG-${new Date().getFullYear()}-${String(Math.floor(100 + Math.random() * 900)).padStart(3, "0")}`;
+      const slpaRef =
+        newOps.SLPAPaymentRef ||
+        `SLPA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const docRef =
+        newOps.documetRefNo ||
+        `DOC-${Math.floor(100000 + Math.random() * 900000)}`;
 
       // Map consignees
-      const payloadConsignees = newOps.consignees.filter(c => c.ConsigneeName.trim() !== "").map((c, index) => {
-        const types = ["ConsigneeOne", "ConsigneeTwo", "ConsigneeThree"];
-        return {
-          ConsigneeID: `CON-${String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')}`,
-          ConsigneeType: types[index] || `Consignee${index + 1}`,
-          ConsigneeName: c.ConsigneeName,
-          description: c.description || "N/A"
-        };
-      });
+      const payloadConsignees = newOps.consignees
+        .filter((c) => c.ConsigneeName.trim() !== "")
+        .map((c, index) => {
+          const types = ["ConsigneeOne", "ConsigneeTwo", "ConsigneeThree"];
+          return {
+            ConsigneeID: `CON-${String(Math.floor(100 + Math.random() * 900)).padStart(3, "0")}`,
+            ConsigneeType: types[index] || `Consignee${index + 1}`,
+            ConsigneeName: c.ConsigneeName,
+            description: c.description || "N/A",
+          };
+        });
 
       const reqBody = {
         agency_ref_no: agencyRef,
@@ -377,18 +412,19 @@ export default function TankerOperations() {
         documetRefNo: docRef,
         comments: newOps.comments || "N/A",
         areas_for_improvement: newOps.areas_for_improvement || "N/A",
+        CustomOT: newOps.CustomOT || "", // <-- Add CustomOT to payload
         consignees: payloadConsignees,
-        user: currentUser?.name || "ops_admin"
+        user: currentUser?.name || "ops_admin",
       };
 
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_BASE_URL}/tankerOps`, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(reqBody)
+        body: JSON.stringify(reqBody),
       });
 
       const result = await res.json();
@@ -401,16 +437,18 @@ export default function TankerOperations() {
       setNewOps(initialFormState);
 
       // Append dummy item conceptually so it shows on screen
-      setOperations([{
-        id: result.data?.ops_id || Date.now().toString(),
-        agencyRef: agencyRef,
-        vesselName: newOps.vessel_name,
-        imoNo: newOps.imo_number,
-        voyageNo: newOps.voyage_no,
-        port: newOps.port,
-        status: "Pending"
-      }, ...operations]);
-
+      setOperations([
+        {
+          id: result.data?.ops_id || Date.now().toString(),
+          agencyRef: agencyRef,
+          vesselName: newOps.vessel_name,
+          imoNo: newOps.imo_number,
+          voyageNo: newOps.voyage_no,
+          port: newOps.port,
+          status: "Pending",
+        },
+        ...operations,
+      ]);
     } catch (err: any) {
       toast.error("Error creating Tanker Ops", { description: err.message });
     } finally {
@@ -428,19 +466,20 @@ export default function TankerOperations() {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` })
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({ user: userName })
+        body: JSON.stringify({ user: userName }),
       });
 
       const result = await res.json();
-      if (!res.ok) throw new Error(result.message || "Failed to delete operation");
+      if (!res.ok)
+        throw new Error(result.message || "Failed to delete operation");
 
       toast.success(result.message || "Operation deleted successfully");
-      
+
       // Update local state
-      setOperations(prev => prev.filter(op => op.id !== id));
-      setFilteredOperations(prev => prev.filter(op => op.id !== id));
+      setOperations((prev) => prev.filter((op) => op.id !== id));
+      setFilteredOperations((prev) => prev.filter((op) => op.id !== id));
     } catch (err: any) {
       toast.error(err.message || "Failed to delete operation");
     } finally {
@@ -454,7 +493,9 @@ export default function TankerOperations() {
     return (
       <div className="flex flex-col h-screen w-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-        <p className="text-sm text-muted-foreground animate-pulse">Loading tanker operations...</p>
+        <p className="text-sm text-muted-foreground animate-pulse">
+          Loading tanker operations...
+        </p>
       </div>
     );
   }
@@ -493,7 +534,11 @@ export default function TankerOperations() {
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Link href={`/tanker-operations/${op.id}`}>
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
                       {op.status === "Completed" ? (
                         <>
                           <Eye className="h-4 w-4" /> View Operation
@@ -505,9 +550,9 @@ export default function TankerOperations() {
                       )}
                     </Button>
                   </Link>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
                     onClick={() => {
                       setOperationToDelete(op.id);
@@ -604,7 +649,8 @@ export default function TankerOperations() {
                       Create Tanker Operation
                     </DialogTitle>
                     <DialogDescription className="text-sm text-gray-600 dark:text-gray-400">
-                      Fill in the operation details to generate a new Reference Number and initialize the workflow.
+                      Fill in the operation details to generate a new Reference
+                      Number and initialize the workflow.
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-6 pt-4">
@@ -612,40 +658,117 @@ export default function TankerOperations() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b">
                       <div className="space-y-2">
                         <Label>Agency Ref No</Label>
-                        <Input className="uppercase" value={newOps.agency_ref_no} onChange={e => setNewOps({ ...newOps, agency_ref_no: e.target.value.toUpperCase() })} />
+                        <Input
+                          className="uppercase"
+                          value={newOps.agency_ref_no}
+                          onChange={(e) =>
+                            setNewOps({
+                              ...newOps,
+                              agency_ref_no: e.target.value.toUpperCase(),
+                            })
+                          }
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>SLPA Payment Ref</Label>
-                        <Input className="uppercase" value={newOps.SLPAPaymentRef} onChange={e => setNewOps({ ...newOps, SLPAPaymentRef: e.target.value.toUpperCase() })} />
+                        <Input
+                          className="uppercase"
+                          value={newOps.SLPAPaymentRef}
+                          onChange={(e) =>
+                            setNewOps({
+                              ...newOps,
+                              SLPAPaymentRef: e.target.value.toUpperCase(),
+                            })
+                          }
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Document Ref No</Label>
-                        <Input className="uppercase" value={newOps.documetRefNo} onChange={e => setNewOps({ ...newOps, documetRefNo: e.target.value.toUpperCase() })} />
+                        <Input
+                          className="uppercase"
+                          value={newOps.documetRefNo}
+                          onChange={(e) =>
+                            setNewOps({
+                              ...newOps,
+                              documetRefNo: e.target.value.toUpperCase(),
+                            })
+                          }
+                        />
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Left Column */}
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label>Vessel Name</Label>
-                          <Input className="uppercase" placeholder="e.g. MT Ocean Titan" value={newOps.vessel_name} onChange={e => setNewOps({ ...newOps, vessel_name: e.target.value.toUpperCase() })} />
+                          <Input
+                            className="uppercase"
+                            placeholder="e.g. MT Ocean Titan"
+                            value={newOps.vessel_name}
+                            onChange={(e) =>
+                              setNewOps({
+                                ...newOps,
+                                vessel_name: e.target.value.toUpperCase(),
+                              })
+                            }
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label>IMO Number</Label>
-                          <Input className="uppercase" placeholder="e.g. 9234567" value={newOps.imo_number} onChange={e => setNewOps({ ...newOps, imo_number: e.target.value.toUpperCase() })} />
+                          <Input
+                            className="uppercase"
+                            placeholder="e.g. 9234567"
+                            value={newOps.imo_number}
+                            onChange={(e) =>
+                              setNewOps({
+                                ...newOps,
+                                imo_number: e.target.value.toUpperCase(),
+                              })
+                            }
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label>Voyage No</Label>
-                          <Input className="uppercase" placeholder="e.g. VOY-7788" value={newOps.voyage_no} onChange={e => setNewOps({ ...newOps, voyage_no: e.target.value.toUpperCase() })} />
+                          <Input
+                            className="uppercase"
+                            placeholder="e.g. VOY-7788"
+                            value={newOps.voyage_no}
+                            onChange={(e) =>
+                              setNewOps({
+                                ...newOps,
+                                voyage_no: e.target.value.toUpperCase(),
+                              })
+                            }
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label>Port</Label>
-                          <Input className="uppercase" placeholder="e.g. Colombo" value={newOps.port} onChange={e => setNewOps({ ...newOps, port: e.target.value.toUpperCase() })} />
+                          <Input
+                            className="uppercase"
+                            placeholder="e.g. Colombo"
+                            value={newOps.port}
+                            onChange={(e) =>
+                              setNewOps({
+                                ...newOps,
+                                port: e.target.value.toUpperCase(),
+                              })
+                            }
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label>Berth Location</Label>
-                          <Input className="uppercase" placeholder="e.g. Oil Jetty 02" value={newOps.berth_location} onChange={e => setNewOps({ ...newOps, berth_location: e.target.value.toUpperCase() })} />
+                          <Input
+                            className="uppercase"
+                            placeholder="e.g. Oil Jetty 02"
+                            value={newOps.berth_location}
+                            onChange={(e) =>
+                              setNewOps({
+                                ...newOps,
+                                berth_location: e.target.value.toUpperCase(),
+                              })
+                            }
+                          />
                         </div>
                       </div>
 
@@ -654,75 +777,163 @@ export default function TankerOperations() {
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
                             <Label>ETA Date</Label>
-                            <DatePicker value={newOps.etaDate} onChange={val => setNewOps({ ...newOps, etaDate: val })} className="w-full h-[40px]" />
+                            <DatePicker
+                              value={newOps.etaDate}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, etaDate: val })
+                              }
+                              className="w-full h-[40px]"
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label>ETA Time</Label>
-                            <TimePicker value={newOps.etaTime} onChange={val => setNewOps({ ...newOps, etaTime: val })} className="h-[40px]" />
+                            <TimePicker
+                              value={newOps.etaTime}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, etaTime: val })
+                              }
+                              className="h-[40px]"
+                            />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
                             <Label>ETB Date</Label>
-                            <DatePicker value={newOps.etbDate} onChange={val => setNewOps({ ...newOps, etbDate: val })} className="w-full h-[40px]" />
+                            <DatePicker
+                              value={newOps.etbDate}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, etbDate: val })
+                              }
+                              className="w-full h-[40px]"
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label>ETB Time</Label>
-                            <TimePicker value={newOps.etbTime} onChange={val => setNewOps({ ...newOps, etbTime: val })} className="h-[40px]" />
+                            <TimePicker
+                              value={newOps.etbTime}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, etbTime: val })
+                              }
+                              className="h-[40px]"
+                            />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
                             <Label>ETD Date</Label>
-                            <DatePicker value={newOps.etdDate} onChange={val => setNewOps({ ...newOps, etdDate: val })} className="w-full h-[40px]" />
+                            <DatePicker
+                              value={newOps.etdDate}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, etdDate: val })
+                              }
+                              className="w-full h-[40px]"
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label>ETD Time</Label>
-                            <TimePicker value={newOps.etdTime} onChange={val => setNewOps({ ...newOps, etdTime: val })} className="h-[40px]" />
+                            <TimePicker
+                              value={newOps.etdTime}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, etdTime: val })
+                              }
+                              className="h-[40px]"
+                            />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
                             <Label>ATA Date</Label>
-                            <DatePicker value={newOps.ataDate} onChange={val => setNewOps({ ...newOps, ataDate: val })} className="w-full h-[40px]" />
+                            <DatePicker
+                              value={newOps.ataDate}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, ataDate: val })
+                              }
+                              className="w-full h-[40px]"
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label>ATA Time</Label>
-                            <TimePicker value={newOps.ataTime} onChange={val => setNewOps({ ...newOps, ataTime: val })} className="h-[40px]" />
+                            <TimePicker
+                              value={newOps.ataTime}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, ataTime: val })
+                              }
+                              className="h-[40px]"
+                            />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
                             <Label>ATB Date</Label>
-                            <DatePicker value={newOps.atbDate} onChange={val => setNewOps({ ...newOps, atbDate: val })} className="w-full h-[40px]" />
+                            <DatePicker
+                              value={newOps.atbDate}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, atbDate: val })
+                              }
+                              className="w-full h-[40px]"
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label>ATB Time</Label>
-                            <TimePicker value={newOps.atbTime} onChange={val => setNewOps({ ...newOps, atbTime: val })} className="h-[40px]" />
+                            <TimePicker
+                              value={newOps.atbTime}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, atbTime: val })
+                              }
+                              className="h-[40px]"
+                            />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-2">
                             <Label>ATD Date</Label>
-                            <DatePicker value={newOps.atdDate} onChange={val => setNewOps({ ...newOps, atdDate: val })} className="w-full h-[40px]" />
+                            <DatePicker
+                              value={newOps.atdDate}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, atdDate: val })
+                              }
+                              className="w-full h-[40px]"
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label>ATD Time</Label>
-                            <TimePicker value={newOps.atdTime} onChange={val => setNewOps({ ...newOps, atdTime: val })} className="h-[40px]" />
+                            <TimePicker
+                              value={newOps.atdTime}
+                              onChange={(val) =>
+                                setNewOps({ ...newOps, atdTime: val })
+                              }
+                              className="h-[40px]"
+                            />
                           </div>
                         </div>
                         <div className="space-y-2">
                           <Label>Estimate Port Stay (Hrs)</Label>
-                          <Input type="number" min="0" placeholder="60" value={newOps.Estimate_port_stay} onChange={e => setNewOps({ ...newOps, Estimate_port_stay: Number(e.target.value) })} />
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="60"
+                            value={newOps.Estimate_port_stay}
+                            onChange={(e) =>
+                              setNewOps({
+                                ...newOps,
+                                Estimate_port_stay: Number(e.target.value),
+                              })
+                            }
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label>Greek Lanka PIC</Label>
-                          <Select value={newOps.greekLankaPIC} onValueChange={val => setNewOps({ ...newOps, greekLankaPIC: val })}>
+                          <Select
+                            value={newOps.greekLankaPIC}
+                            onValueChange={(val) =>
+                              setNewOps({ ...newOps, greekLankaPIC: val })
+                            }
+                          >
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select PIC" />
                             </SelectTrigger>
                             <SelectContent>
-                              {userOptions.map(opt => (
+                              {userOptions.map((opt) => (
                                 <SelectItem key={opt.value} value={opt.value}>
                                   {opt.label}
                                 </SelectItem>
@@ -732,12 +943,17 @@ export default function TankerOperations() {
                         </div>
                         <div className="space-y-2">
                           <Label>Boarding Officer</Label>
-                          <Select value={newOps.bordingOfficer} onValueChange={val => setNewOps({ ...newOps, bordingOfficer: val })}>
+                          <Select
+                            value={newOps.bordingOfficer}
+                            onValueChange={(val) =>
+                              setNewOps({ ...newOps, bordingOfficer: val })
+                            }
+                          >
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select Officer" />
                             </SelectTrigger>
                             <SelectContent>
-                              {userOptions.map(opt => (
+                              {userOptions.map((opt) => (
                                 <SelectItem key={opt.value} value={opt.value}>
                                   {opt.label}
                                 </SelectItem>
@@ -748,29 +964,80 @@ export default function TankerOperations() {
                       </div>
                     </div>
 
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Custom OT</Label>
+                        <Input
+                          className="uppercase"
+                          placeholder="Enter Custom OT"
+                          value={newOps.CustomOT}
+                          onChange={(e) =>
+                            setNewOps({ ...newOps, CustomOT: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
                     <div className="space-y-4 border rounded-md p-4 bg-gray-50/50 dark:bg-gray-800/50">
                       <div className="flex justify-between items-center">
-                        <Label className="text-base font-semibold">Consignees</Label>
+                        <Label className="text-base font-semibold">
+                          Consignees
+                        </Label>
                         {newOps.consignees.length < 3 && (
-                          <Button type="button" variant="outline" size="sm" onClick={handleAddConsignee}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleAddConsignee}
+                          >
                             <Plus className="w-4 h-4 mr-2" /> Add Consignee
                           </Button>
                         )}
                       </div>
                       {newOps.consignees.map((c, idx) => (
-                        <div key={idx} className="flex gap-2 items-start relative bg-white dark:bg-gray-900 p-3 rounded-md border shadow-sm">
+                        <div
+                          key={idx}
+                          className="flex gap-2 items-start relative bg-white dark:bg-gray-900 p-3 rounded-md border shadow-sm"
+                        >
                           <div className="flex-1 space-y-3">
                             <div>
                               <Label className="text-xs">Consignee Name</Label>
-                              <Input className="uppercase" placeholder="e.g. Ceylon Petroleum Corporation" value={c.ConsigneeName} onChange={e => handleConsigneeChange(idx, "ConsigneeName", e.target.value.toUpperCase())} />
+                              <Input
+                                className="uppercase"
+                                placeholder="e.g. Ceylon Petroleum Corporation"
+                                value={c.ConsigneeName}
+                                onChange={(e) =>
+                                  handleConsigneeChange(
+                                    idx,
+                                    "ConsigneeName",
+                                    e.target.value.toUpperCase(),
+                                  )
+                                }
+                              />
                             </div>
                             <div>
                               <Label className="text-xs">Description</Label>
-                              <Input className="uppercase" placeholder="e.g. Main cargo receiver" value={c.description} onChange={e => handleConsigneeChange(idx, "description", e.target.value.toUpperCase())} />
+                              <Input
+                                className="uppercase"
+                                placeholder="e.g. Main cargo receiver"
+                                value={c.description}
+                                onChange={(e) =>
+                                  handleConsigneeChange(
+                                    idx,
+                                    "description",
+                                    e.target.value.toUpperCase(),
+                                  )
+                                }
+                              />
                             </div>
                           </div>
                           {newOps.consignees.length > 1 && (
-                            <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-700 mt-5" onClick={() => handleRemoveConsignee(idx)}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:text-red-700 mt-5"
+                              onClick={() => handleRemoveConsignee(idx)}
+                            >
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           )}
@@ -779,7 +1046,11 @@ export default function TankerOperations() {
                     </div>
 
                     <DialogFooter className="pt-4 border-t">
-                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsDialogOpen(false)}
+                      >
                         Cancel
                       </Button>
                       <Button type="submit" disabled={isLoading}>
@@ -849,7 +1120,10 @@ export default function TankerOperations() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredOperations.map((op) => (
-                <Card key={op.id} className="hover:shadow-lg transition-shadow border-t-4 border-t-primary flex flex-col h-full relative group">
+                <Card
+                  key={op.id}
+                  className="hover:shadow-lg transition-shadow border-t-4 border-t-primary flex flex-col h-full relative group"
+                >
                   <Button
                     variant="ghost"
                     size="icon"
@@ -865,7 +1139,10 @@ export default function TankerOperations() {
                   <CardHeader className="pb-3 border-b flex-shrink-0">
                     <div className="flex justify-between items-start">
                       <div>
-                        <Badge variant="outline" className="mb-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200">
+                        <Badge
+                          variant="outline"
+                          className="mb-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200"
+                        >
                           {op.agencyRef}
                         </Badge>
                         <CardTitle className="text-xl flex items-center gap-2">
@@ -880,15 +1157,21 @@ export default function TankerOperations() {
                   </CardHeader>
                   <CardContent className="pt-4 grid grid-cols-2 gap-y-4 text-sm flex-grow">
                     <div>
-                      <p className="text-muted-foreground text-xs font-semibold uppercase">IMO No</p>
+                      <p className="text-muted-foreground text-xs font-semibold uppercase">
+                        IMO No
+                      </p>
                       <p className="font-medium mt-1">{op.imoNo}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground text-xs font-semibold uppercase">Voyage No</p>
+                      <p className="text-muted-foreground text-xs font-semibold uppercase">
+                        Voyage No
+                      </p>
                       <p className="font-medium mt-1">{op.voyageNo}</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-muted-foreground text-xs font-semibold uppercase">Port</p>
+                      <p className="text-muted-foreground text-xs font-semibold uppercase">
+                        Port
+                      </p>
                       <p className="font-medium mt-1 flex items-center gap-1">
                         <MapPin className="h-4 w-4 text-gray-400" />
                         {op.port}
@@ -896,14 +1179,24 @@ export default function TankerOperations() {
                     </div>
                     <div className="col-span-2 pt-2 border-t mt-1">
                       <div className="flex justify-between text-[10px] text-muted-foreground italic">
-                        <span>Created: {formatDisplayDateTime(op.createdAt)}</span>
-                        <span>Updated: {formatDisplayDateTime(op.updatedAt)}</span>
+                        <span>
+                          Created: {formatDisplayDateTime(op.createdAt)}
+                        </span>
+                        <span>
+                          Updated: {formatDisplayDateTime(op.updatedAt)}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
                   <div className="p-4 border-t mt-auto">
-                    <Link href={`/tanker-operations/${op.id}`} className="w-full">
-                      <Button variant="default" className="w-full flex items-center gap-2">
+                    <Link
+                      href={`/tanker-operations/${op.id}`}
+                      className="w-full"
+                    >
+                      <Button
+                        variant="default"
+                        className="w-full flex items-center gap-2"
+                      >
                         {op.status === "Completed" ? (
                           <>
                             <Eye className="h-4 w-4" /> View Operation
@@ -934,13 +1227,16 @@ export default function TankerOperations() {
         </div>
       </div>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the tanker operation
-              and remove all associated data.
+              This action cannot be undone. This will permanently delete the
+              tanker operation and remove all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
