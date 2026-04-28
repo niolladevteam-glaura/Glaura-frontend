@@ -719,9 +719,7 @@ export default function TankerOperationDetail({
               {/* Middle Column: Consignees */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg border">
-                  <Label className="px-2 font-semibold">
-                    Physical Suppliers
-                  </Label>
+                  <Label className="px-2 font-semibold">Consignees</Label>
                   <Button
                     variant="outline"
                     size="sm"
