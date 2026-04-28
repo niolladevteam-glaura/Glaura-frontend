@@ -864,7 +864,7 @@ export default function TankerOperationDetail({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>CustomOT</Label>
+                  <Label>Custom OT</Label>
                   <Input
                     className="uppercase"
                     value={opsData.CustomOT || ""}
