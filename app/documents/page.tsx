@@ -190,23 +190,29 @@ export default function DocumentManagement() {
   ];
 
   // Department-based document access
+  // Department-based document access
   const getAllowedDocTypes = () => {
-    if (!currentUser || !currentUser.department) return allDocTypes;
+    if (!currentUser || !currentUser.department) return [];
+
     const dept = String(currentUser.department).toLowerCase();
+
+    // Management → All documents
+    if (dept === "management") {
+      return allDocTypes;
+    }
+
+    // Disbursement → Only PDA + Delivery Note
     if (dept === "disbursement") {
-      // PDA, Delivery Note, FDA (if FDA is added)
       return allDocTypes.filter((d) =>
-        ["PDA", "Delivery Note", "FDA"].includes(d.label)
+        ["PDA", "Delivery Note"].includes(d.label),
       );
     }
-    if (dept === "operations") {
-      // OKTB, Crew Sign On, Work Done, Delivery Note
-      return allDocTypes.filter((d) =>
-        ["OKTB", "Crew Sign On", "Work Done", "Delivery Note"].includes(d.label)
-      );
-    }
-    // All other departments: no restrictions
-    return allDocTypes;
+
+    // All other departments
+    // (Finance, Operations, Communication, Clearance,
+    //  Bunkering, Supply, Marketing)
+    // → All documents EXCEPT PDA
+    return allDocTypes.filter((d) => d.label !== "PDA");
   };
   const docTypes = getAllowedDocTypes();
 
@@ -254,7 +260,7 @@ export default function DocumentManagement() {
             status: "Generated",
             format: "PDF",
             raw: d,
-          })
+          }),
         );
         setSignOnDocs(signOnDocs);
 
@@ -288,13 +294,13 @@ export default function DocumentManagement() {
             status: "Generated",
             format: "PDF",
             raw: d,
-          })
+          }),
         );
         setWorkDoneDocs(workDoneDocs);
 
         // Delivery Note
         const deliveryNoteJson = await apiCall(
-          `${API_URL}/documents/delivery-note`
+          `${API_URL}/documents/delivery-note`,
         );
         const deliveryNoteDocs: Document[] = (deliveryNoteJson.data || []).map(
           (d: any) => ({
@@ -308,7 +314,7 @@ export default function DocumentManagement() {
             status: "Generated",
             format: "PDF",
             raw: d,
-          })
+          }),
         );
         setDeliveryNoteDocs(deliveryNoteDocs);
       } catch (err) {
@@ -332,12 +338,12 @@ export default function DocumentManagement() {
           doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           doc.vesselName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (doc.principle &&
-            doc.principle.toLowerCase().includes(searchTerm.toLowerCase()))
+            doc.principle.toLowerCase().includes(searchTerm.toLowerCase())),
       );
     }
     if (statusFilter !== "all") {
       filtered = filtered.filter(
-        (doc) => doc.status.toLowerCase() === statusFilter
+        (doc) => doc.status.toLowerCase() === statusFilter,
       );
     }
     return filtered;
@@ -464,7 +470,7 @@ export default function DocumentManagement() {
         setWorkDoneDocs((prev) => prev.filter((d) => d.id !== deleteTarget.id));
       } else if (deleteTarget.category === "Delivery Note") {
         setDeliveryNoteDocs((prev) =>
-          prev.filter((d) => d.id !== deleteTarget.id)
+          prev.filter((d) => d.id !== deleteTarget.id),
         );
       }
     } catch (e) {
@@ -639,7 +645,7 @@ export default function DocumentManagement() {
                           onClick={() =>
                             router.push(
                               docTypes.find((d) => d.label === selectedType)
-                                ?.route || "/documents"
+                                ?.route || "/documents",
                             )
                           }
                         >
@@ -675,7 +681,7 @@ export default function DocumentManagement() {
                                 <div className="flex flex-wrap items-center space-x-1 mt-1">
                                   <Badge
                                     className={getCategoryColor(
-                                      document.category
+                                      document.category,
                                     )}
                                   >
                                     {document.category}
@@ -735,7 +741,7 @@ export default function DocumentManagement() {
                                 <Calendar className="h-4 w-4 text-gray-400" />
                                 <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                                   {new Date(
-                                    document.generatedAt
+                                    document.generatedAt,
                                   ).toLocaleString()}
                                 </span>
                               </div>
