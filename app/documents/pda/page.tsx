@@ -317,6 +317,11 @@ export default function PdaGeneratePage() {
     setFilteredCurrencies(filtered);
   };
 
+  const [showPortCallDialog, setShowPortCallDialog] = useState(true);
+  const [isPortCallLinked, setIsPortCallLinked] = useState<boolean | null>(
+    null,
+  );
+
   // Fetch vessels on mount
   useEffect(() => {
     const fetchVessels = async () => {
@@ -521,19 +526,27 @@ export default function PdaGeneratePage() {
       paymentTerms === "Other" ? paymentTermsOther.trim() : paymentTerms;
 
     const arrDateFormated = arraivalDate ? formatDate(arraivalDate) : "";
-    const arrTimeFormated = arraivalTime ? arraivalTime + (arraivalTime.split(":").length === 2 ? ":00" : "") : "00:00:00";
-    const reqArraivalDate = arrDateFormated ? `${arrDateFormated} , ${arrTimeFormated}` : "";
+    const arrTimeFormated = arraivalTime
+      ? arraivalTime + (arraivalTime.split(":").length === 2 ? ":00" : "")
+      : "00:00:00";
+    const reqArraivalDate = arrDateFormated
+      ? `${arrDateFormated} , ${arrTimeFormated}`
+      : "";
 
     const depDateFormated = departureDate ? formatDate(departureDate) : "";
-    const depTimeFormated = departureTime ? departureTime + (departureTime.split(":").length === 2 ? ":00" : "") : "00:00:00";
-    const reqDepartureDate = depDateFormated ? `${depDateFormated}, ${depTimeFormated}` : "";
+    const depTimeFormated = departureTime
+      ? departureTime + (departureTime.split(":").length === 2 ? ":00" : "")
+      : "00:00:00";
+    const reqDepartureDate = depDateFormated
+      ? `${depDateFormated}, ${depTimeFormated}`
+      : "";
 
     const discountVal = parseFloat(discountAmount as string) || 0;
     const grandTotalVal = (InvoiceTotal - discountVal).toFixed(2);
 
     const payload = {
       date,
-      jobID: jobId,
+      jobID: isPortCallLinked ? jobId : null,
       currency,
       ClientName,
       ClientAddress,
@@ -585,32 +598,32 @@ export default function PdaGeneratePage() {
       const blobUrl = window.URL.createObjectURL(blob);
 
       // Replicate backend filename generation as fallback (due to potential CORS hiding headers)
-      const safeStr = (str: string) => 
+      const safeStr = (str: string) =>
         String(str)
           .replace(/[^a-zA-Z0-9-_]/g, "_")
           .replace(/_+/g, "_");
-      
+
       const expectedFileName = `${safeStr(VesselName)}-${safeStr(poc)}-${safeStr(port)}-${safeStr(date)}.pdf`;
       let filename = expectedFileName;
 
       // Extract filename from Content-Disposition header if available (preferred)
-      const disposition = res.headers.get('Content-Disposition');
-      if (disposition && disposition.indexOf('attachment') !== -1) {
+      const disposition = res.headers.get("Content-Disposition");
+      if (disposition && disposition.indexOf("attachment") !== -1) {
         const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
         const matches = filenameRegex.exec(disposition);
         if (matches != null && matches[1]) {
-          filename = matches[1].replace(/['"]/g, '');
+          filename = matches[1].replace(/['"]/g, "");
         }
-      } else if (disposition && disposition.includes('filename=')) {
+      } else if (disposition && disposition.includes("filename=")) {
         const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
         const matches = filenameRegex.exec(disposition);
         if (matches != null && matches[1]) {
-          filename = matches[1].replace(/['"]/g, '');
+          filename = matches[1].replace(/['"]/g, "");
         }
       }
 
       // Create an invisible link to trigger the download
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = blobUrl;
       link.download = filename;
       document.body.appendChild(link);
@@ -837,7 +850,8 @@ export default function PdaGeneratePage() {
                     value={jobId}
                     onChange={(e) => setJobId(e.target.value)}
                     placeholder="GLPC-YYYY-XXXX-XXX"
-                    required
+                    required={isPortCallLinked === true}
+                    disabled={isPortCallLinked === false}
                   />
                 </div>
                 <div>
@@ -1004,7 +1018,9 @@ export default function PdaGeneratePage() {
                   )}
                 </div>
                 <div>
-                  <label className="block mb-1 text-sm font-medium">Currency</label>
+                  <label className="block mb-1 text-sm font-medium">
+                    Currency
+                  </label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -1235,7 +1251,9 @@ export default function PdaGeneratePage() {
                   )}
                   {showDiscount && (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">Discount amount:</span>
+                      <span className="text-sm font-medium">
+                        Discount amount:
+                      </span>
                       <Input
                         type="number"
                         placeholder="Amount"
@@ -1259,13 +1277,18 @@ export default function PdaGeneratePage() {
                       </Button>
                     </div>
                   )}
-                  {showDiscount && discountAmount && parseFloat(String(discountAmount)) > 0 ? (
+                  {showDiscount &&
+                  discountAmount &&
+                  parseFloat(String(discountAmount)) > 0 ? (
                     <div className="flex flex-col items-end gap-1 mt-2">
                       <span className="text-base font-semibold text-muted-foreground mr-1">
                         Subtotal: {InvoiceTotal.toFixed(2)}
                       </span>
                       <span className="text-lg font-bold text-yellow-900 dark:text-yellow-300">
-                        Grand Total: {(InvoiceTotal - parseFloat(String(discountAmount))).toFixed(2)}
+                        Grand Total:{" "}
+                        {(
+                          InvoiceTotal - parseFloat(String(discountAmount))
+                        ).toFixed(2)}
                       </span>
                     </div>
                   ) : (
@@ -1301,6 +1324,42 @@ export default function PdaGeneratePage() {
           </form>
         </Card>
       </div>
+
+      <Dialog open={showPortCallDialog}>
+        <DialogContent
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Port Call Reference</DialogTitle>
+            <DialogDescription>
+              Is this document linked to a Port Call?
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsPortCallLinked(false);
+                setJobId("");
+                setShowPortCallDialog(false);
+              }}
+            >
+              No
+            </Button>
+
+            <Button
+              onClick={() => {
+                setIsPortCallLinked(true);
+                setShowPortCallDialog(false);
+              }}
+            >
+              Yes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Draft Modal */}
       <Dialog open={showDraftModal} onOpenChange={setShowDraftModal}>
