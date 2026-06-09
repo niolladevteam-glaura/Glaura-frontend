@@ -1325,7 +1325,7 @@ export default function PdaGeneratePage() {
         </Card>
       </div>
 
-      {/* Port-Call Link Dialog box */}
+      {/* Port-Call Link Dialog */}
       <Dialog open={showPortCallDialog}>
         <DialogContent
           onPointerDownOutside={(e) => e.preventDefault()}

@@ -160,9 +160,20 @@ export default function LoginPage() {
                 <CardTitle className="text-3xl font-bold gradient-text">
                   Welcome to GLAURA
                 </CardTitle>
+
                 <CardDescription className="text-lg text-gray-600">
                   Access your maritime command center
                 </CardDescription>
+
+                <div className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3">
+                  <p className="text-sm font-medium text-red-700">
+                    System Maintenance Notice
+                  </p>
+                  <p className="mt-1 text-sm text-red-600">
+                    The system is currently under maintenance. Some features may
+                    not work properly during this period.
+                  </p>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <form onSubmit={handleLogin} className="space-y-6">
