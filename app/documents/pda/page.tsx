@@ -546,7 +546,7 @@ export default function PdaGeneratePage() {
 
     const payload = {
       date,
-      jobID: isPortCallLinked ? jobId : null,
+      jobID: isPortCallLinked ? jobId : "",
       currency,
       ClientName,
       ClientAddress,
