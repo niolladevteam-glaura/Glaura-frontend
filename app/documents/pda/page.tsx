@@ -783,6 +783,20 @@ export default function PdaGeneratePage() {
     );
   }
 
+  console.log(
+    "VESSELS WITH EMPTY NAME",
+    vessels.filter((v) => !v.vessel_name?.trim()),
+  );
+
+  console.log("PAYMENT TERMS", PAYMENT_TERMS_OPTIONS);
+
+  console.log(
+    "EMPTY PAYMENT TERMS",
+    PAYMENT_TERMS_OPTIONS.filter((p) => !p?.trim()),
+  );
+
+  console.log("BANK ACCOUNTS", bankAccounts);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -917,7 +931,10 @@ export default function PdaGeneratePage() {
                     </SelectTrigger>
                     <SelectContent>
                       {vessels.map((v) => (
-                        <SelectItem key={v.id} value={v.vessel_name}>
+                        <SelectItem
+                          key={v.id}
+                          value={v.vessel_name?.trim() || `VESSEL_${v.id}`}
+                        >
                           {v.vessel_name}
                         </SelectItem>
                       ))}
@@ -1000,7 +1017,10 @@ export default function PdaGeneratePage() {
                     <SelectContent>
                       {PAYMENT_TERMS_OPTIONS.filter((opt) => opt?.trim()).map(
                         (opt) => (
-                          <SelectItem key={opt} value={opt}>
+                          <SelectItem
+                            key={opt}
+                            value={opt?.trim() || "EMPTY_TERM"}
+                          >
                             {opt}
                           </SelectItem>
                         ),
@@ -1088,7 +1108,10 @@ export default function PdaGeneratePage() {
                     </SelectTrigger>
                     <SelectContent>
                       {bankAccounts.map((b) => (
-                        <SelectItem key={b.id} value={String(b.id)}>
+                        <SelectItem
+                          key={b.id}
+                          value={String(b.id || `BANK_${Math.random()}`)}
+                        >
                           {b.bank} - {b.account_number} ({b.primary_currency})
                         </SelectItem>
                       ))}
