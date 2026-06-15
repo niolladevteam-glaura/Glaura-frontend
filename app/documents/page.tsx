@@ -546,7 +546,7 @@ export default function DocumentManagement() {
               <div>
                 <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between mb-6 gap-4">
                   <h2 className="text-lg sm:text-xl font-bold">
-                    Document Types
+                    Document Types 1
                   </h2>
                   <Button
                     className="w-full xs:w-auto"
