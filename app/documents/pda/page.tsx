@@ -998,11 +998,13 @@ export default function PdaGeneratePage() {
                       <SelectValue placeholder="Select payment terms" />
                     </SelectTrigger>
                     <SelectContent>
-                      {PAYMENT_TERMS_OPTIONS.map((term) => (
-                        <SelectItem key={term} value={term}>
-                          {term}
-                        </SelectItem>
-                      ))}
+                      {PAYMENT_TERMS_OPTIONS.filter((opt) => opt?.trim()).map(
+                        (opt) => (
+                          <SelectItem key={opt} value={opt}>
+                            {opt}
+                          </SelectItem>
+                        ),
+                      )}
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
