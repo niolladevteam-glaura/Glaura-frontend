@@ -447,15 +447,21 @@ export default function VesselManagement() {
     if (searchTerm) {
       filtered = filtered.filter(
         (vessel) =>
-          vessel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vessel.imo.includes(searchTerm) ||
-          vessel.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vessel.flag.toLowerCase().includes(searchTerm.toLowerCase()),
+          (vessel.name || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (vessel.imo || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (vessel.owner || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (vessel.flag || "").toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
     if (typeFilter !== "all") {
       filtered = filtered.filter((vessel) =>
-        vessel.vesselType.toLowerCase().includes(typeFilter.toLowerCase()),
+        (vessel.vesselType || "")
+          .toLowerCase()
+          .includes(typeFilter.toLowerCase()),
       );
     }
     if (statusFilter !== "all") {
