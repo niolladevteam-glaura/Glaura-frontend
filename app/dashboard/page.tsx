@@ -349,7 +349,6 @@ export default function Dashboard() {
           href: "/bunkering-operations",
           icon: Fuel,
           label: "Bunkering Operations",
-          
         },
 
         can("operation.document.view") && {
@@ -363,6 +362,11 @@ export default function Dashboard() {
     {
       heading: "Disbursement Department",
       items: [
+        can("operation.port_call.view") && {
+          href: "/port-calls",
+          icon: Anchor,
+          label: "Active Port Calls",
+        },
         can("disbursement.inquiry.view") && {
           href: "/pending-inquiry",
           icon: ClipboardCheck,
