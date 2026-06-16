@@ -165,7 +165,7 @@ export default function LoginPage() {
                   Access your maritime command center
                 </CardDescription>
 
-                <div className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3">
+                {/* <div className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3">
                   <p className="text-sm font-medium text-red-700">
                     System Maintenance Notice
                   </p>
@@ -173,7 +173,7 @@ export default function LoginPage() {
                     The system is currently under maintenance. Some features may
                     not work properly during this period.
                   </p>
-                </div>
+                </div> */}
               </CardHeader>
               <CardContent className="space-y-6">
                 <form onSubmit={handleLogin} className="space-y-6">
