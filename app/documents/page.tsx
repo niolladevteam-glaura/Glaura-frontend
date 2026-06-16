@@ -192,12 +192,18 @@ export default function DocumentManagement() {
   // Department-based document access
   // Department-based document access
   const getAllowedDocTypes = () => {
-    if (!currentUser || !currentUser.department) return [];
+    if (!currentUser) return [];
 
-    const dept = String(currentUser.department).toLowerCase();
+    const dept = String(currentUser.department || "").toLowerCase();
+    const role = String(currentUser.role || "").toLowerCase();
 
     // Management → All documents
     if (dept === "management") {
+      return allDocTypes;
+    }
+
+    // Senior Executive - Projects & Business Development → All documents
+    if (role === "senior executive - projects & business development") {
       return allDocTypes;
     }
 
@@ -208,10 +214,7 @@ export default function DocumentManagement() {
       );
     }
 
-    // All other departments
-    // (Finance, Operations, Communication, Clearance,
-    //  Bunkering, Supply, Marketing)
-    // → All documents EXCEPT PDA
+    // Other departments → All except PDA
     return allDocTypes.filter((d) => d.label !== "PDA");
   };
   const docTypes = getAllowedDocTypes();
