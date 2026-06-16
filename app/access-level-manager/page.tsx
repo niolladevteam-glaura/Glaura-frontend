@@ -91,7 +91,7 @@ export default function AccessLevelManager() {
     setCurrentUser(
       user && user.name && user.accessLevel
         ? { name: user.name, accessLevel: user.accessLevel }
-        : { name: "Demo User", accessLevel: "A" }
+        : { name: "Demo User", accessLevel: "A" },
     );
   }, []);
 
@@ -109,7 +109,7 @@ export default function AccessLevelManager() {
               "Content-Type": "application/json",
               ...(token && { Authorization: `Bearer ${token}` }),
             },
-          }
+          },
         );
         if (res.status === 401) {
           setAllPermissions([]);
@@ -158,7 +158,7 @@ export default function AccessLevelManager() {
                     module: perm.module,
                   }))
                 : [],
-            }))
+            })),
           );
         } else {
           setAccessLevels([]);
@@ -198,7 +198,7 @@ export default function AccessLevelManager() {
       (p) =>
         p.key.toLowerCase().includes(term) ||
         p.description.toLowerCase().includes(term) ||
-        p.module.toLowerCase().includes(term)
+        p.module.toLowerCase().includes(term),
     );
   }, [permissionSearch, allPermissions]);
 
@@ -224,13 +224,13 @@ export default function AccessLevelManager() {
 
   async function handleModalSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     if (!modalName.trim()) return;
 
-    // Prepare permission IDs
     const permissionIds = modalPermissions.map((p) => p.id);
 
-    if (modalMode === "add") {
-      try {
+    try {
+      if (modalMode === "add") {
         const response = await createAccessLevel({
           name: modalName,
           description: modalDescription,
@@ -243,36 +243,51 @@ export default function AccessLevelManager() {
         }
 
         setShowModal(false);
+
         toast.success("Access Level created successfully!", {
           description: `Created "${response.accessLevel.name}" with ${modalPermissions.length} permissions.`,
           duration: 3500,
         });
-        // Reload access levels list from backend
-        reloadAccessLevels();
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to create Access Level", {
-          duration: 4000,
+
+        await reloadAccessLevels();
+      } else if (modalMode === "edit" && editingLevel) {
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(
+          `${API_BASE_URL}/permission/access-level/${editingLevel.id}`,
+          {
+            method: "PATCH", // Change to PATCH if your API uses PATCH
+            headers: {
+              "Content-Type": "application/json",
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            body: JSON.stringify({
+              access_level_name: modalName,
+              description: modalDescription,
+              permissions: permissionIds,
+            }),
+          },
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Failed to update access level");
+        }
+
+        setShowModal(false);
+
+        toast.success("Access Level updated!", {
+          description: `Updated "${modalName}".`,
+          duration: 3000,
         });
+
+        await reloadAccessLevels();
       }
-    } else if (modalMode === "edit" && editingLevel) {
-      setAccessLevels((prev) =>
-        prev.map((al) =>
-          al.id === editingLevel.id
-            ? {
-                ...al,
-                name: modalName,
-                description: modalDescription,
-                permissions: modalPermissions,
-              }
-            : al
-        )
-      );
-      setShowModal(false);
-      toast.success("Access Level updated!", {
-        description: `Updated "${modalName}".`,
-        duration: 3000,
+    } catch (err: any) {
+      toast.error(err?.message || "Operation failed", {
+        duration: 4000,
       });
-      // Optionally reloadAccessLevels() if API edit is supported
     }
   }
 
@@ -303,7 +318,7 @@ export default function AccessLevelManager() {
                   module: perm.module,
                 }))
               : [],
-          }))
+          })),
         );
       } else {
         setAccessLevels([]);
@@ -327,7 +342,7 @@ export default function AccessLevelManager() {
     setModalPermissions((prev) =>
       prev.find((p) => p.id === perm.id)
         ? prev.filter((p) => p.id !== perm.id)
-        : [...prev, perm]
+        : [...prev, perm],
     );
   }
 
@@ -592,7 +607,7 @@ export default function AccessLevelManager() {
                             (groups[perm.module] =
                               groups[perm.module] || []).push(perm);
                             return groups;
-                          }, {})
+                          }, {}),
                         )
                           .slice(0, 2)
                           .map(([mod, perms]) => (
@@ -633,7 +648,7 @@ export default function AccessLevelManager() {
                             (groups[perm.module] =
                               groups[perm.module] || []).push(perm);
                             return groups;
-                          }, {})
+                          }, {}),
                         ).length > 2 && (
                           <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
                             <span className="text-xs text-gray-500">
@@ -645,7 +660,7 @@ export default function AccessLevelManager() {
                                   (groups[perm.module] =
                                     groups[perm.module] || []).push(perm);
                                   return groups;
-                                }, {})
+                                }, {}),
                               ).length - 2}{" "}
                               more modules
                             </span>
@@ -752,14 +767,14 @@ export default function AccessLevelManager() {
                           ...modalPermissions,
                           ...filteredPermissions.filter(
                             (p) =>
-                              !modalPermissions.find((sel) => sel.id === p.id)
+                              !modalPermissions.find((sel) => sel.id === p.id),
                           ),
                         ];
                         // Remove duplicates by id
                         const unique = Array.from(
                           new Map(
-                            newPerms.map((perm) => [perm.id, perm])
-                          ).values()
+                            newPerms.map((perm) => [perm.id, perm]),
+                          ).values(),
                         );
                         setModalPermissions(unique);
                       }}
@@ -775,8 +790,8 @@ export default function AccessLevelManager() {
                         setModalPermissions((prev) =>
                           prev.filter(
                             (p) =>
-                              !filteredPermissions.find((fp) => fp.id === p.id)
-                          )
+                              !filteredPermissions.find((fp) => fp.id === p.id),
+                          ),
                         );
                       }}
                     >
@@ -796,7 +811,7 @@ export default function AccessLevelManager() {
                           groups[perm.module] = groups[perm.module] || [];
                           groups[perm.module].push(perm);
                           return groups;
-                        }, {})
+                        }, {}),
                       ).length === 0 ? (
                       <div className="text-xs text-muted-foreground py-6">
                         No permissions found.
@@ -809,7 +824,7 @@ export default function AccessLevelManager() {
                           groups[perm.module] = groups[perm.module] || [];
                           groups[perm.module].push(perm);
                           return groups;
-                        }, {})
+                        }, {}),
                       ).map(([mod, perms]) => (
                         <div key={mod} className="space-y-3">
                           <div className="font-bold text-base text-blue-600 mb-1">
@@ -818,7 +833,7 @@ export default function AccessLevelManager() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {perms.map((perm) => {
                               const isChecked = !!modalPermissions.find(
-                                (p) => p.id === perm.id
+                                (p) => p.id === perm.id,
                               );
                               return (
                                 <button
