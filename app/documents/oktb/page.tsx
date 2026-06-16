@@ -532,14 +532,16 @@ export default function OKTBPage() {
                         <SelectValue placeholder="Select crew change" />
                       </SelectTrigger>
                       <SelectContent>
-                        {crewServices.map((cs) => (
-                          <SelectItem
-                            key={cs.Crw_Chg_Serv_id}
-                            value={cs.Crw_Chg_Serv_id}
-                          >
-                            {cs.crewName}
-                          </SelectItem>
-                        ))}
+                        {crewServices
+                          .filter((cs) => cs.Crw_Chg_Serv_id?.trim())
+                          .map((cs) => (
+                            <SelectItem
+                              key={cs.Crw_Chg_Serv_id}
+                              value={cs.Crw_Chg_Serv_id.trim()}
+                            >
+                              {cs.crewName || "Unnamed Crew"}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -557,11 +559,13 @@ export default function OKTBPage() {
                       <SelectValue placeholder="Select vessel" />
                     </SelectTrigger>
                     <SelectContent>
-                      {vessels.map((v) => (
-                        <SelectItem key={v.id} value={v.vessel_name}>
-                          {v.vessel_name}
-                        </SelectItem>
-                      ))}
+                      {vessels
+                        .filter((v) => v.vessel_name?.trim())
+                        .map((v) => (
+                          <SelectItem key={v.id} value={v.vessel_name.trim()}>
+                            {v.vessel_name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
