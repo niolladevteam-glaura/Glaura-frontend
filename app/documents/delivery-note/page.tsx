@@ -85,7 +85,9 @@ export default function DeliveryNoteGeneratePage() {
         });
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {
-          setVessels(data.data);
+          setVessels(
+            data.data.filter((v: any) => v.vessel_name && v.vessel_name.trim()),
+          );
         } else {
           setVessels([]);
         }
@@ -307,11 +309,16 @@ export default function DeliveryNoteGeneratePage() {
                       <SelectValue placeholder="Select vessel" />
                     </SelectTrigger>
                     <SelectContent>
-                      {vessels.map((v, idx) => (
-                        <SelectItem key={v.id || idx} value={v.vessel_name}>
-                          {v.vessel_name}
-                        </SelectItem>
-                      ))}
+                      {vessels
+                        .filter((v) => v.vessel_name?.trim())
+                        .map((v, idx) => (
+                          <SelectItem
+                            key={v.id || idx}
+                            value={v.vessel_name.trim()}
+                          >
+                            {v.vessel_name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
