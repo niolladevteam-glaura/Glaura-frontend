@@ -322,11 +322,13 @@ export default function CrewSignOnGeneratePage() {
                       <SelectValue placeholder="Select vessel" />
                     </SelectTrigger>
                     <SelectContent>
-                      {vessels.map((v) => (
-                        <SelectItem key={v.id} value={v.vessel_name}>
-                          {v.vessel_name}
-                        </SelectItem>
-                      ))}
+                      {vessels
+                        .filter((v) => v.vessel_name?.trim())
+                        .map((v) => (
+                          <SelectItem key={v.id} value={v.vessel_name.trim()}>
+                            {v.vessel_name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
