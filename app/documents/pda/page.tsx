@@ -270,6 +270,7 @@ export default function PdaGeneratePage() {
   const [ClientRefNo, setClientRefNo] = useState<string>("");
   const [AgentName, setAgentName] = useState<string>("");
   const [VesselName, setVesselName] = useState<string>("");
+  const [isManualVessel, setIsManualVessel] = useState(false);
   const [grt, setGrt] = useState<number | string>("");
   const [port, setPort] = useState<string>("");
   const [arraivalDate, setArraivalDate] = useState<string>("");
@@ -379,10 +380,16 @@ export default function PdaGeneratePage() {
 
   // When VesselName changes, auto-fill GRT
   useEffect(() => {
+    if (isManualVessel) return;
+
     const vessel = vessels.find((v) => v.vessel_name === VesselName);
-    if (vessel) setGrt(vessel.grt || "");
-    else setGrt("");
-  }, [VesselName, vessels]);
+
+    if (vessel) {
+      setGrt(vessel.grt || "");
+    } else {
+      setGrt("");
+    }
+  }, [VesselName, vessels, isManualVessel]);
 
   // Auto-calculate tableTotals and InvoiceTotal
   useEffect(() => {
@@ -922,13 +929,22 @@ export default function PdaGeneratePage() {
                     Vessel Name
                   </label>
                   <Select
-                    value={VesselName}
-                    onValueChange={(v) => setVesselName(v)}
-                    required
+                    value={isManualVessel ? "OTHER" : VesselName}
+                    onValueChange={(v) => {
+                      if (v === "OTHER") {
+                        setIsManualVessel(true);
+                        setVesselName("");
+                        setGrt("");
+                      } else {
+                        setIsManualVessel(false);
+                        setVesselName(v);
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select vessel" />
                     </SelectTrigger>
+
                     <SelectContent>
                       {vessels.map((v) => (
                         <SelectItem
@@ -938,14 +954,32 @@ export default function PdaGeneratePage() {
                           {v.vessel_name}
                         </SelectItem>
                       ))}
+
+                      <SelectItem value="OTHER">
+                        + Enter Vessel Manually
+                      </SelectItem>
                     </SelectContent>
                   </Select>
+                  {isManualVessel && (
+                    <Input
+                      className="mt-2"
+                      placeholder="Enter Vessel Name"
+                      value={VesselName}
+                      onChange={(e) => setVesselName(e.target.value)}
+                      required
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block mb-1 text-sm font-medium">
                     Gross Registered Tonnage (GRT)
                   </label>
-                  <Input value={grt} readOnly placeholder="Auto-filled" />
+                  <Input
+                    value={grt}
+                    readOnly={!isManualVessel}
+                    onChange={(e) => setGrt(e.target.value)}
+                    placeholder={isManualVessel ? "Enter GRT" : "Auto-filled"}
+                  />
                 </div>
                 <div>
                   <label className="block mb-1 text-sm font-medium">Port</label>
