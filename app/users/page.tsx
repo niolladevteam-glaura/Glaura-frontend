@@ -461,6 +461,7 @@ export default function UserManagement() {
         contact_number: editingUser.phoneNumber || "",
         role: editingUser.role || "staff",
         access_level: editingUser.accessLevel || "R",
+        access_level_id: editingUser.accessLevel || "R",
         department: editingUser.department || "Other",
         status: editingUser.isActive,
         permissions: permissionsObj, // <-- Correct format for backend!
