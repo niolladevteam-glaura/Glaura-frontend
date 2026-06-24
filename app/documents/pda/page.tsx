@@ -278,6 +278,7 @@ export default function PdaGeneratePage() {
   const [arraivalTime, setArraivalTime] = useState<string>("");
   const [departureTime, setDepartureTime] = useState<string>("");
   const [poc, setPoc] = useState<string>("Cargo Operations");
+  const [note, setNote] = useState<string>("");
 
   const [paymentTerms, setPaymentTerms] = useState<string>(
     "Upon receipt of the Final DA",
@@ -564,6 +565,7 @@ export default function PdaGeneratePage() {
       arraivalDate: reqArraivalDate,
       departureDate: reqDepartureDate,
       poc,
+      note,
       bankAccountID: selectedBankId || "",
       discount: discountAmount ? String(discountAmount) : "0",
       grandTotal: grandTotalVal,
@@ -708,6 +710,7 @@ export default function PdaGeneratePage() {
       showDiscount,
       discountAmount,
       selectedBankId,
+      note,
     };
 
     try {
@@ -755,6 +758,7 @@ export default function PdaGeneratePage() {
         setDiscountAmount(draftData.discountAmount || "");
         setSelectedBankId(draftData.selectedBankId || "");
         setHasDraft(true);
+        setNote(draftData.note || "");
       } catch (err) {
         console.error("Failed to load draft:", err);
       }
@@ -1072,6 +1076,15 @@ export default function PdaGeneratePage() {
                       />
                     </div>
                   )}
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block mb-1 text-sm font-medium">Note</label>
+                  <Textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Enter any additional notes"
+                    rows={4}
+                  />
                 </div>
                 <div>
                   <label className="block mb-1 text-sm font-medium">
