@@ -396,7 +396,8 @@ export default function PdaGeneratePage() {
   useEffect(() => {
     const updatedInvoiceData = invoiceData.map((table) => {
       const total = table.tableRows.reduce(
-        (sum, row) => sum + (parseFloat(row.amount as string) || 0),
+        (sum, row) =>
+          sum + (parseFloat(String(row.amount).replace(/,/g, "")) || 0),
         0,
       );
       return { ...table, tableTotal: total };
@@ -549,7 +550,8 @@ export default function PdaGeneratePage() {
       ? `${depDateFormated}, ${depTimeFormated}`
       : "";
 
-    const discountVal = parseFloat(discountAmount as string) || 0;
+    const discountVal =
+      parseFloat(String(discountAmount).replace(/,/g, "")) || 0;
     const grandTotalVal = (InvoiceTotal - discountVal).toFixed(2);
 
     const payload = {
@@ -578,7 +580,7 @@ export default function PdaGeneratePage() {
         tableRows: table.tableRows.map((row) => ({
           no: row.no,
           details: row.details,
-          amount: Number(row.amount) || 0,
+          amount: parseFloat(String(row.amount).replace(/,/g, "")) || 0,
           remarks: row.remarks,
         })),
       })),
@@ -1240,6 +1242,8 @@ export default function PdaGeneratePage() {
                               </div>
                               <div className="col-span-12 xs:col-span-3">
                                 <Input
+                                  type="text"
+                                  inputMode="decimal"
                                   placeholder="Amount"
                                   value={row.amount}
                                   onChange={(e) =>
@@ -1251,8 +1255,6 @@ export default function PdaGeneratePage() {
                                     )
                                   }
                                   required
-                                  min={0}
-                                  step="any"
                                   className="w-full"
                                 />
                               </div>
@@ -1349,15 +1351,17 @@ export default function PdaGeneratePage() {
                   )}
                   {showDiscount &&
                   discountAmount &&
-                  parseFloat(String(discountAmount)) > 0 ? (
+                  parseFloat(String(discountAmount).replace(/,/g, "")) > 0 ? (
                     <div className="flex flex-col items-end gap-1 mt-2">
                       <span className="text-base font-semibold text-muted-foreground mr-1">
                         Subtotal: {InvoiceTotal.toFixed(2)}
                       </span>
+
                       <span className="text-lg font-bold text-yellow-900 dark:text-yellow-300">
                         Grand Total:{" "}
                         {(
-                          InvoiceTotal - parseFloat(String(discountAmount))
+                          InvoiceTotal -
+                          parseFloat(String(discountAmount).replace(/,/g, ""))
                         ).toFixed(2)}
                       </span>
                     </div>
