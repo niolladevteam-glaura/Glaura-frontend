@@ -1240,7 +1240,6 @@ export default function PdaGeneratePage() {
                               </div>
                               <div className="col-span-12 xs:col-span-3">
                                 <Input
-                                  type="number"
                                   placeholder="Amount"
                                   value={row.amount}
                                   onChange={(e) =>
@@ -1327,7 +1326,6 @@ export default function PdaGeneratePage() {
                         Discount amount:
                       </span>
                       <Input
-                        type="number"
                         placeholder="Amount"
                         className="w-32"
                         value={discountAmount}
