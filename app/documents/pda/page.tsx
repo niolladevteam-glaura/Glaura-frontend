@@ -268,7 +268,9 @@ export default function PdaGeneratePage() {
   const [ClientName, setClientName] = useState<string>("");
   const [ClientAddress, setClientAddress] = useState<string>("");
   const [ClientRefNo, setClientRefNo] = useState<string>("");
-  const [AgentName, setAgentName] = useState<string>("");
+  const [AgentName, setAgentName] = useState<string>(
+    "Greek Lanka Maritime Services (Pvt) Ltd",
+  );
   const [VesselName, setVesselName] = useState<string>("");
   const [isManualVessel, setIsManualVessel] = useState(false);
   const [grt, setGrt] = useState<number | string>("");
