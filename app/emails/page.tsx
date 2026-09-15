@@ -71,7 +71,7 @@ interface TaskMail {
   created_by: string;
   createdAt: string;
   updatedAt: string;
-  cc_emails: string[];
+  ccs: { cc_id: string; mail_id: string; cc_email: string }[];
 }
 
 export default function EmailTabsPage() {
@@ -303,7 +303,7 @@ export default function EmailTabsPage() {
       subject: mail.subject || "",
       body: mail.body || "",
       client_email: mail.client_email || "",
-      cc_emails: (mail.cc_emails || []).join(", "),
+      cc_emails: (mail.ccs || []).map((c) => c.cc_email).join(", "),
     });
     setIsTaskMailEditDialogOpen(true);
   };
