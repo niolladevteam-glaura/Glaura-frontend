@@ -71,7 +71,7 @@ interface TaskMail {
   created_by: string;
   createdAt: string;
   updatedAt: string;
-  ccs: string[];
+  cc_emails: string[];
 }
 
 export default function EmailTabsPage() {
@@ -105,12 +105,12 @@ export default function EmailTabsPage() {
     subject: string;
     body: string;
     client_email: string;
-    ccs: string;
+    cc_emails: string;
   }>({
     subject: "",
     body: "",
     client_email: "",
-    ccs: "",
+    cc_emails: "",
   });
   const [deletingTaskMailId, setDeletingTaskMailId] = useState<string | null>(
     null
@@ -303,7 +303,7 @@ export default function EmailTabsPage() {
       subject: mail.subject || "",
       body: mail.body || "",
       client_email: mail.client_email || "",
-      ccs: (mail.ccs || []).join(", "),
+      cc_emails: (mail.cc_emails || []).join(", "),
     });
     setIsTaskMailEditDialogOpen(true);
   };
@@ -312,8 +312,8 @@ export default function EmailTabsPage() {
     if (!selectedTaskMail) return;
     try {
       setEmailsLoading(true);
-      const ccsArr =
-        taskMailEdit.ccs
+      const cc_emailsArr =
+        taskMailEdit.cc_emails
           .split(",")
           .map((s) => s.trim())
           .filter((s) => !!s) || [];
@@ -325,7 +325,7 @@ export default function EmailTabsPage() {
             subject: taskMailEdit.subject,
             body: taskMailEdit.body,
             client_email: taskMailEdit.client_email,
-            ccs: ccsArr,
+            cc_emails: cc_emailsArr,
           }),
         }
       );
@@ -832,11 +832,11 @@ export default function EmailTabsPage() {
                     CC Emails (comma separated)
                   </div>
                   <Input
-                    value={taskMailEdit.ccs}
+                    value={taskMailEdit.cc_emails}
                     onChange={(e) =>
                       setTaskMailEdit((edit) => ({
                         ...edit,
-                        ccs: e.target.value,
+                        cc_emails: e.target.value,
                       }))
                     }
                     className="w-full"
